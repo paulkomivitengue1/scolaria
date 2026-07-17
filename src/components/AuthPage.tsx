@@ -35,14 +35,14 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
     const name = mode === 'signup' ? directorName.trim() : email.split('@')[0];
     setTimeout(() => {
       const session = {
-        email: email.trim() || 'compte@scolaria.app',
+        email: email.trim() || 'compte@kasheco.app',
         name: name || 'Directeur',
         school: schoolName.trim() || 'Notre École',
         provider: 'email',
         loginAt: Date.now(),
         remember,
       };
-      localStorage.setItem('scolaria_session', JSON.stringify(session));
+      localStorage.setItem('kasheco_session', JSON.stringify(session));
       setLoading(false);
       onLogin();
     }, 650);
@@ -59,7 +59,7 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
         loginAt: Date.now(),
         remember: true,
       };
-      localStorage.setItem('scolaria_session', JSON.stringify(session));
+      localStorage.setItem('kasheco_session', JSON.stringify(session));
       setLoading(false);
       onLogin();
     }, 650);

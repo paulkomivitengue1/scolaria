@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: Calculator,
     title: 'Calcul Automatisé',
-    desc: "Saisissez le tarif annuel par classe — Scolaria calcule instantanément les 9 mensualités, le reste à payer et le solde de chaque élève.",
+    desc: "Saisissez le tarif annuel par classe — Kasheco calcule instantanément les 9 mensualités, le reste à payer et le solde de chaque élève.",
     accent: 'royal',
   },
   {
@@ -50,7 +50,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         <div className="animate-fadeUp delay-100 mt-8 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-glow-gold-lg">
           <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
         </div>
-        <h1 className="animate-fadeUp delay-200 mt-8 font-display text-5xl font-800 leading-tight tracking-tighter text-white sm:text-6xl lg:text-7xl">Scolaria</h1>
+        <h1 className="animate-fadeUp delay-200 mt-8 font-display text-5xl font-800 leading-tight tracking-tighter text-white sm:text-6xl lg:text-7xl">Kasheco</h1>
         <p className="animate-fadeUp delay-300 mt-4 max-w-2xl text-lg leading-relaxed text-royal-100 sm:text-xl">
           La solution premium de gestion des frais de scolarité pour les écoles d'<span className="text-gold-300 font-700">Afrique de l'Ouest</span>. Encaissez, calculez et envoyez vos reçus — sans paperasse.
         </p>
@@ -85,7 +85,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         </div>
         <button onClick={onEnter} className="mt-12 inline-flex items-center gap-2 text-sm font-700 text-gold-300 transition hover:text-gold-400">Commencer maintenant <ArrowRight className="h-4 w-4" /></button>
         <footer className="mt-16 flex flex-col items-center gap-1 border-t border-white/10 pt-8 text-center text-xs text-royal-100">
-          <div className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-gold-300" /><span className="font-700 text-white">Scolaria</span></div>
+          <div className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-gold-300" /><span className="font-700 text-white">Kasheco</span></div>
           <p>La référence premium de la gestion scolaire — Afrique de l'Ouest</p>
         </footer>
       </div>

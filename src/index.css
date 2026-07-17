@@ -26,7 +26,11 @@ body{font-family:var(--font-body);color:var(--ink);background:var(--canvas);-web
 .text-royal-100{color:var(--royal-100);}.text-royal-300{color:var(--royal-300);}.text-royal-400{color:var(--royal-400);}.text-royal-700{color:var(--royal-700);}.text-royal-900{color:var(--royal-900);}
 .text-gold-300{color:var(--gold-300);}.text-gold-400{color:var(--gold-400);}.text-gold-600{color:var(--gold-600);}.text-gold-700{color:var(--gold-700);}
 .text-emerald-600{color:var(--emerald-600);}.text-teal-600{color:var(--teal-600);}
-.text-red-500{color:#ef4444;}
+.text-red-500{color:#ef4444;}.text-red-600{color:#dc2626;}.text-red-700{color:#b91c1c;}
+.bg-red-50{background:#fef2f2;}.bg-red-100{background:#fee2e2;}.bg-red-500{background:#ef4444;}.bg-red-600{background:#dc2626;}
+.border-red-200{border-color:#fecaca;}.border-red-300{border-color:#fca5a5;}.border-red-500{border-color:#ef4444;}
+.hover\:bg-red-50:hover{background:#fef2f2;}
+.ring-red-400{box-shadow:0 0 0 4px rgba(239,68,68,.15);}
 
 .bg-white{background:#fff;}.bg-canvas{background:var(--canvas);}.bg-slate-50{background:var(--slate-50);}.bg-slate-100{background:var(--slate-100);}.bg-royal-50{background:var(--royal-50);}.bg-royal-700{background:var(--royal-700);}.bg-royal-900{background:var(--royal-900);}.bg-gold-50{background:var(--gold-50);}.bg-gold-500{background:var(--gold-500);}.bg-gold-600{background:var(--gold-600);}.bg-emerald-50{background:var(--emerald-50);}.bg-emerald-600{background:var(--emerald-600);}
 

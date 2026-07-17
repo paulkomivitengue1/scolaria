@@ -53,3 +53,42 @@ export function annualTotalFor(cls:string, sel:ServiceType[], p:PricingConfig) {
   const cp = p[cls]; if (!cp) return 0;
   return sel.reduce((sum,t) => sum + (cp[t] ?? 0), 0);
 }
+
+/* ---- Stock management ---- */
+export type UniformCycle = 'maternelle' | 'cycle1' | 'cycle2';
+export type UniformSize = '4'|'5'|'6'|'7'|'8'|'9'|'10'|'11'|'12'|'S'|'M'|'L'|'XL';
+export const UNIFORM_CYCLES: { id: UniformCycle; label: string }[] = [
+  { id: 'maternelle', label: 'Maternelle' },
+  { id: 'cycle1', label: '1er Cycle' },
+  { id: 'cycle2', label: '2nd Cycle' },
+];
+export const UNIFORM_SIZES: UniformSize[] = ['4','5','6','7','8','9','10','11','12','S','M','L','XL'];
+
+export interface UniformStockItem {
+  id: string;
+  cycle: UniformCycle;
+  size: UniformSize;
+  oldStock: number;
+  newStock: number;
+  sold: number;
+}
+export type UniformStockMap = Record<string, UniformStockItem>;
+
+export const uniformAvailable = (i: UniformStockItem) => i.oldStock + i.newStock - i.sold;
+export const uniformRemaining = (i: UniformStockItem) => Math.max(0, uniformAvailable(i));
+
+export type BookClass = 'Jardin'|'1ère année'|'2ème année'|'3ème année'|'4ème année'|'5ème année'|'6ème année'|'7ème année'|'8ème année'|'9ème année';
+export const BOOK_CLASSES: BookClass[] = ['Jardin','1ère année','2ème année','3ème année','4ème année','5ème année','6ème année','7ème année','8ème année','9ème année'];
+export const BOOK_SUBJECTS = ['Lecture','Calcul','Écriture','Dictée','Grammaire','Conjugaison','Histoire-Géo','Sciences','Anglais','EPS'] as const;
+export type BookSubject = typeof BOOK_SUBJECTS[number];
+
+export interface BookStockItem {
+  id: string;
+  className: BookClass;
+  subject: BookSubject;
+  inStock: number;
+  sold: number;
+}
+export type BookStockMap = Record<string, BookStockItem>;
+
+export const bookRemaining = (b: BookStockItem) => Math.max(0, b.inStock - b.sold);

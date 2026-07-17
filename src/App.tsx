@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid, LogOut } from 'lucide-react';
+import { BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid, LogOut, Boxes } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Header } from './components/Header';
@@ -9,15 +9,16 @@ import { PaymentModal } from './components/PaymentModal';
 import { WhatsAppReceipt } from './components/WhatsAppReceipt';
 import { AddStudentModal } from './components/AddStudentModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
-import { DEFAULT_PRICING } from './data';
-import type { Student, MonthKey, ServiceType, PricingConfig } from './types';
+import { StocksView } from './components/StocksView';
+import { DEFAULT_PRICING, DEFAULT_UNIFORM_STOCK, DEFAULT_BOOK_STOCK } from './data';
+import type { Student, MonthKey, ServiceType, PricingConfig, UniformStockItem, BookStockItem } from './types';
 import { studentExpected, studentCollected } from './types';
 import { getSchoolName, setSchoolName } from './whatsapp';
 
 type AppScreen = 'landing' | 'auth' | 'dashboard';
-type View = 'cahier' | 'parametres';
+type View = 'cahier' | 'stocks' | 'parametres';
 
-const SESSION_KEY = 'scolaria_session';
+const SESSION_KEY = 'kasheco_session';
 
 function hasStoredSession(): boolean {
   try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
@@ -27,6 +28,8 @@ function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch { 
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>(() => (hasStoredSession() ? 'dashboard' : 'landing'));
   const [students, setStudents] = useState<Student[]>([]);
+  const [uniforms, setUniforms] = useState<UniformStockItem[]>(DEFAULT_UNIFORM_STOCK);
+  const [books, setBooks] = useState<BookStockItem[]>(DEFAULT_BOOK_STOCK);
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>('cahier');
@@ -79,6 +82,7 @@ export default function App() {
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
             <button onClick={()=>setView('cahier')} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-700 transition ${view==='cahier'?'bg-royal-700 text-white shadow-sm':'text-slate-600 hover:bg-slate-100'}`}><LayoutGrid className="h-4 w-4"/>Cahier</button>
+            <button onClick={()=>setView('stocks')} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-700 transition ${view==='stocks'?'bg-royal-700 text-white shadow-sm':'text-slate-600 hover:bg-slate-100'}`}><Boxes className="h-4 w-4"/>Stocks</button>
             <button onClick={()=>setView('parametres')} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-700 transition ${view==='parametres'?'bg-royal-700 text-white shadow-sm':'text-slate-600 hover:bg-slate-100'}`}><Settings2 className="h-4 w-4"/>Paramètres</button>
           </div>
           <button onClick={handleLogout} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-600 text-slate-600 transition hover:bg-slate-50 active:scale-95"><LogOut className="h-4 w-4"/>Déconnexion</button>
@@ -103,10 +107,12 @@ export default function App() {
           </div>
         </>)}
 
+        {view==='stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={setUniforms} onBooksChange={setBooks}/>}
+
         {view==='parametres' && <ConfigurationPanel pricing={pricing} onSave={setPricing} onReset={()=>setPricing(DEFAULT_PRICING)} schoolName={schoolName} onSchoolNameChange={handleSchoolNameChange}/>}
 
         <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          <p className="font-600 text-slate-500">Scolaria — La référence premium de la gestion scolaire</p>
+          <p className="font-600 text-slate-500">Kasheco — La référence premium de la gestion scolaire</p>
           <p>Afrique de l'Ouest · Conçu pour les intendances exigeantes</p>
         </footer>
       </main>

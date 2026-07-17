@@ -64,7 +64,7 @@ export function buildWhatsAppLink(ctx: WhatsAppContext): string {
   return `https://wa.me/${phone}?text=${encoded}`;
 }
 
-const SESSION_KEY = 'scolaria_session';
+const SESSION_KEY = 'kasheco_session';
 const DEFAULT_SCHOOL = 'Notre École';
 
 export function getSchoolName(): string {
