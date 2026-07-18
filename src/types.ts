@@ -56,13 +56,13 @@ export function annualTotalFor(cls:string, sel:ServiceType[], p:PricingConfig) {
 
 /* ---- Stock management ---- */
 export type UniformCycle = 'maternelle' | 'cycle1' | 'cycle2';
-export type UniformSize = '4'|'5'|'6'|'7'|'8'|'9'|'10'|'11'|'12'|'S'|'M'|'L'|'XL';
+export type UniformSize = '4'|'6'|'8'|'10'|'12'|'S'|'M'|'L'|'XL';
 export const UNIFORM_CYCLES: { id: UniformCycle; label: string }[] = [
-  { id: 'maternelle', label: 'Maternelle' },
+  { id: 'maternelle', label: 'Maternelle / Jardin' },
   { id: 'cycle1', label: '1er Cycle' },
   { id: 'cycle2', label: '2nd Cycle' },
 ];
-export const UNIFORM_SIZES: UniformSize[] = ['4','5','6','7','8','9','10','11','12','S','M','L','XL'];
+export const UNIFORM_SIZES: UniformSize[] = ['4','6','8','10','12','S','M','L','XL'];
 
 export interface UniformStockItem {
   id: string;
@@ -71,6 +71,7 @@ export interface UniformStockItem {
   oldStock: number;
   newStock: number;
   sold: number;
+  price: number;
 }
 export type UniformStockMap = Record<string, UniformStockItem>;
 

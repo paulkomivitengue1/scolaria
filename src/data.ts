@@ -17,20 +17,18 @@ export const STUDENTS: never[] = [];
 
 const uid = (p: string) => `${p}_${Math.random().toString(36).slice(2, 9)}`;
 
-const initialUniforms: { cycle: UniformCycle; size: UniformSize; oldStock: number; newStock: number; sold: number }[] = [
-  { cycle: 'maternelle', size: '4', oldStock: 12, newStock: 8, sold: 5 },
-  { cycle: 'maternelle', size: '5', oldStock: 10, newStock: 6, sold: 7 },
-  { cycle: 'maternelle', size: '6', oldStock: 8, newStock: 4, sold: 2 },
-  { cycle: 'cycle1', size: '7', oldStock: 14, newStock: 10, sold: 8 },
-  { cycle: 'cycle1', size: '8', oldStock: 12, newStock: 8, sold: 9 },
-  { cycle: 'cycle1', size: '9', oldStock: 10, newStock: 6, sold: 4 },
-  { cycle: 'cycle1', size: '10', oldStock: 8, newStock: 4, sold: 1 },
-  { cycle: 'cycle2', size: '11', oldStock: 10, newStock: 6, sold: 3 },
-  { cycle: 'cycle2', size: '12', oldStock: 8, newStock: 4, sold: 2 },
-  { cycle: 'cycle2', size: 'S', oldStock: 6, newStock: 4, sold: 1 },
-  { cycle: 'cycle2', size: 'M', oldStock: 6, newStock: 2, sold: 2 },
-  { cycle: 'cycle2', size: 'L', oldStock: 4, newStock: 2, sold: 0 },
-  { cycle: 'cycle2', size: 'XL', oldStock: 2, newStock: 2, sold: 1 },
+const initialUniforms: { cycle: UniformCycle; size: UniformSize; oldStock: number; newStock: number; sold: number; price: number }[] = [
+  { cycle: 'maternelle', size: '4', oldStock: 12, newStock: 8, sold: 5, price: 5000 },
+  { cycle: 'maternelle', size: '6', oldStock: 10, newStock: 6, sold: 7, price: 5000 },
+  { cycle: 'maternelle', size: '8', oldStock: 8, newStock: 4, sold: 2, price: 5000 },
+  { cycle: 'maternelle', size: '10', oldStock: 6, newStock: 3, sold: 1, price: 5000 },
+  { cycle: 'cycle1', size: '8', oldStock: 14, newStock: 10, sold: 8, price: 6000 },
+  { cycle: 'cycle1', size: '10', oldStock: 12, newStock: 8, sold: 9, price: 6000 },
+  { cycle: 'cycle1', size: '12', oldStock: 10, newStock: 6, sold: 4, price: 6000 },
+  { cycle: 'cycle2', size: 'S', oldStock: 10, newStock: 6, sold: 3, price: 7000 },
+  { cycle: 'cycle2', size: 'M', oldStock: 8, newStock: 4, sold: 2, price: 7000 },
+  { cycle: 'cycle2', size: 'L', oldStock: 6, newStock: 2, sold: 2, price: 7000 },
+  { cycle: 'cycle2', size: 'XL', oldStock: 4, newStock: 2, sold: 0, price: 7000 },
 ];
 
 export const DEFAULT_UNIFORM_STOCK: UniformStockItem[] = initialUniforms.map((u) => ({
@@ -75,7 +73,7 @@ export const DEFAULT_BOOK_STOCK: BookStockItem[] = initialBooks.map((b) => ({
 }));
 
 export const newUniformItem = (cycle: UniformCycle, size: UniformSize): UniformStockItem => ({
-  id: uid('u'), cycle, size, oldStock: 0, newStock: 0, sold: 0,
+  id: uid('u'), cycle, size, oldStock: 0, newStock: 0, sold: 0, price: 5000,
 });
 
 export const newBookItem = (className: BookClass, subject: BookSubject): BookStockItem => ({

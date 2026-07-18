@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid, LogOut, Boxes } from 'lucide-react';
+import { BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid, LogOut, Boxes, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Header } from './components/Header';
@@ -10,15 +10,16 @@ import { WhatsAppReceipt } from './components/WhatsAppReceipt';
 import { AddStudentModal } from './components/AddStudentModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
+import { AdminPanel } from './components/AdminPanel';
 import { DEFAULT_PRICING, DEFAULT_UNIFORM_STOCK, DEFAULT_BOOK_STOCK } from './data';
 import type { Student, MonthKey, ServiceType, PricingConfig, UniformStockItem, BookStockItem } from './types';
-import { studentExpected, studentCollected } from './types';
+import { studentExpected, studentCollected, uniformRemaining, bookRemaining } from './types';
 import { getSchoolName, setSchoolName } from './whatsapp';
 
-type AppScreen = 'landing' | 'auth' | 'dashboard';
+type AppScreen = 'landing' | 'auth' | 'dashboard' | 'admin';
 type View = 'cahier' | 'stocks' | 'parametres';
 
-const SESSION_KEY = 'kasheco_session';
+const SESSION_KEY = 'scolaria_session';
 
 function hasStoredSession(): boolean {
   try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
@@ -26,7 +27,10 @@ function hasStoredSession(): boolean {
 function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch { /* noop */ } }
 
 export default function App() {
-  const [screen, setScreen] = useState<AppScreen>(() => (hasStoredSession() ? 'dashboard' : 'landing'));
+  const [screen, setScreen] = useState<AppScreen>(() => {
+    if (typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/scolaria-admin') return 'admin';
+    return hasStoredSession() ? 'dashboard' : 'landing';
+  });
   const [students, setStudents] = useState<Student[]>([]);
   const [uniforms, setUniforms] = useState<UniformStockItem[]>(DEFAULT_UNIFORM_STOCK);
   const [books, setBooks] = useState<BookStockItem[]>(DEFAULT_BOOK_STOCK);
@@ -43,10 +47,25 @@ export default function App() {
   const [receiptService, setReceiptService] = useState<ServiceType|null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [schoolName, setSchoolNameState] = useState<string>(() => getSchoolName());
+  const [stockSales, setStockSales] = useState<number>(0);
+  const [stockToast, setStockToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (screen !== 'dashboard') document.body.style.background = '';
   }, [screen]);
+
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash.replace('#', '') === '/scolaria-admin') setScreen('admin');
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const exitAdmin = () => {
+    if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+    setScreen(hasStoredSession() ? 'dashboard' : 'landing');
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -56,9 +75,9 @@ export default function App() {
 
   const { totalCollected, outstanding, recoveryRate } = useMemo(() => {
     const total = students.reduce((s,st)=>s+studentExpected(st),0);
-    const coll = students.reduce((s,st)=>s+studentCollected(st),0);
-    return { totalCollected:coll, outstanding:total-coll, recoveryRate: total>0?Math.round(coll/total*100):0 };
-  }, [students]);
+    const coll = students.reduce((s,st)=>s+studentCollected(st),0) + stockSales;
+    return { totalCollected:coll, outstanding:Math.max(0,total-coll), recoveryRate: total>0?Math.round(coll/total*100):0 };
+  }, [students, stockSales]);
 
   const activeStudent = students.find(s=>s.id===activeStudentId) ?? null;
   const receiptStudent = students.find(s=>s.id===receiptStudentId) ?? null;
@@ -72,6 +91,19 @@ export default function App() {
   const handleLogout = () => { clearSession(); setSchoolNameState(getSchoolName()); setScreen('landing'); };
   const handleSchoolNameChange = (name: string) => { setSchoolName(name); setSchoolNameState(name); };
 
+  const handleUniformSell = (item: UniformStockItem) => {
+    setStockSales((v) => v + item.price);
+    setStockToast(`+${item.price.toLocaleString('fr-FR')} FCFA — Tenue ${item.size} ajoutée à la caisse`);
+    setTimeout(() => setStockToast(null), 3000);
+  };
+
+  const handleYearEnd = () => {
+    setUniforms((prev) => prev.map((u) => ({ ...u, oldStock: uniformRemaining(u), newStock: 0, sold: 0 })));
+    setBooks((prev) => prev.map((b) => ({ ...b, inStock: bookRemaining(b), sold: 0 })));
+    setStockSales(0);
+  };
+
+  if (screen === 'admin') return <AdminPanel onExit={exitAdmin} />;
   if (screen === 'landing') return <LandingPage onEnter={() => setScreen('auth')} />;
   if (screen === 'auth') return <AuthPage onLogin={() => setScreen('dashboard')} onBack={() => setScreen('landing')} />;
 
@@ -107,13 +139,26 @@ export default function App() {
           </div>
         </>)}
 
-        {view==='stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={setUniforms} onBooksChange={setBooks}/>}
+        {view==='stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={setUniforms} onBooksChange={setBooks} onUniformSell={handleUniformSell}/>}
 
-        {view==='parametres' && <ConfigurationPanel pricing={pricing} onSave={setPricing} onReset={()=>setPricing(DEFAULT_PRICING)} schoolName={schoolName} onSchoolNameChange={handleSchoolNameChange}/>}
+        {view==='parametres' && <ConfigurationPanel pricing={pricing} onSave={setPricing} onReset={()=>setPricing(DEFAULT_PRICING)} schoolName={schoolName} onSchoolNameChange={handleSchoolNameChange} uniforms={uniforms} books={books} onYearEnd={handleYearEnd}/>}
+
+        {stockToast && (
+          <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
+            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {stockToast}</span>
+          </div>
+        )}
 
         <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          <p className="font-600 text-slate-500">Kasheco — La référence premium de la gestion scolaire</p>
+          <p className="font-600 text-slate-500">Scolaria — La référence premium de la gestion scolaire</p>
           <p>Afrique de l'Ouest · Conçu pour les intendances exigeantes</p>
+          <button
+            onClick={() => { window.location.hash = '/scolaria-admin'; setScreen('admin'); }}
+            className="mt-3 inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-0.5 text-[10px] font-600 text-slate-300 transition hover:border-slate-200 hover:text-slate-500"
+            title="Console super-admin"
+          >
+            <ShieldCheck className="h-3 w-3" /> admin
+          </button>
         </footer>
       </main>
 

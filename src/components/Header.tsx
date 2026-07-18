@@ -8,7 +8,7 @@ export function Header({ query, onQuery, resultCount, onLogout }: HeaderProps) {
           <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-royal-700 to-royal-900 text-white shadow-cardLg">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#f5c518"/><path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#f5c518"/></svg>
           </span>
-          <div className="leading-tight"><h1 className="font-display text-lg font-800 tracking-tight text-ink">Kasheco</h1><p className="text-[11px] font-600 text-slate-400">Gestion Scolaire Premium</p></div>
+          <div className="leading-tight"><h1 className="font-display text-lg font-800 tracking-tight text-ink">Scolaria</h1><p className="text-[11px] font-600 text-slate-400">Gestion Scolaire Premium</p></div>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative hidden w-full max-w-xs sm:block">

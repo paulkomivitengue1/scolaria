@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Settings2, GraduationCap, Utensils, Bus, Save, RotateCcw, Check, Search, AlertCircle, School } from 'lucide-react';
-import type { PricingConfig, ServiceType } from '../types';
-import { CLASS_LIST, SERVICES, formatFCFA, annualTotalFor, monthlyShare, NUM_MONTHS } from '../types';
+import { Settings2, GraduationCap, Utensils, Bus, Save, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight } from 'lucide-react';
+import type { PricingConfig, ServiceType, UniformStockItem, BookStockItem } from '../types';
+import { CLASS_LIST, SERVICES, formatFCFA, annualTotalFor, monthlyShare, NUM_MONTHS, uniformRemaining, bookRemaining } from '../types';
 
-interface ConfigPanelProps { pricing: PricingConfig; onSave:(n:PricingConfig)=>void; onReset:()=>void; schoolName: string; onSchoolNameChange:(n:string)=>void; }
+interface ConfigPanelProps {
+  pricing: PricingConfig;
+  onSave:(n:PricingConfig)=>void;
+  onReset:()=>void;
+  schoolName: string;
+  onSchoolNameChange:(n:string)=>void;
+  uniforms: UniformStockItem[];
+  books: BookStockItem[];
+  onYearEnd: () => void;
+}
 const ICONS = { GraduationCap, Utensils, Bus };
 const ACC: Record<ServiceType,{ wrap:string; text:string }> = { scolarite:{wrap:'bg-royal-50',text:'text-royal-700'}, cantine:{wrap:'bg-gold-50',text:'text-gold-600'}, transport:{wrap:'bg-emerald-50',text:'text-emerald-600'} };
 
-export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSchoolNameChange }: ConfigPanelProps) {
+export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSchoolNameChange, uniforms, books, onYearEnd }: ConfigPanelProps) {
   const [draft, setDraft] = useState<PricingConfig>(pricing);
   const [filter, setFilter] = useState('');
   const [saved, setSaved] = useState(false);
@@ -77,6 +86,8 @@ export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSch
           </div>
         </div>
       </div>
+      {/* Clôture d'exercice / Nouvelle année */}
+      <YearEndSection uniforms={uniforms} books={books} onYearEnd={onYearEnd} />
       <div className="relative max-w-xs"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"/><input type="text" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer une classe…" className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-4"/></div>
       <div className="hidden overflow-hidden rounded-2.5xl border border-slate-200 bg-white shadow-card md:block">
         <div className="overflow-x-auto scrollbar-thin"><table className="w-full text-sm"><thead><tr className="border-b border-slate-200 bg-slate-50">
@@ -103,4 +114,64 @@ function PriceInput({ value, onChange, accent }:{ value:number; onChange:(v:numb
     <input type="number" min={0} step={1000} value={value||''} onChange={e=>onChange(parseInt(e.target.value,10))} placeholder="0" className={`h-10 w-24 bg-white px-3 text-right text-sm font-700 text-ink outline-none ${value>0?accent.wrap:''}`}/>
     <span className="flex items-center bg-slate-100 px-2.5 text-[11px] font-700 text-slate-500">FCFA</span>
   </div>);
+}
+
+function YearEndSection({ uniforms, books, onYearEnd }: { uniforms: UniformStockItem[]; books: BookStockItem[]; onYearEnd: () => void }) {
+  const [confirm, setConfirm] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const totalUniforms = uniforms.reduce((s, i) => s + uniformRemaining(i), 0);
+  const totalBooks = books.reduce((s, i) => s + bookRemaining(i), 0);
+
+  const handleConfirm = () => {
+    onYearEnd();
+    setConfirm(false);
+    setDone(true);
+    setTimeout(() => setDone(false), 4000);
+  };
+
+  return (
+    <div className="rounded-2.5xl border border-royal-200 bg-gradient-to-br from-royal-50 via-white to-gold-50 p-5 shadow-card">
+      <div className="flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 text-white shadow-cardLg">
+          <CalendarClock className="h-5 w-5" />
+        </span>
+        <div className="flex-1">
+          <h3 className="font-display text-lg font-800 text-ink">Clôture d'exercice / Nouvelle Année</h3>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Prépare la rentrée scolaire en un clic : les compteurs « Vendus » et « Distribués » repassent à zéro, et le stock restant de cette année devient automatiquement l'« Ancien Stock » de la prochaine.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Tenues reportées</div>
+          <div className="font-display text-xl font-800 text-royal-700">{totalUniforms}</div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Livres reportés</div>
+          <div className="font-display text-xl font-800 text-royal-700">{totalBooks}</div>
+        </div>
+      </div>
+
+      {done ? (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700">
+          <Check className="h-4 w-4" /> Nouvelle année scolaire préparée avec succès !
+        </div>
+      ) : confirm ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-600 text-slate-600">Confirmer la clôture ?</span>
+          <button onClick={handleConfirm} className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-2 text-sm font-700 text-white shadow-cardLg transition hover:brightness-105 active:scale-95">
+            <Check className="h-4 w-4" /> Oui, préparer la rentrée
+          </button>
+          <button onClick={() => setConfirm(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-600 text-slate-500 transition hover:bg-slate-50">Annuler</button>
+        </div>
+      ) : (
+        <button onClick={() => setConfirm(true)} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-5 py-2.5 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95">
+          <Sparkles className="h-4 w-4" /> Préparer la nouvelle rentrée scolaire <ArrowRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
 }
