@@ -19,7 +19,7 @@ import { getSchoolName, setSchoolName } from './whatsapp';
 type AppScreen = 'landing' | 'auth' | 'dashboard' | 'admin';
 type View = 'cahier' | 'stocks' | 'parametres';
 
-const SESSION_KEY = 'scolaria_session';
+const SESSION_KEY = 'gestilys_session';
 
 function hasStoredSession(): boolean {
   try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
@@ -28,7 +28,7 @@ function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch { 
 
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>(() => {
-    if (typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/scolaria-admin') return 'admin';
+    if (typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/gestilys-admin') return 'admin';
     return hasStoredSession() ? 'dashboard' : 'landing';
   });
   const [students, setStudents] = useState<Student[]>([]);
@@ -56,7 +56,7 @@ export default function App() {
 
   useEffect(() => {
     const onHash = () => {
-      if (window.location.hash.replace('#', '') === '/scolaria-admin') setScreen('admin');
+      if (window.location.hash.replace('#', '') === '/gestilys-admin') setScreen('admin');
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -150,10 +150,10 @@ export default function App() {
         )}
 
         <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          <p className="font-600 text-slate-500">Scolaria — La référence premium de la gestion scolaire</p>
+          <p className="font-600 text-slate-500">Gestilys — La référence premium de la gestion scolaire</p>
           <p>Afrique de l'Ouest · Conçu pour les intendances exigeantes</p>
           <button
-            onClick={() => { window.location.hash = '/scolaria-admin'; setScreen('admin'); }}
+            onClick={() => { window.location.hash = '/gestilys-admin'; setScreen('admin'); }}
             className="mt-3 inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-0.5 text-[10px] font-600 text-slate-300 transition hover:border-slate-200 hover:text-slate-500"
             title="Console super-admin"
           >

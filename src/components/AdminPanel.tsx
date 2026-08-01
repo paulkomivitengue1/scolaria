@@ -113,7 +113,7 @@ export function AdminPanel({ onExit }: Props) {
             </span>
             <div>
               <h1 className="font-display text-lg font-800 tracking-tight text-white">Panneau Super-Admin</h1>
-              <p className="text-[11px] font-600 text-royal-200">Scolaria · Console d'administration</p>
+              <p className="text-[11px] font-600 text-royal-200">Gestilys · Console d'administration</p>
             </div>
           </div>
           <button
@@ -366,7 +366,7 @@ export function AdminPanel({ onExit }: Props) {
         </section>
 
         <footer className="mt-10 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          <p className="font-600 text-slate-500">Scolaria Admin · Console Super-Administrateur</p>
+          <p className="font-600 text-slate-500">Gestilys Admin · Console Super-Administrateur</p>
           <p>Données simulées — connexion Supabase prévue pour la prochaine itération.</p>
         </footer>
       </main>
