@@ -64,27 +64,15 @@ export function buildWhatsAppLink(ctx: WhatsAppContext): string {
   return `https://wa.me/${phone}?text=${encoded}`;
 }
 
-const SESSION_KEY = 'gestilys_session';
+// School name now comes from the Supabase-backed auth profile
+// (passed as a prop to WhatsAppReceipt), so localStorage is no longer needed.
+// These helpers are kept for backward compatibility but are unused.
 const DEFAULT_SCHOOL = 'Notre École';
 
 export function getSchoolName(): string {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return DEFAULT_SCHOOL;
-    const s = JSON.parse(raw);
-    return s.school || DEFAULT_SCHOOL;
-  } catch {
-    return DEFAULT_SCHOOL;
-  }
+  return DEFAULT_SCHOOL;
 }
 
-export function setSchoolName(name: string): void {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    const session = raw ? JSON.parse(raw) : {};
-    session.school = name;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {
-    // noop
-  }
+export function setSchoolName(_name: string): void {
+  // noop — school name is managed via the ConfigurationPanel and stored in Supabase
 }
