@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 
 /* ────────────────────────────────────────────────────────
    Auth context — manages the Supabase session and the
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function fetchProfile(u: User): Promise<SchoolProfile | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('users')
       .select('school_id, role, email, schools(name, director_name, trial_ends_at, subscription_status)')
       .eq('auth_uid', u.id)
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    getSupabase().auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user).finally(() => setLoading(false));
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // onAuthStateChange runs synchronously — wrap async work in IIFE to avoid deadlock
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((_event, session) => {
       (async () => {
         if (session?.user) {
           setUser(session.user);
@@ -97,12 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     schoolName: string,
     directorName: string,
   ): Promise<{ error?: string }> {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await getSupabase().auth.signUp({ email, password });
     if (error) return { error: error.message };
     if (!data.user) return { error: "Erreur inattendue lors de l'inscription." };
 
     // Create the school + user profile + seed default data atomically
-    const { error: rpcError } = await supabase.rpc('handle_new_school', {
+    const { error: rpcError } = await getSupabase().rpc('handle_new_school', {
       p_school_name: schoolName,
       p_director_name: directorName,
       p_email: email,
@@ -114,13 +114,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(email: string, password: string): Promise<{ error?: string }> {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await getSupabase().auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
     return {};
   }
 
   async function signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    await getSupabase().auth.signOut();
     setUser(null);
     setProfile(null);
   }
