@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid,
-  LogOut, Boxes, CheckCircle2, ShieldCheck, Lock, AlertTriangle,
+  LogOut, Boxes, CheckCircle2, Lock, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import {
@@ -29,9 +29,9 @@ type View = 'cahier' | 'stocks' | 'parametres';
 export default function App() {
   const { user, profile, loading, isTrialExpired, signOut, refreshProfile } = useAuth();
 
-  // Admin panel via hash route (unchanged from original)
+  // Admin panel — accessible only via /scolaria-admin hash URL, never via a visible button
   const [isAdminPanel, setIsAdminPanel] = useState(() =>
-    typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/gestilys-admin'
+    typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/scolaria-admin'
   );
 
   const [students, setStudents] = useState<Student[]>([]);
@@ -90,7 +90,7 @@ export default function App() {
   // ── Hash route for admin panel ────────────────────────
   useEffect(() => {
     const onHash = () => {
-      if (window.location.hash.replace('#', '') === '/gestilys-admin') setIsAdminPanel(true);
+      if (window.location.hash.replace('#', '') === '/scolaria-admin') setIsAdminPanel(true);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -219,6 +219,15 @@ export default function App() {
 
   // ── Render ────────────────────────────────────────────
 
+  // Admin panel — checked BEFORE auth/loading so it's accessible even when not logged in.
+  // The AdminPanel component has its own developer-code login screen.
+  if (isAdminPanel) {
+    return <AdminPanel onExit={() => {
+      if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+      setIsAdminPanel(false);
+    }} />;
+  }
+
   // Loading spinner while auth state resolves
   if (loading) {
     return (
@@ -226,14 +235,6 @@ export default function App() {
         <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-royal-700 animate-spin" />
       </div>
     );
-  }
-
-  // Admin panel (unchanged hash-route access)
-  if (isAdminPanel) {
-    return <AdminPanel onExit={() => {
-      if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
-      setIsAdminPanel(false);
-    }} />;
   }
 
   // Not logged in → landing or auth
@@ -307,13 +308,6 @@ export default function App() {
         <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
           <p className="font-600 text-slate-500">Gestilys — La référence premium de la gestion scolaire</p>
           <p>Afrique de l'Ouest · Conçu pour les intendances exigeantes</p>
-          <button
-            onClick={() => { window.location.hash = '/gestilys-admin'; setIsAdminPanel(true); }}
-            className="mt-3 inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-0.5 text-[10px] font-600 text-slate-300 transition hover:border-slate-200 hover:text-slate-500"
-            title="Console super-admin"
-          >
-            <ShieldCheck className="h-3 w-3" /> admin
-          </button>
         </footer>
       </main>
 
