@@ -174,11 +174,11 @@ export function AdminPanel({ onExit }: Props) {
   }
 
   // ── Main admin panel ──────────────────────────────────
-  const filteredSchools = useMemo(() => {
+  const filteredSchools = (() => {
     const q = filter.trim().toLowerCase();
     if (!q) return schools;
     return schools.filter((s) => s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q));
-  }, [schools, filter]);
+  })();
 
   const pendingPayments = payments.filter((p) => p.status === 'en_attente');
   const resolvedPayments = payments.filter((p) => p.status !== 'en_attente');
