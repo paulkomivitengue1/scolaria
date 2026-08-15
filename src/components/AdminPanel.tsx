@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   ShieldCheck, Building2, CreditCard, Check, X, Search, BadgeCheck,
   Clock, AlertCircle, Smartphone, ArrowLeft, Sparkles, School, Lock,
@@ -174,11 +174,11 @@ export function AdminPanel({ onExit }: Props) {
   }
 
   // ── Main admin panel ──────────────────────────────────
-  const filteredSchools = (() => {
+  const filteredSchools = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) return schools;
     return schools.filter((s) => s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q));
-  })();
+  }, [schools, filter]);
 
   const pendingPayments = payments.filter((p) => p.status === 'en_attente');
   const resolvedPayments = payments.filter((p) => p.status !== 'en_attente');
