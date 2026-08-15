@@ -260,13 +260,13 @@ export default function App() {
 
         {!dataLoading && (
           <>
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="inline-flex items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                <button onClick={() => setView('cahier')} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-700 transition ${view === 'cahier' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><LayoutGrid className="h-4 w-4" />Cahier</button>
-                <button onClick={() => setView('stocks')} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-700 transition ${view === 'stocks' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Boxes className="h-4 w-4" />Stocks</button>
-                <button onClick={() => setView('parametres')} className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-700 transition ${view === 'parametres' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Settings2 className="h-4 w-4" />Paramètres</button>
+            <div className="mb-5 flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <button onClick={() => setView('cahier')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'cahier' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><LayoutGrid className="h-4 w-4" />Cahier</button>
+                <button onClick={() => setView('stocks')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'stocks' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Boxes className="h-4 w-4" />Stocks</button>
+                <button onClick={() => setView('parametres')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'parametres' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Settings2 className="h-4 w-4" />Paramètres</button>
               </div>
-              <button onClick={handleLogout} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-600 text-slate-600 transition hover:bg-slate-50 active:scale-95"><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Déconnexion</span></button>
+              <button onClick={handleLogout} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 active:scale-95" title="Déconnexion" aria-label="Déconnexion"><LogOut className="h-4 w-4" /></button>
             </div>
 
             {view === 'cahier' && (<>

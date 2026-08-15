@@ -58,13 +58,12 @@ export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSch
             </div>
           </div>
           <div className="relative">
-            <School className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"/>
             <input
               type="text"
               value={schoolDraft}
               onChange={e=>{setSchoolDraft(e.target.value); setSchoolSaved(false);}}
               placeholder="Entrez le nom de votre école…"
-              className="h-14 w-full rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-lg font-600 text-ink outline-none transition focus:border-royal-500 focus:ring-2 focus:ring-royal-500/30"
+              className="h-14 w-full rounded-xl border border-slate-300 bg-white px-4 text-lg font-600 text-ink outline-none transition focus:border-royal-500 focus:ring-2 focus:ring-royal-500/30"
             />
           </div>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -130,8 +129,8 @@ export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSch
 }
 function PriceInput({ value, onChange, accent }:{ value:number; onChange:(v:number)=>void; accent:{wrap:string;text:string}; }) {
   return (<div className="inline-flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white transition focus-within:border-royal-400">
-    <input type="number" min={0} step={1000} value={value||''} onChange={e=>onChange(parseInt(e.target.value,10))} placeholder="0" className={`h-10 w-24 bg-white px-3 text-right text-sm font-700 text-ink outline-none sm:w-28 md:w-20 ${value>0?accent.wrap:''}`}/>
-    <span className="flex items-center bg-slate-100 px-2.5 text-[11px] font-700 text-slate-500">FCFA</span>
+    <input type="number" min={0} step={1000} value={value||''} onChange={e=>onChange(parseInt(e.target.value,10))} placeholder="0" className={`h-9 w-16 min-w-0 bg-white px-2 text-right text-sm font-700 text-ink outline-none sm:h-10 sm:w-24 sm:px-3 md:w-20 ${value>0?accent.wrap:''}`}/>
+    <span className="flex items-center bg-slate-100 px-2 text-[10px] font-700 text-slate-500 sm:px-2.5 sm:text-[11px]">FCFA</span>
   </div>);
 }
 
