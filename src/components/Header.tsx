@@ -16,7 +16,14 @@ export function Header({ query, onQuery, resultCount, onLogout }: HeaderProps) {
             <input type="text" value={query} onChange={e=>onQuery(e.target.value)} placeholder="Rechercher un élève, classe, parent…" className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-4" />
             {query && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-600 text-slate-400">{resultCount}</span>}
           </div>
-          <button onClick={onLogout} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 active:scale-95" title="Déconnexion" aria-label="Déconnexion"><LogOut className="h-4.5 w-4.5"/></button>
+          <button onClick={onLogout} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 active:scale-95" title="Déconnexion" aria-label="Déconnexion"><LogOut className="h-4.5 w-4.5"/></button>
+        </div>
+      </div>
+      <div className="mx-auto max-w-[1600px] px-4 pb-2.5 sm:hidden">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input type="text" value={query} onChange={e=>onQuery(e.target.value)} placeholder="Rechercher un élève, classe, parent…" className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm outline-none transition focus:border-royal-400 focus:ring-4" />
+          {query && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-600 text-slate-400">{resultCount}</span>}
         </div>
       </div>
     </header>

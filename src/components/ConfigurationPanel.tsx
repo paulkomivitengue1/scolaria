@@ -102,8 +102,27 @@ export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSch
           </tr>))}
         </tbody></table></div>
       </div>
-      <div className="divide-y border border-slate-200 rounded-2.5xl bg-white shadow-card md:hidden">
-        {classes.map(cls=>(<div key={cls} className="p-4"><div className="flex items-center justify-between"><span className="font-600 text-ink">{cls}</span><span className="font-display text-sm font-700 text-royal-700">{formatFCFA(Math.round(monthlyShare(ann(cls))))}</span></div><div className="mt-3 grid grid-cols-3 gap-2">{SERVICES.map(svc=>(<div key={svc.type}><div className={`mb-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-700 ${ACC[svc.type].wrap} ${ACC[svc.type].text}`}>{svc.shortLabel}</div><PriceInput value={draft[cls]?.[svc.type]??0} onChange={v=>update(cls,svc.type,v)} accent={ACC[svc.type]}/></div>))}</div></div>))}
+      <div className="space-y-3 md:hidden">
+        {classes.map(cls=>(
+          <div key={cls} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-base font-800 text-ink">{cls}</span>
+              <span className="font-display text-sm font-700 text-royal-700">{formatFCFA(Math.round(monthlyShare(ann(cls))))}</span>
+            </div>
+            <div className="mt-1 text-[10px] font-600 uppercase tracking-wider text-slate-400">Mensuel ÷{NUM_MONTHS}</div>
+            <div className="mt-3 space-y-2.5">
+              {SERVICES.map(svc=>{const Icon=ICONS[svc.icon];return(
+                <div key={svc.type} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`grid h-8 w-8 place-items-center rounded-lg ${ACC[svc.type].wrap}`}><Icon className={`h-4 w-4 ${ACC[svc.type].text}`}/></span>
+                    <span className="text-sm font-600 text-slate-600">{svc.shortLabel}</span>
+                  </div>
+                  <PriceInput value={draft[cls]?.[svc.type]??0} onChange={v=>update(cls,svc.type,v)} accent={ACC[svc.type]}/>
+                </div>
+              );})}
+            </div>
+          </div>
+        ))}
       </div>
       <div className="flex items-start gap-2 rounded-xl border border-gold-200 bg-gold-50 px-4 py-3 text-xs text-gold-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0"/><p>Les nouveaux élèves inscrits via « Ajouter un élève » utilisent automatiquement ces tarifs annuels selon leur classe et les services cochés (mensualité = annuel ÷ {NUM_MONTHS}). Modifier un tarif n'affecte pas les élèves déjà inscrits.</p></div>
     </div>
@@ -111,7 +130,7 @@ export function ConfigurationPanel({ pricing, onSave, onReset, schoolName, onSch
 }
 function PriceInput({ value, onChange, accent }:{ value:number; onChange:(v:number)=>void; accent:{wrap:string;text:string}; }) {
   return (<div className="inline-flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white transition focus-within:border-royal-400">
-    <input type="number" min={0} step={1000} value={value||''} onChange={e=>onChange(parseInt(e.target.value,10))} placeholder="0" className={`h-10 w-24 bg-white px-3 text-right text-sm font-700 text-ink outline-none ${value>0?accent.wrap:''}`}/>
+    <input type="number" min={0} step={1000} value={value||''} onChange={e=>onChange(parseInt(e.target.value,10))} placeholder="0" className={`h-10 w-24 bg-white px-3 text-right text-sm font-700 text-ink outline-none sm:w-28 md:w-20 ${value>0?accent.wrap:''}`}/>
     <span className="flex items-center bg-slate-100 px-2.5 text-[11px] font-700 text-slate-500">FCFA</span>
   </div>);
 }

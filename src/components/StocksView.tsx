@@ -374,10 +374,10 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
       </div>
 
       {/* summary cards */}
-      <div className="mb-6 grid grid-cols-3 gap-3">
+      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
         <SummaryCard icon={Package} label="Qté Initiale" value={totals.inStock} accent="royal" />
         <SummaryCard icon={TrendingDown} label="Distribuée" value={totals.sold} accent="gold" />
-        <SummaryCard icon={Boxes} label="Reste Armoire" value={totals.remaining} accent="emerald" />
+        <SummaryCard icon={Boxes} label="Reste" value={totals.remaining} accent="emerald" />
       </div>
 
       {/* Mobile: stacked card layout */}
@@ -562,14 +562,14 @@ function SummaryCard({
     emerald: 'from-emerald-50 to-emerald-100 text-emerald-600',
   };
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
-      <div className="flex items-center gap-3">
-        <span className={`grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br ${styles[accent]}`}>
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-4">
+      <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${styles[accent]} sm:h-11 sm:w-11`}>
           <Icon className="h-5 w-5" />
         </span>
-        <div>
-          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">{label}</div>
-          <div className="font-display text-2xl font-800 text-ink">{value}</div>
+        <div className="text-center sm:text-left">
+          <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400 sm:text-[11px]">{label}</div>
+          <div className="font-display text-xl font-800 text-ink sm:text-2xl">{value}</div>
         </div>
       </div>
     </div>
