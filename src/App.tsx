@@ -7,7 +7,8 @@ import { useAuth } from './lib/auth';
 import {
   loadStudents, addStudentDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock,
-  loadPricing, savePricing, updateSchoolName, yearEndStockReset,
+  loadSchoolFeeConfig, saveTranches, saveFeeConfig,
+  updateSchoolName, yearEndStockReset,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
@@ -20,16 +21,20 @@ import { AddStudentModal } from './components/AddStudentModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
 import { AdminPanel } from './components/AdminPanel';
-import { DEFAULT_PRICING } from './data';
-import type { Student, MonthKey, ServiceType, PricingConfig, UniformStockItem, BookStockItem } from './types';
-import { studentExpected, studentCollected } from './types';
+import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef } from './types';
+import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
 type View = 'cahier' | 'stocks' | 'parametres';
+
+const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
+  tranches: [{ index: 1, label: 'Tranche 1' }, { index: 2, label: 'Tranche 2' }, { index: 3, label: 'Tranche 3' }],
+  feeTypes: DEFAULT_FEE_TYPES,
+  feeConfig: [],
+};
 
 export default function App() {
   const { user, profile, loading, isTrialExpired, signOut, refreshProfile } = useAuth();
 
-  // Admin panel — accessible only via /scolaria-admin hash URL, never via a visible button
   const [isAdminPanel, setIsAdminPanel] = useState(() =>
     typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/scolaria-admin'
   );
@@ -37,19 +42,19 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>([]);
   const [uniforms, setUniforms] = useState<UniformStockItem[]>([]);
   const [books, setBooks] = useState<BookStockItem[]>([]);
-  const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
+  const [feeConfig, setFeeConfig] = useState<SchoolFeeConfig>(EMPTY_FEE_CONFIG);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>('cahier');
-  const [activeService, setActiveService] = useState<ServiceType>('scolarite');
+  const [activeFeeType, setActiveFeeType] = useState<string>('scolarite');
   const [payOpen, setPayOpen] = useState(false);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
-  const [activeMonth, setActiveMonth] = useState<MonthKey | null>(null);
-  const [activeSvcModal, setActiveSvcModal] = useState<ServiceType | null>(null);
+  const [activeFeeTypeModal, setActiveFeeTypeModal] = useState<string | null>(null);
+  const [activeTrancheKey, setActiveTrancheKey] = useState<number | 'single' | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptStudentId, setReceiptStudentId] = useState<string | null>(null);
-  const [receiptService, setReceiptService] = useState<ServiceType | null>(null);
+  const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [stockSales, setStockSales] = useState<number>(0);
   const [stockToast, setStockToast] = useState<string | null>(null);
@@ -59,16 +64,17 @@ export default function App() {
   const loadAllData = useCallback(async (schoolId: string) => {
     setDataLoading(true);
     try {
-      const [stus, unis, bks, prc] = await Promise.all([
-        loadStudents(schoolId),
+      const schoolConfig = await loadSchoolFeeConfig(schoolId);
+      setFeeConfig(schoolConfig);
+
+      const [stus, unis, bks] = await Promise.all([
+        loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
         loadUniformStock(schoolId),
         loadBookStock(schoolId),
-        loadPricing(schoolId),
       ]);
       setStudents(stus);
       setUniforms(unis);
       setBooks(bks);
-      setPricing(prc);
     } catch (err) {
       console.error('Failed to load school data:', err);
     } finally {
@@ -87,7 +93,6 @@ export default function App() {
     }
   }, [user, profile?.schoolId, loadAllData]);
 
-  // ── Hash route for admin panel ────────────────────────
   useEffect(() => {
     const onHash = () => {
       if (window.location.hash.replace('#', '') === '/scolaria-admin') setIsAdminPanel(true);
@@ -96,7 +101,6 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // ── Compute financial summary ─────────────────────────
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return students;
@@ -121,30 +125,37 @@ export default function App() {
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
 
   // ── Handlers ──────────────────────────────────────────
-  const openCell = (id: string, m: MonthKey, svc: ServiceType) => {
-    setActiveStudentId(id); setActiveMonth(m); setActiveSvcModal(svc); setPayOpen(true);
+  const openCell = (id: string, feeType: string, trancheKey: number | 'single') => {
+    setActiveStudentId(id);
+    setActiveFeeTypeModal(feeType);
+    setActiveTrancheKey(trancheKey);
+    setPayOpen(true);
   };
 
-  const validatePayment = async (id: string, svc: ServiceType, m: MonthKey, amt: number) => {
+  const validatePayment = async (id: string, feeType: string, trancheKey: number | 'single', amt: number) => {
     if (!profile?.schoolId) return;
     try {
       setPayError(null);
-      await recordPayment(profile.schoolId, id, svc, m, amt);
-      // Optimistically update the local state
+      await recordPayment(profile.schoolId, id, feeType, trancheKey, amt);
       setStudents(prev => prev.map(s => s.id === id ? {
         ...s,
-        services: s.services.map(x => x.type === svc ? {
-          ...x,
-          payments: { ...x.payments, [m]: { paid: x.payments[m].paid + amt } }
-        } : x)
+        fees: s.fees.map(f => f.feeType === feeType ? {
+          ...f,
+          payments: {
+            ...f.payments,
+            [trancheKey]: { paid: (f.payments[trancheKey]?.paid ?? 0) + amt },
+          },
+        } : f),
       } : s));
     } catch (err: any) {
       setPayError(err.message || 'Erreur lors de l\'enregistrement du paiement.');
     }
   };
 
-  const openReceipt = (s: Student, svc: ServiceType) => {
-    setReceiptStudentId(s.id); setReceiptService(svc); setReceiptOpen(true);
+  const openReceipt = (s: Student, feeType: string) => {
+    setReceiptStudentId(s.id);
+    setReceiptFeeType(feeType);
+    setReceiptOpen(true);
   };
 
   const addStudent = async (st: Student) => {
@@ -170,7 +181,7 @@ export default function App() {
     }
   };
 
-  // ── Stock handlers with DB sync ───────────────────────
+  // ── Stock handlers ────────────────────────────────────
   const handleUniformsChange = useCallback((next: UniformStockItem[]) => {
     setUniforms(next);
     if (profile?.schoolId) {
@@ -195,18 +206,29 @@ export default function App() {
     setTimeout(() => setStockToast(null), 3000);
   };
 
-  const handlePricingSave = async (newPricing: PricingConfig) => {
-    setPricing(newPricing);
+  // ── Fee config save handler ───────────────────────────
+  const handleFeeConfigSave = async (newTranches: TrancheDef[], newFeeTypes: FeeTypeDef[], newRows: FeeConfigRow[]) => {
+    const newConfig: SchoolFeeConfig = { tranches: newTranches, feeTypes: newFeeTypes, feeConfig: newRows };
+    setFeeConfig(newConfig);
     if (!profile?.schoolId) return;
-    try { await savePricing(profile.schoolId, newPricing); }
-    catch (err) { console.error('Failed to save pricing:', err); }
+    try {
+      await Promise.all([
+        saveTranches(profile.schoolId, newTranches),
+        saveFeeConfig(profile.schoolId, newRows),
+      ]);
+    } catch (err) {
+      console.error('Failed to save fee config:', err);
+    }
+  };
+
+  const handleResetFeeConfig = () => {
+    setFeeConfig(EMPTY_FEE_CONFIG);
   };
 
   const handleYearEnd = async () => {
     if (!profile?.schoolId) return;
     try {
       await yearEndStockReset(profile.schoolId, uniforms, books);
-      // Refresh stock from DB
       const [unis, bks] = await Promise.all([
         loadUniformStock(profile.schoolId),
         loadBookStock(profile.schoolId),
@@ -214,13 +236,13 @@ export default function App() {
       setUniforms(unis);
       setBooks(bks);
       setStockSales(0);
-    } catch (err) { console.error('Year-end reset failed:', err); }
+    } catch (err) {
+      console.error('Year-end reset failed:', err);
+    }
   };
 
   // ── Render ────────────────────────────────────────────
 
-  // Admin panel — checked BEFORE auth/loading so it's accessible even when not logged in.
-  // The AdminPanel component has its own developer-code login screen.
   if (isAdminPanel) {
     return <AdminPanel onExit={() => {
       if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -228,7 +250,6 @@ export default function App() {
     }} />;
   }
 
-  // Loading spinner while auth state resolves
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas">
@@ -237,17 +258,14 @@ export default function App() {
     );
   }
 
-  // Not logged in → landing or auth
   if (!user || !profile) {
     return <LandingOrAuth onEnterAuth={() => {}} />;
   }
 
-  // Trial expired → soft-block screen
   if (isTrialExpired) {
     return <TrialExpired schoolName={profile.schoolName} onLogout={handleLogout} />;
   }
 
-  // Main dashboard
   return (
     <div className="min-h-screen bg-canvas bg-grid">
       <Header query={query} onQuery={setQuery} resultCount={filtered.length} onLogout={handleLogout} />
@@ -274,7 +292,7 @@ export default function App() {
                 <div>
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700"><Sparkles className="h-3 w-3" />Tableau de bord</div>
                   <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Le Cahier de Caisse</h1>
-                  <p className="mt-1 text-sm text-slate-500">Suivez et encaissez les frais de scolarité, cantine & transport.</p>
+                  <p className="mt-1 text-sm text-slate-500">Suivez et encaissez les frais de scolarité et autres.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><Filter className="h-4 w-4" /><span>{students.length} élève{students.length !== 1 ? 's' : ''} · 2025 — 2026</span></div>
@@ -289,13 +307,31 @@ export default function App() {
               )}
               <div className="mt-6">
                 <div className="mb-3 flex items-center gap-2"><BookOpenText className="h-5 w-5 text-royal-700" /><h2 className="font-display text-lg font-700 text-ink">Cahier Interactif</h2>{students.length > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-600 text-slate-500">{filtered.length} élève{filtered.length !== 1 ? 's' : ''}</span>}</div>
-                <CahierGrid students={filtered} activeService={activeService} onServiceChange={setActiveService} onCellClick={openCell} onWhatsApp={openReceipt} onAddClick={() => setAddOpen(true)} />
+                <CahierGrid
+                  students={filtered}
+                  feeTypes={feeConfig.feeTypes}
+                  tranches={feeConfig.tranches}
+                  activeFeeType={activeFeeType}
+                  onFeeTypeChange={setActiveFeeType}
+                  onCellClick={openCell}
+                  onWhatsApp={openReceipt}
+                  onAddClick={() => setAddOpen(true)}
+                />
               </div>
             </>)}
 
             {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
 
-            {view === 'parametres' && <ConfigurationPanel pricing={pricing} onSave={handlePricingSave} onReset={() => setPricing(DEFAULT_PRICING)} schoolName={profile.schoolName} onSchoolNameChange={handleSchoolNameChange} uniforms={uniforms} books={books} onYearEnd={handleYearEnd} />}
+            {view === 'parametres' && <ConfigurationPanel
+              feeConfig={feeConfig}
+              onSaveFeeConfig={handleFeeConfigSave}
+              onReset={handleResetFeeConfig}
+              schoolName={profile.schoolName}
+              onSchoolNameChange={handleSchoolNameChange}
+              uniforms={uniforms}
+              books={books}
+              onYearEnd={handleYearEnd}
+            />}
           </>
         )}
 
@@ -311,22 +347,42 @@ export default function App() {
         </footer>
       </main>
 
-      <PaymentModal student={activeStudent} month={activeMonth} service={activeSvcModal} open={payOpen} onClose={() => setPayOpen(false)} onValidate={validatePayment} />
-      <WhatsAppReceipt student={receiptStudent} open={receiptOpen} onClose={() => setReceiptOpen(false)} schoolName={profile?.schoolName || ''} initialService={receiptService} initialMonth={activeMonth} />
-      <AddStudentModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={addStudent} pricing={pricing} />
+      <PaymentModal
+        student={activeStudent}
+        feeType={activeFeeTypeModal}
+        trancheKey={activeTrancheKey}
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        onValidate={validatePayment}
+        feeTypes={feeConfig.feeTypes}
+        tranches={feeConfig.tranches}
+      />
+      <WhatsAppReceipt
+        student={receiptStudent}
+        open={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        schoolName={profile?.schoolName || ''}
+        initialFeeType={receiptFeeType}
+        feeTypes={feeConfig.feeTypes}
+        tranches={feeConfig.tranches}
+      />
+      <AddStudentModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onAdd={addStudent}
+        feeTypes={feeConfig.feeTypes}
+        feeConfig={feeConfig.feeConfig}
+        tranches={feeConfig.tranches}
+      />
     </div>
   );
 }
-
-/* ── Landing / Auth router ─────────────────────────────── */
 
 function LandingOrAuth(_: { onEnterAuth: () => void }) {
   const [showAuth, setShowAuth] = useState(false);
   if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
   return <LandingPage onEnter={() => setShowAuth(true)} />;
 }
-
-/* ── Trial expired soft-block ──────────────────────────── */
 
 function TrialExpired({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
   return (
