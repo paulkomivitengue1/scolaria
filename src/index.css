@@ -147,3 +147,42 @@ body{font-family:var(--font-body);color:var(--ink);background:var(--canvas);-web
 input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
 input[type="number"]{-moz-appearance:textfield;}
 button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
+
+/* Indigo color system for report cards */
+.text-indigo-400{color:#818cf8;}.text-indigo-600{color:#4f46e5;}.text-indigo-700{color:#4338ca;}.text-indigo-900{color:#312e81;}
+.bg-indigo-50{background:#eef2ff;}.bg-indigo-100{background:#e0e7ff;}.bg-indigo-700{background:#4338ca;}
+.border-indigo-100{border-color:#e0e7ff;}.border-indigo-200{border-color:#c7d2fe;}.border-indigo-400{border-color:#818cf8;}
+.hover\:bg-indigo-100:hover{background:#e0e7ff;}.hover\:bg-indigo-800:hover{background:#3730a3;}
+.focus\:border-indigo-400:focus{border-color:#818cf8;}
+
+/* Pink/orange for fee type accents */
+.text-pink-600{color:#db2777;}.bg-pink-50{background:#fdf2f8;}.bg-pink-500{background:#ec4899;}
+.text-orange-600{color:#ea580c;}
+
+/* Grid template for report card grade table */
+.grid-cols-\[1fr_80px_80px_80px_40px\]{grid-template-columns:1fr 80px 80px 80px 40px;}
+.sm\:grid-cols-\[1fr_80px_80px_80px_40px\]{grid-template-columns:1fr 80px 80px 80px 40px;}
+.sm\:grid{display:grid;}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr));}
+.hover\:shadow-cardLg:hover{box-shadow:0 4px 24px rgba(30,58,138,.25);}
+.sm\:items-center{align-items:center;}
+.sm\:justify-center{justify-content:center;}
+.sm\:w-16{width:64px;}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+.sm\:p-8{padding:32px;}
+.hover\:bg-red-100:hover{background:#fee2e2;}
+
+/* Print styles for bulletin PDF export */
+@media print {
+  body { background: #fff !important; }
+  .print\:hidden { display: none !important; }
+  .print\:border-0 { border: 0 !important; }
+  .print\:shadow-none { box-shadow: none !important; }
+  .print\:p-0 { padding: 0 !important; }
+  #bulletin-print {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+}

@@ -233,3 +233,64 @@ export interface BookStockItem {
 export type BookStockMap = Record<string, BookStockItem>;
 
 export const bookRemaining = (b: BookStockItem) => Math.max(0, b.inStock - b.sold);
+
+/* ---- Report cards (bulletins) ---- */
+export interface GradePeriod {
+  index: number;
+  label: string;
+}
+
+export interface GradeRow {
+  id: string;
+  subject: string;
+  score: number;
+  maxScore: number;
+  coefficient: number;
+}
+
+export interface ReportCard {
+  id: string;
+  studentId: string;
+  periodIndex: number;
+  periodLabel: string;
+  academicYear: string;
+  status: 'draft' | 'finalized';
+  appreciation: string;
+  grades: GradeRow[];
+  updatedAt: string;
+}
+
+export const DEFAULT_SUBJECTS = [
+  'Lecture', 'Calcul', 'Écriture', 'Dictée', 'Grammaire', 'Conjugaison',
+  'Histoire-Géo', 'Sciences', 'Anglais', 'EPS', 'Dessin', 'Récitation',
+];
+
+export const gradePercentage = (g: GradeRow) =>
+  g.maxScore > 0 ? (g.score / g.maxScore) * 100 : 0;
+
+export const gradeAverage = (grades: GradeRow[]): number => {
+  const valid = grades.filter(g => g.maxScore > 0 && g.coefficient > 0);
+  if (valid.length === 0) return 0;
+  const weightedSum = valid.reduce((s, g) =>
+    s + (g.score / g.maxScore) * 20 * g.coefficient, 0
+  );
+  const totalCoeff = valid.reduce((s, g) => s + g.coefficient, 0);
+  return totalCoeff > 0 ? weightedSum / totalCoeff : 0;
+};
+
+export const gradeAppreciation = (avg: number): string => {
+  if (avg >= 16) return 'Excellent';
+  if (avg >= 14) return 'Très bien';
+  if (avg >= 12) return 'Bien';
+  if (avg >= 10) return 'Assez bien';
+  if (avg >= 8) return 'Passable';
+  return 'Insuffisant';
+};
+
+export const gradeColor = (avg: number): string => {
+  if (avg >= 14) return 'text-emerald-600';
+  if (avg >= 12) return 'text-teal-600';
+  if (avg >= 10) return 'text-gold-600';
+  if (avg >= 8) return 'text-orange-600';
+  return 'text-red-600';
+};

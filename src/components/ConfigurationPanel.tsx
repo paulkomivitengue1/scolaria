@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X } from 'lucide-react';
-import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem } from '../types';
+import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X, ClipboardList } from 'lucide-react';
+import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem, GradePeriod } from '../types';
 import { CLASS_LIST, formatFCFA, getFeeTotalForClass, uniformRemaining, bookRemaining, FEE_TYPE_ICONS, getFeeAccent } from '../types';
 
 interface ConfigPanelProps {
@@ -12,6 +12,8 @@ interface ConfigPanelProps {
   uniforms: UniformStockItem[];
   books: BookStockItem[];
   onYearEnd: () => void;
+  gradePeriods: GradePeriod[];
+  onSaveGradePeriods: (periods: GradePeriod[]) => Promise<void>;
 }
 
 const FEE_ICONS: Record<string, typeof GraduationCap> = {
@@ -20,7 +22,7 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
-export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, uniforms, books, onYearEnd }: ConfigPanelProps) {
+export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, uniforms, books, onYearEnd, gradePeriods, onSaveGradePeriods }: ConfigPanelProps) {
   const [tranches, setTranches] = useState<TrancheDef[]>(feeConfig.tranches);
   const [feeTypes, setFeeTypes] = useState<FeeTypeDef[]>(feeConfig.feeTypes);
   const [configRows, setConfigRows] = useState<FeeConfigRow[]>(feeConfig.feeConfig);
@@ -32,6 +34,8 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
   const [activeFeeType, setActiveFeeType] = useState<string>(feeConfig.feeTypes[0]?.feeType ?? 'scolarite');
   const [newFeeName, setNewFeeName] = useState('');
   const [showAddFee, setShowAddFee] = useState(false);
+  const [periods, setPeriods] = useState<GradePeriod[]>(gradePeriods);
+  const [periodStatus, setPeriodStatus] = useState<SaveState>('idle');
 
   const configRef = useRef(feeConfig);
   const schoolRef = useRef(schoolName);
@@ -40,6 +44,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
 
   useEffect(() => { configRef.current = feeConfig; }, [feeConfig]);
   useEffect(() => { schoolRef.current = schoolName; }, [schoolName]);
+  useEffect(() => { setPeriods(gradePeriods); }, [gradePeriods]);
 
   // Sync when feeConfig prop changes (e.g. after initial load)
   useEffect(() => {
@@ -279,6 +284,52 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
           <button onClick={addTranche} disabled={tranches.length >= 12} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-royal-200 bg-royal-50 px-3 text-sm font-600 text-royal-700 transition hover:bg-royal-100 active:scale-95 disabled:opacity-40"><Plus className="h-4 w-4" /> Ajouter une tranche</button>
           {tranches.length > 1 && (
             <button onClick={removeTranche} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 text-sm font-600 text-red-600 transition hover:bg-red-100 active:scale-95"><Trash2 className="h-4 w-4" /> Retirer la dernière</button>
+          )}
+        </div>
+      </div>
+
+      {/* Grade periods configurator */}
+      <div className="rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-700"><ClipboardList className="h-5 w-5" /></span>
+          <div className="flex-1">
+            <h3 className="font-display text-lg font-700 text-ink">Périodes de notation</h3>
+            <p className="text-sm text-slate-500">Découpage des bulletins (trimestres, semestres…) utilisé dans les bulletins scolaires.</p>
+          </div>
+          <SaveIndicator status={periodStatus} />
+        </div>
+        <div className="space-y-2">
+          {periods.map(p => (
+            <div key={p.index} className="flex items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-100 text-sm font-700 text-indigo-700">{p.index}</span>
+              <input type="text" value={p.label} onChange={e => {
+                const next = periods.map(pp => pp.index === p.index ? { ...pp, label: e.target.value } : pp);
+                setPeriods(next);
+                if (configTimer.current) clearTimeout(configTimer.current);
+                setPeriodStatus('saving');
+                configTimer.current = setTimeout(async () => {
+                  await onSaveGradePeriods(next);
+                  setPeriodStatus('saved');
+                  setTimeout(() => setPeriodStatus('idle'), 2000);
+                }, 800);
+              }} className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-4" placeholder={`Période ${p.index}`} />
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <button onClick={() => {
+            if (periods.length >= 6) return;
+            const nextIdx = Math.max(0, ...periods.map(p => p.index)) + 1;
+            const next = [...periods, { index: nextIdx, label: `Période ${nextIdx}` }];
+            setPeriods(next);
+            onSaveGradePeriods(next);
+          }} disabled={periods.length >= 6} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-600 text-indigo-700 transition hover:bg-indigo-100 active:scale-95 disabled:opacity-40"><Plus className="h-4 w-4" /> Ajouter une période</button>
+          {periods.length > 1 && (
+            <button onClick={() => {
+              const next = periods.slice(0, -1);
+              setPeriods(next);
+              onSaveGradePeriods(next);
+            }} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 text-sm font-600 text-red-600 transition hover:bg-red-100 active:scale-95"><Trash2 className="h-4 w-4" /> Retirer la dernière</button>
           )}
         </div>
       </div>

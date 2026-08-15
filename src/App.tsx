@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid,
-  LogOut, Boxes, CheckCircle2, Lock, AlertTriangle,
+  LogOut, Boxes, CheckCircle2, Lock, AlertTriangle, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import {
   loadStudents, addStudentDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock,
   loadSchoolFeeConfig, saveTranches, saveFeeConfig,
+  loadGradePeriods, saveGradePeriods,
   updateSchoolName, yearEndStockReset,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
@@ -20,11 +21,12 @@ import { WhatsAppReceipt } from './components/WhatsAppReceipt';
 import { AddStudentModal } from './components/AddStudentModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
+import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
-import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef } from './types';
+import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
-type View = 'cahier' | 'stocks' | 'parametres';
+type View = 'cahier' | 'bulletins' | 'stocks' | 'parametres';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
   tranches: [{ index: 1, label: 'Tranche 1' }, { index: 2, label: 'Tranche 2' }, { index: 3, label: 'Tranche 3' }],
@@ -43,6 +45,7 @@ export default function App() {
   const [uniforms, setUniforms] = useState<UniformStockItem[]>([]);
   const [books, setBooks] = useState<BookStockItem[]>([]);
   const [feeConfig, setFeeConfig] = useState<SchoolFeeConfig>(EMPTY_FEE_CONFIG);
+  const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const [query, setQuery] = useState('');
@@ -67,11 +70,13 @@ export default function App() {
       const schoolConfig = await loadSchoolFeeConfig(schoolId);
       setFeeConfig(schoolConfig);
 
-      const [stus, unis, bks] = await Promise.all([
+      const [stus, unis, bks, periods] = await Promise.all([
         loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
         loadUniformStock(schoolId),
         loadBookStock(schoolId),
+        loadGradePeriods(schoolId),
       ]);
+      if (periods.length > 0) setGradePeriods(periods);
       setStudents(stus);
       setUniforms(unis);
       setBooks(bks);
@@ -225,6 +230,16 @@ export default function App() {
     setFeeConfig(EMPTY_FEE_CONFIG);
   };
 
+  const handleSaveGradePeriods = async (periods: GradePeriod[]) => {
+    setGradePeriods(periods);
+    if (!profile?.schoolId) return;
+    try {
+      await saveGradePeriods(profile.schoolId, periods);
+    } catch (err) {
+      console.error('Failed to save grade periods:', err);
+    }
+  };
+
   const handleYearEnd = async () => {
     if (!profile?.schoolId) return;
     try {
@@ -281,6 +296,7 @@ export default function App() {
             <div className="mb-5 flex items-center gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button onClick={() => setView('cahier')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'cahier' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><LayoutGrid className="h-4 w-4" />Cahier</button>
+                <button onClick={() => setView('bulletins')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'bulletins' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><ClipboardList className="h-4 w-4" />Bulletins</button>
                 <button onClick={() => setView('stocks')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'stocks' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Boxes className="h-4 w-4" />Stocks</button>
                 <button onClick={() => setView('parametres')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'parametres' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Settings2 className="h-4 w-4" />Paramètres</button>
               </div>
@@ -320,6 +336,8 @@ export default function App() {
               </div>
             </>)}
 
+            {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
+
             {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
 
             {view === 'parametres' && <ConfigurationPanel
@@ -331,6 +349,8 @@ export default function App() {
               uniforms={uniforms}
               books={books}
               onYearEnd={handleYearEnd}
+              gradePeriods={gradePeriods}
+              onSaveGradePeriods={handleSaveGradePeriods}
             />}
           </>
         )}

@@ -12,6 +12,9 @@ import type {
   UniformSize,
   BookClass,
   BookSubject,
+  GradePeriod,
+  ReportCard,
+  GradeRow,
 } from '../types';
 import { CLASS_LIST, DEFAULT_FEE_TYPES } from '../types';
 
@@ -373,4 +376,144 @@ export async function yearEndStockReset(
       .update({ in_stock: remaining, sold: 0 })
       .eq('id', b.id);
   }
+}
+
+// ── Grade periods ──────────────────────────────────────
+
+export async function loadGradePeriods(schoolId: string): Promise<GradePeriod[]> {
+  const { data, error } = await getSupabase()
+    .from('grade_periods')
+    .select('period_index, label')
+    .eq('school_id', schoolId)
+    .order('period_index');
+  if (error) throw error;
+  return (data || []).map(r => ({ index: r.period_index, label: r.label || `Période ${r.period_index}` }));
+}
+
+export async function saveGradePeriods(schoolId: string, periods: GradePeriod[]): Promise<void> {
+  const supa = getSupabase();
+  const { error: delErr } = await supa.from('grade_periods').delete().eq('school_id', schoolId);
+  if (delErr) throw delErr;
+  if (periods.length === 0) return;
+  const rows = periods.map(p => ({ school_id: schoolId, period_index: p.index, label: p.label }));
+  const { error } = await supa.from('grade_periods').insert(rows);
+  if (error) throw error;
+}
+
+// ── Report cards ───────────────────────────────────────
+
+export async function loadReportCards(schoolId: string, studentId: string): Promise<ReportCard[]> {
+  const supa = getSupabase();
+  const { data: cards, error } = await supa
+    .from('report_cards')
+    .select('id, student_id, period_index, period_label, academic_year, status, appreciation, updated_at')
+    .eq('school_id', schoolId)
+    .eq('student_id', studentId)
+    .order('period_index', { ascending: true });
+  if (error) throw error;
+  if (!cards || cards.length === 0) return [];
+
+  const cardIds = cards.map(c => c.id);
+  const { data: grades, error: gradeErr } = await supa
+    .from('grades')
+    .select('id, report_card_id, subject, score, max_score, coefficient')
+    .in('report_card_id', cardIds);
+  if (gradeErr) throw gradeErr;
+
+  const gradesByCard: Record<string, GradeRow[]> = {};
+  (grades || []).forEach(g => {
+    if (!gradesByCard[g.report_card_id]) gradesByCard[g.report_card_id] = [];
+    gradesByCard[g.report_card_id].push({
+      id: g.id,
+      subject: g.subject,
+      score: Number(g.score),
+      maxScore: Number(g.max_score),
+      coefficient: Number(g.coefficient),
+    });
+  });
+
+  return cards.map(c => ({
+    id: c.id,
+    studentId: c.student_id,
+    periodIndex: c.period_index,
+    periodLabel: c.period_label,
+    academicYear: c.academic_year,
+    status: c.status as 'draft' | 'finalized',
+    appreciation: c.appreciation || '',
+    grades: gradesByCard[c.id] || [],
+    updatedAt: c.updated_at,
+  }));
+}
+
+export async function createReportCard(
+  schoolId: string,
+  studentId: string,
+  periodIndex: number,
+  periodLabel: string,
+  academicYear: string,
+): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('report_cards')
+    .insert({
+      school_id: schoolId,
+      student_id: studentId,
+      period_index: periodIndex,
+      period_label: periodLabel,
+      academic_year: academicYear,
+      status: 'draft',
+      appreciation: '',
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function updateReportCard(
+  cardId: string,
+  fields: { appreciation?: string; status?: 'draft' | 'finalized' }
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('report_cards')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', cardId);
+  if (error) throw error;
+}
+
+export async function deleteReportCard(cardId: string): Promise<void> {
+  const { error } = await getSupabase().from('report_cards').delete().eq('id', cardId);
+  if (error) throw error;
+}
+
+// ── Grades ─────────────────────────────────────────────
+
+export async function saveGrade(
+  cardId: string,
+  grade: { id?: string; subject: string; score: number; maxScore: number; coefficient: number }
+): Promise<string> {
+  const supa = getSupabase();
+  if (grade.id) {
+    const { error } = await supa.from('grades').update({
+      subject: grade.subject,
+      score: grade.score,
+      max_score: grade.maxScore,
+      coefficient: grade.coefficient,
+    }).eq('id', grade.id);
+    if (error) throw error;
+    return grade.id;
+  }
+  const { data, error } = await supa.from('grades').insert({
+    report_card_id: cardId,
+    subject: grade.subject,
+    score: grade.score,
+    max_score: grade.maxScore,
+    coefficient: grade.coefficient,
+  }).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function deleteGrade(gradeId: string): Promise<void> {
+  const { error } = await getSupabase().from('grades').delete().eq('id', gradeId);
+  if (error) throw error;
 }
