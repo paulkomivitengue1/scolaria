@@ -14,6 +14,9 @@ export interface AdminSchool {
   subscription_status: string;
   trial_ends_at: string;
   created_at: string;
+  director_name: string;
+  phone: string;
+  student_count: number;
 }
 
 export interface AdminManualPayment {
