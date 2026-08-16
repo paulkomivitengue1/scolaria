@@ -53,9 +53,16 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const openEditor = async (student: Student, periodIndex: number) => {
     setSelectedStudent(student);
     setSelectedPeriod(periodIndex);
-    await loadCards(student.id);
-    // Find existing card for this period
-    const existing = reportCards.find(c => c.periodIndex === periodIndex && c.academicYear === academicYear);
+    let cards: ReportCard[] = [];
+    try {
+      cards = await loadReportCards(schoolId, student.id);
+      setReportCards(cards);
+    } catch (err) {
+      console.error('Failed to load report cards:', err);
+      return;
+    }
+    // Find existing card for this period from freshly loaded data
+    const existing = cards.find(c => c.periodIndex === periodIndex && c.academicYear === academicYear);
     if (existing) {
       setCurrentCard(existing);
       setGrades(existing.grades);
@@ -285,8 +292,8 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           </div>
           <div className="divide-y divide-slate-100">
             {grades.map((g, i) => (
-              <div key={i} className="grid grid-cols-1 gap-2 px-4 py-3 sm:grid-cols-[1fr_80px_80px_80px_40px] sm:items-center">
-                {/* Subject with autocomplete on mobile/desktop */}
+              <div key={i} className="px-4 py-3 sm:grid sm:grid-cols-[1fr_80px_80px_80px_40px] sm:items-center sm:gap-2">
+                {/* Subject — full width on both mobile & desktop */}
                 <div className="relative">
                   <input
                     type="text"
@@ -300,20 +307,27 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                     {DEFAULT_SUBJECTS.map(s => <option key={s} value={s} />)}
                   </datalist>
                 </div>
-                <div className="flex items-center gap-2 sm:justify-center">
-                  <span className="text-xs font-600 text-slate-400 sm:hidden">Note:</span>
-                  <input type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="0" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16" />
+                {/* Mobile: 3-column compact grid for Note / Sur / Coef */}
+                <div className="mt-2 grid grid-cols-3 gap-2 sm:hidden">
+                  <div>
+                    <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Note</label>
+                    <input type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="0" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Sur</label>
+                    <input type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Coef.</label>
+                    <input type="number" min={1} step={0.5} value={g.coefficient || ''} onChange={e => updateGrade(i, 'coefficient', parseFloat(e.target.value) || 1)} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 sm:justify-center">
-                  <span className="text-xs font-600 text-slate-400 sm:hidden">Sur:</span>
-                  <input type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16" />
-                </div>
-                <div className="flex items-center gap-2 sm:justify-center">
-                  <span className="text-xs font-600 text-slate-400 sm:hidden">Coef.:</span>
-                  <input type="number" min={1} step={0.5} value={g.coefficient || ''} onChange={e => updateGrade(i, 'coefficient', parseFloat(e.target.value) || 1)} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16" />
-                </div>
+                {/* Desktop: inline fields (hidden on mobile) */}
+                <input type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="0" className="hidden h-9 rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16 sm:block" />
+                <input type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="hidden h-9 rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16 sm:block" />
+                <input type="number" min={1} step={0.5} value={g.coefficient || ''} onChange={e => updateGrade(i, 'coefficient', parseFloat(e.target.value) || 1)} placeholder="1" className="hidden h-9 rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16 sm:block" />
                 <button onClick={() => removeGrade(i)} className="hidden h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 sm:grid"><Trash2 className="h-4 w-4" /></button>
-                <button onClick={() => removeGrade(i)} className="mt-1 inline-flex items-center gap-1 text-xs font-600 text-red-500 sm:hidden"><Trash2 className="h-3.5 w-3.5" /> Supprimer</button>
+                <button onClick={() => removeGrade(i)} className="mt-2 inline-flex items-center gap-1 text-xs font-600 text-red-500 sm:hidden"><Trash2 className="h-3.5 w-3.5" /> Supprimer cette matière</button>
               </div>
             ))}
             {grades.length === 0 && (
