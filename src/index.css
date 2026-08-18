@@ -110,16 +110,6 @@ body{font-family:var(--font-body);color:var(--ink);background:var(--canvas);-web
 .scrollbar-thin::-webkit-scrollbar{height:6px;width:6px;}
 .scrollbar-thin::-webkit-scrollbar-thumb{background:var(--slate-300);border-radius:4px;}
 
-.sm\:flex{display:flex;}.sm\:block{display:block;}.sm\:hidden{display:none;}.sm\:flex-row{flex-direction:row;}.sm\:items-end{align-items:flex-end;}.sm\:justify-between{justify-content:space-between;}.sm\:px-6{padding-left:24px;padding-right:24px;}.sm\:p-6{padding:24px;}.sm\:py-16{padding-top:64px;padding-bottom:64px;}.sm\:text-5xl{font-size:48px;line-height:1.1;}.sm\:text-6xl{font-size:60px;line-height:1.05;}
-.lg\:block{display:block;}.lg\:flex{display:flex;}.lg\:px-8{padding-left:32px;padding-right:32px;}.lg\:py-20{padding-top:80px;padding-bottom:80px;}.lg\:py-24{padding-top:96px;padding-bottom:96px;}.lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}.lg\:text-7xl{font-size:72px;line-height:1;}
-@media (min-width:1024px){
-  .lg\:hidden{display:none!important;}
-  .lg\:translate-x-0{transform:translateX(0)!important;}
-  .lg\:pl-64{padding-left:256px;}
-  .lg\:block{display:block!important;}
-  .lg\:flex{display:flex!important;}
-}
-.md\:block{display:block;}.md\:hidden{display:none;}.md\:flex{display:flex;}.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
 .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
 
 @keyframes scaleIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
@@ -168,15 +158,9 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
 
 /* Grid template for report card grade table */
 .grid-cols-\[1fr_80px_80px_80px_40px\]{grid-template-columns:1fr 80px 80px 80px 40px;}
-.sm\:grid-cols-\[1fr_80px_80px_80px_40px\]{grid-template-columns:1fr 80px 80px 80px 40px;}
-.sm\:grid{display:grid;}
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr));}
 .hover\:shadow-cardLg:hover{box-shadow:0 4px 24px rgba(30,58,138,.25);}
-.sm\:items-center{align-items:center;}
-.sm\:justify-center{justify-content:center;}
-.sm\:w-16{width:64px;}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
-.sm\:p-8{padding:32px;}
 .hover\:bg-red-100:hover{background:#fee2e2;}
 .hover\:text-red-600:hover{color:#dc2626;}
 .mb-0\.5{margin-bottom:2px;}
@@ -199,9 +183,6 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
 .bg-royal-50{background:var(--royal-50);}
 .border-royal-200{border-color:var(--royal-200);}
 .grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
-.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
-.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
-.lg\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}
 .hover\:shadow-cardLg:hover{box-shadow:0 4px 24px rgba(30,58,138,.25);}
 .hover\:bg-slate-50:hover{background:var(--slate-50);}
 .hover\:bg-royal-50:hover{background:var(--royal-50);}
@@ -225,6 +206,25 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
 .min-w-0{min-width:0;}
 .overflow-y-auto{overflow-y:auto;}
 .max-h-\[calc\(100vh-64px\)\]{max-height:calc(100vh - 64px);}
+
+/* Responsive breakpoints — MUST be after all base classes so they override */
+@media (min-width:640px){
+  .sm\:flex{display:flex;}.sm\:block{display:block;}.sm\:hidden{display:none;}.sm\:flex-row{flex-direction:row;}.sm\:items-end{align-items:flex-end;}.sm\:justify-between{justify-content:space-between;}.sm\:items-center{align-items:center;}.sm\:justify-center{justify-content:center;}
+  .sm\:px-6{padding-left:24px;padding-right:24px;}.sm\:p-6{padding:24px;}.sm\:p-8{padding:32px;}.sm\:py-16{padding-top:64px;padding-bottom:64px;}
+  .sm\:text-5xl{font-size:48px;line-height:1.1;}.sm\:text-6xl{font-size:60px;line-height:1.05;}
+  .sm\:w-16{width:64px;}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .sm\:grid{display:grid;}.sm\:grid-cols-\[1fr_80px_80px_80px_40px\]{grid-template-columns:1fr 80px 80px 80px 40px;}
+}
+
+@media (min-width:768px){
+  .md\:block{display:block;}.md\:hidden{display:none;}.md\:flex{display:flex;}.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}.md\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+
+@media (min-width:1024px){
+  .lg\:block{display:block;}.lg\:flex{display:flex;}.lg\:hidden{display:none!important;}.lg\:translate-x-0{transform:translateX(0)!important;}.lg\:pl-64{padding-left:256px;}
+  .lg\:px-8{padding-left:32px;padding-right:32px;}.lg\:py-20{padding-top:80px;padding-bottom:80px;}.lg\:py-24{padding-top:96px;padding-bottom:96px;}
+  .lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}.lg\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}.lg\:text-7xl{font-size:72px;line-height:1;}
+}
 
 /* Print styles for bulletin PDF export */
 @media print {

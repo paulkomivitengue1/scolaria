@@ -183,18 +183,30 @@ function TenuesPanel({
                 ) : null}
               </div>
 
-              {/* Middle: available + price */}
+              {/* Middle: all stock details in 2x2 grid */}
               <div className="mt-3 grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-                  <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Disponible</div>
-                  <div className={`font-display text-2xl font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {remaining}
-                  </div>
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Ancien stock</div>
+                  <div className="font-display text-xl font-800 text-slate-700">{item.oldStock}</div>
+                </div>
+                <div className="rounded-xl bg-royal-50 px-3 py-2.5">
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
+                  <div className="font-display text-xl font-800 text-royal-700">{item.newStock}</div>
                 </div>
                 <div className="rounded-xl bg-gold-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-gold-700">Prix unitaire</div>
                   <div className="font-display text-base font-800 text-gold-700">{formatFCFA(item.price)}</div>
                 </div>
+                <div className={`rounded-xl px-3 py-2.5 ${out ? 'bg-slate-50' : low ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                  <div className={`text-[10px] font-700 uppercase tracking-wider ${out ? 'text-slate-400' : low ? 'text-red-700' : 'text-emerald-700'}`}>Disponible</div>
+                  <div className={`font-display text-2xl font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</div>
+                </div>
+              </div>
+
+              {/* Vendus + valeur totale */}
+              <div className="mt-2.5 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                <div className="text-[11px] font-600 text-slate-500">Vendus: <span className="font-800 text-gold-700">{item.sold}</span></div>
+                <div className="text-[11px] font-600 text-slate-500">Valeur totale: <span className="font-800 text-ink">{formatFCFA(remaining * item.price)}</span></div>
               </div>
 
               {/* Bottom: big thumb buttons */}
@@ -213,6 +225,12 @@ function TenuesPanel({
                   <Zap className="h-5 w-5" /> Vente -1
                 </button>
               </div>
+              <button
+                onClick={() => onChange(uniforms.filter((u) => u.id !== item.id))}
+                className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-xs font-600 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+              >
+                <Minus className="h-3.5 w-3.5" /> Supprimer cette taille
+              </button>
             </div>
           );
         })}
@@ -418,17 +436,19 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 ) : null}
               </div>
 
-              {/* Middle: available */}
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-                  <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Reste armoire</div>
-                  <div className={`font-display text-2xl font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {remaining}
-                  </div>
+              {/* Middle: all stock details */}
+              <div className="mt-3 grid grid-cols-3 gap-2.5">
+                <div className="rounded-xl bg-royal-50 px-2.5 py-2.5 text-center">
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Qté Initiale</div>
+                  <div className="font-display text-xl font-800 text-royal-700">{item.inStock}</div>
                 </div>
-                <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                <div className="rounded-xl bg-slate-50 px-2.5 py-2.5 text-center">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Distribuée</div>
-                  <div className="font-display text-2xl font-800 text-slate-700">{item.sold}</div>
+                  <div className="font-display text-xl font-800 text-slate-700">{item.sold}</div>
+                </div>
+                <div className={`rounded-xl px-2.5 py-2.5 text-center ${out ? 'bg-slate-50' : low ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                  <div className={`text-[10px] font-700 uppercase tracking-wider ${out ? 'text-slate-400' : low ? 'text-red-700' : 'text-emerald-700'}`}>Reste</div>
+                  <div className={`font-display text-xl font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</div>
                 </div>
               </div>
 
@@ -448,6 +468,12 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                   <Zap className="h-5 w-5" /> Distrib. -1
                 </button>
               </div>
+              <button
+                onClick={() => onChange(books.filter((b) => b.id !== item.id))}
+                className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-xs font-600 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+              >
+                <Minus className="h-3.5 w-3.5" /> Supprimer cette matière
+              </button>
             </div>
           );
         })}

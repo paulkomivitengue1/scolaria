@@ -35,7 +35,7 @@ const SECTIONS: NavSection[] = [
   {
     title: 'Scolarité',
     items: [
-      { view: 'cahier', label: 'Classes', icon: GraduationCap },
+      { view: 'classes', label: 'Classes', icon: GraduationCap },
       { view: 'cahier', label: 'Élèves', icon: Users },
       { view: 'cahier', label: 'Inscriptions', icon: UserPlus },
     ],

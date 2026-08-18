@@ -25,6 +25,7 @@ import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
+import { ClassView } from './components/ClassView';
 import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, AppView } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
@@ -383,6 +384,16 @@ export default function App() {
                   />
                 </div>
               </>)}
+
+              {view === 'classes' && (
+                <ClassView
+                  students={students}
+                  feeTypes={feeConfig.feeTypes}
+                  tranches={feeConfig.tranches}
+                  onCellClick={openCell}
+                  onWhatsApp={openReceipt}
+                />
+              )}
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
 

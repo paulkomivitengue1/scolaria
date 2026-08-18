@@ -39,8 +39,8 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
       icon: Users,
       iconBg: 'bg-royal-50',
       iconColor: 'text-royal-700',
-      target: 'cahier',
-      actionLabel: 'Voir le cahier',
+      target: 'classes',
+      actionLabel: 'Voir par classe',
     },
     {
       label: 'Total Encaissé',
