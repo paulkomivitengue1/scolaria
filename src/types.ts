@@ -1,3 +1,5 @@
+export type AppView = 'dashboard' | 'cahier' | 'bulletins' | 'stocks' | 'parametres';
+
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 
 // ── Tranches (per-school configurable) ─────────────────

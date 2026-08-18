@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  BookOpenText, Sparkles, Filter, UserPlus, Settings2, LayoutGrid,
-  LogOut, Boxes, CheckCircle2, Lock, AlertTriangle, ClipboardList,
+  BookOpenText, Sparkles, Filter, UserPlus,
+  LogOut, CheckCircle2, Lock, AlertTriangle,
+  Search,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import {
@@ -13,7 +14,8 @@ import {
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
-import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { DashboardView } from './components/DashboardView';
 import { FinancialHud } from './components/FinancialHud';
 import { CahierGrid } from './components/CahierGrid';
 import { PaymentModal } from './components/PaymentModal';
@@ -23,10 +25,8 @@ import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
-import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod } from './types';
+import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, AppView } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
-
-type View = 'cahier' | 'bulletins' | 'stocks' | 'parametres';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
   tranches: [{ index: 1, label: 'Tranche 1' }, { index: 2, label: 'Tranche 2' }, { index: 3, label: 'Tranche 3' }],
@@ -49,7 +49,8 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(true);
 
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<View>('cahier');
+  const [view, setView] = useState<AppView>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFeeType, setActiveFeeType] = useState<string>('scolarite');
   const [payOpen, setPayOpen] = useState(false);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
@@ -256,6 +257,11 @@ export default function App() {
     }
   };
 
+  const handleNavigate = (v: AppView) => {
+    setView(v);
+    setSidebarOpen(false);
+  };
+
   // ── Render ────────────────────────────────────────────
 
   if (isAdminPanel) {
@@ -283,89 +289,132 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-canvas bg-grid">
-      <Header query={query} onQuery={setQuery} resultCount={filtered.length} onLogout={handleLogout} />
-      <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
-        {dataLoading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 rounded-full border-4 border-slate-200 border-t-royal-700 animate-spin" />
-          </div>
-        )}
+      <Sidebar
+        current={view}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen(v => !v)}
+        schoolName={profile.schoolName}
+      />
 
-        {!dataLoading && (
-          <>
-            <div className="mb-5 flex items-center gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button onClick={() => setView('cahier')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'cahier' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><LayoutGrid className="h-4 w-4" />Cahier</button>
-                <button onClick={() => setView('bulletins')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'bulletins' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><ClipboardList className="h-4 w-4" />Bulletins</button>
-                <button onClick={() => setView('stocks')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'stocks' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Boxes className="h-4 w-4" />Stocks</button>
-                <button onClick={() => setView('parametres')} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-700 transition ${view === 'parametres' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}><Settings2 className="h-4 w-4" />Paramètres</button>
-              </div>
-              <button onClick={handleLogout} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 active:scale-95" title="Déconnexion" aria-label="Déconnexion"><LogOut className="h-4 w-4" /></button>
+      {/* Main content — offset by sidebar on desktop */}
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-sm">
+          <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+            {/* Mobile: spacer for hamburger button */}
+            <div className="w-12 shrink-0 lg:hidden" />
+
+            {/* Search */}
+            <div className="relative w-full max-w-xs">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Rechercher un élève, classe, parent…"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-4"
+              />
+              {query && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-600 text-slate-400">{filtered.length}</span>}
             </div>
 
-            {view === 'cahier' && (<>
-              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700"><Sparkles className="h-3 w-3" />Tableau de bord</div>
-                  <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Le Cahier de Caisse</h1>
-                  <p className="mt-1 text-sm text-slate-500">Suivez et encaissez les frais de scolarité et autres.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><Filter className="h-4 w-4" /><span>{students.length} élève{students.length !== 1 ? 's' : ''} · 2025 — 2026</span></div>
-                  <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-4 py-2.5 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95"><UserPlus className="h-4.5 w-4.5" />Ajouter un élève</button>
-                </div>
-              </div>
-              <FinancialHud totalCollected={totalCollected} outstanding={outstanding} recoveryRate={recoveryRate} />
-              {payError && (
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>{payError}</span>
-                </div>
-              )}
-              <div className="mt-6">
-                <div className="mb-3 flex items-center gap-2"><BookOpenText className="h-5 w-5 text-royal-700" /><h2 className="font-display text-lg font-700 text-ink">Cahier Interactif</h2>{students.length > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-600 text-slate-500">{filtered.length} élève{filtered.length !== 1 ? 's' : ''}</span>}</div>
-                <CahierGrid
-                  students={filtered}
-                  feeTypes={feeConfig.feeTypes}
-                  tranches={feeConfig.tranches}
-                  activeFeeType={activeFeeType}
-                  onFeeTypeChange={setActiveFeeType}
-                  onCellClick={openCell}
-                  onWhatsApp={openReceipt}
-                  onAddClick={() => setAddOpen(true)}
-                />
-              </div>
-            </>)}
-
-            {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
-
-            {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
-
-            {view === 'parametres' && <ConfigurationPanel
-              feeConfig={feeConfig}
-              onSaveFeeConfig={handleFeeConfigSave}
-              onReset={handleResetFeeConfig}
-              schoolName={profile.schoolName}
-              onSchoolNameChange={handleSchoolNameChange}
-              uniforms={uniforms}
-              books={books}
-              onYearEnd={handleYearEnd}
-              gradePeriods={gradePeriods}
-              onSaveGradePeriods={handleSaveGradePeriods}
-            />}
-          </>
-        )}
-
-        {stockToast && (
-          <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
-            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {stockToast}</span>
+            {/* Right side: quick logout */}
+            <button
+              onClick={handleLogout}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 active:scale-95"
+              title="Déconnexion"
+              aria-label="Déconnexion"
+            >
+              <LogOut className="h-4.5 w-4.5" />
+            </button>
           </div>
-        )}
+        </header>
 
-        <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          <p className="font-600 text-slate-500">Gestilys — La référence premium de la gestion scolaire</p>
-          <p>Afrique de l'Ouest · Conçu pour les intendances exigeantes</p>
-        </footer>
-      </main>
+        <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+          {dataLoading && (
+            <div className="flex items-center justify-center py-20">
+              <div className="h-8 w-8 rounded-full border-4 border-slate-200 border-t-royal-700 animate-spin" />
+            </div>
+          )}
+
+          {!dataLoading && (
+            <>
+              {view === 'dashboard' && (
+                <DashboardView
+                  students={students}
+                  totalCollected={totalCollected}
+                  outstanding={outstanding}
+                  recoveryRate={recoveryRate}
+                  stockSales={stockSales}
+                  onNavigate={handleNavigate}
+                />
+              )}
+
+              {view === 'cahier' && (<>
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700"><Sparkles className="h-3 w-3" />Tableau de bord</div>
+                    <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Le Cahier de Caisse</h1>
+                    <p className="mt-1 text-sm text-slate-500">Suivez et encaissez les frais de scolarité et autres.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><Filter className="h-4 w-4" /><span>{students.length} élève{students.length !== 1 ? 's' : ''} · 2025 — 2026</span></div>
+                    <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-4 py-2.5 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95"><UserPlus className="h-4.5 w-4.5" />Ajouter un élève</button>
+                  </div>
+                </div>
+                <FinancialHud totalCollected={totalCollected} outstanding={outstanding} recoveryRate={recoveryRate} />
+                {payError && (
+                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>{payError}</span>
+                  </div>
+                )}
+                <div className="mt-6">
+                  <div className="mb-3 flex items-center gap-2"><BookOpenText className="h-5 w-5 text-royal-700" /><h2 className="font-display text-lg font-700 text-ink">Cahier Interactif</h2>{students.length > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-600 text-slate-500">{filtered.length} élève{filtered.length !== 1 ? 's' : ''}</span>}</div>
+                  <CahierGrid
+                    students={filtered}
+                    feeTypes={feeConfig.feeTypes}
+                    tranches={feeConfig.tranches}
+                    activeFeeType={activeFeeType}
+                    onFeeTypeChange={setActiveFeeType}
+                    onCellClick={openCell}
+                    onWhatsApp={openReceipt}
+                    onAddClick={() => setAddOpen(true)}
+                  />
+                </div>
+              </>)}
+
+              {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
+
+              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
+
+              {view === 'parametres' && <ConfigurationPanel
+                feeConfig={feeConfig}
+                onSaveFeeConfig={handleFeeConfigSave}
+                onReset={handleResetFeeConfig}
+                schoolName={profile.schoolName}
+                onSchoolNameChange={handleSchoolNameChange}
+                uniforms={uniforms}
+                books={books}
+                onYearEnd={handleYearEnd}
+                gradePeriods={gradePeriods}
+                onSaveGradePeriods={handleSaveGradePeriods}
+              />}
+            </>
+          )}
+
+          {stockToast && (
+            <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {stockToast}</span>
+            </div>
+          )}
+
+          <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
+            <p className="font-600 text-slate-500">Gestilys — La référence premium de la gestion scolaire</p>
+            <p>Afrique de l'Ouest · Conçu pour les intendances exigeantes</p>
+          </footer>
+        </main>
+      </div>
 
       <PaymentModal
         student={activeStudent}
