@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Shirt, BookOpen, Boxes, Plus, Minus, Zap, AlertTriangle, Package,
-  TrendingDown, Layers, BookMarked, CheckCircle2,
+  TrendingDown, Layers, BookMarked, CheckCircle2, XCircle,
 } from 'lucide-react';
 import type {
   UniformStockItem, BookStockItem, UniformCycle, UniformSize, BookClass, BookSubject,
@@ -65,6 +65,70 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, o
   );
 }
 
+/* ---------- Quantity input (mobile-friendly) ---------- */
+
+function QtyInput({ value, onChange, max }: { value: number; onChange: (v: number) => void; max?: number }) {
+  const clamp = (v: number) => {
+    const n = Math.max(1, Math.floor(v));
+    return max !== undefined ? Math.min(n, max) : n;
+  };
+  return (
+    <div className="inline-flex shrink-0 items-center gap-0.5 rounded-xl border-2 border-slate-200 bg-white p-0.5">
+      <button
+        type="button"
+        onClick={() => onChange(clamp(value - 1))}
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition active:scale-90 hover:bg-slate-200"
+        aria-label="Diminuer la quantité"
+      >
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={value}
+        onChange={(e) => {
+          const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
+          onChange(clamp(isNaN(parsed) ? 1 : parsed));
+        }}
+        onBlur={(e) => {
+          const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
+          onChange(clamp(isNaN(parsed) ? 1 : parsed));
+        }}
+        className="w-8 bg-transparent text-center font-800 text-sm text-ink outline-none"
+        aria-label="Quantité"
+      />
+      <button
+        type="button"
+        onClick={() => onChange(clamp(value + 1))}
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition active:scale-90 hover:bg-slate-200"
+        aria-label="Augmenter la quantité"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Toast (success + error) ---------- */
+
+function Toast({ message, type }: { message: string; type: 'success' | 'error' }) {
+  return (
+    <div
+      className={`fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border px-4 py-2.5 text-sm font-700 shadow-cardLg ${
+        type === 'success'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-red-200 bg-red-50 text-red-700'
+      }`}
+    >
+      <span className="inline-flex items-center gap-2">
+        {type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+        {message}
+      </span>
+    </div>
+  );
+}
+
 /* ---------- Tenues ---------- */
 
 function TenuesPanel({
@@ -75,7 +139,17 @@ function TenuesPanel({
   onSell?: (item: UniformStockItem) => void;
 }) {
   const [activeCycle, setActiveCycle] = useState<UniformCycle>('maternelle');
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [qtys, setQtys] = useState<Record<string, number>>({});
+
+  const getQty = (id: string) => qtys[id] ?? 1;
+  const setQty = (id: string, v: number) => setQtys(prev => ({ ...prev, [id]: v }));
+  const resetQty = (id: string) => setQtys(prev => ({ ...prev, [id]: 1 }));
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const cycleItems = useMemo(
     () => uniforms.filter((u) => u.cycle === activeCycle),
@@ -94,13 +168,24 @@ function TenuesPanel({
     onChange(uniforms.map((u) => (u.id === id ? { ...u, ...patch } : u)));
   };
 
-  const quickSell = (item: UniformStockItem) => {
+  const buyQty = (item: UniformStockItem) => {
+    const qty = getQty(item.id);
+    updateItem(item.id, { newStock: item.newStock + qty });
+    resetQty(item.id);
+    showToast(`Achat enregistré — ${qty} tenue(s) taille ${item.size} ajoutée(s)`);
+  };
+
+  const sellQty = (item: UniformStockItem) => {
+    const qty = getQty(item.id);
     const remaining = uniformRemaining(item);
-    if (remaining <= 0) return;
-    onChange(uniforms.map((u) => (u.id === item.id ? { ...u, sold: u.sold + 1 } : u)));
-    onSell?.(item);
-    setToast(`Vente enregistrée — ${formatFCFA(item.price)} ajouté à la caisse`);
-    setTimeout(() => setToast(null), 2600);
+    if (qty > remaining) {
+      showToast(`Stock insuffisant : ${remaining} disponible(s), ${qty} demandé(es)`, 'error');
+      return;
+    }
+    onChange(uniforms.map((u) => (u.id === item.id ? { ...u, sold: u.sold + qty } : u)));
+    onSell?.({ ...item, price: item.price * qty });
+    resetQty(item.id);
+    showToast(`Vente enregistrée — ${qty} × ${formatFCFA(item.price)} = ${formatFCFA(qty * item.price)}`);
   };
 
   const ensureSize = (size: UniformSize) => {
@@ -113,12 +198,7 @@ function TenuesPanel({
 
   return (
     <div>
-      {/* toast */}
-      {toast && (
-        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
-          <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {toast}</span>
-        </div>
-      )}
+      {toast && <Toast message={toast.msg} type={toast.type} />}
 
       {/* cycle tabs */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -161,7 +241,6 @@ function TenuesPanel({
               key={item.id}
               className={`rounded-2xl border bg-white p-4 shadow-card transition ${low ? 'border-red-200' : 'border-slate-200'}`}
             >
-              {/* Top: title */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className={`grid h-11 w-11 place-items-center rounded-xl text-base font-800 ${low ? 'bg-red-100 text-red-700' : 'bg-royal-50 text-royal-700'}`}>
@@ -183,7 +262,6 @@ function TenuesPanel({
                 ) : null}
               </div>
 
-              {/* Middle: all stock details in 2x2 grid */}
               <div className="mt-3 grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Ancien stock</div>
@@ -203,26 +281,26 @@ function TenuesPanel({
                 </div>
               </div>
 
-              {/* Vendus + valeur totale */}
               <div className="mt-2.5 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                 <div className="text-[11px] font-600 text-slate-500">Vendus: <span className="font-800 text-gold-700">{item.sold}</span></div>
-                <div className="text-[11px] font-600 text-slate-500">Valeur totale: <span className="font-800 text-ink">{formatFCFA(remaining * item.price)}</span></div>
+                <div className="text-[11px] font-600 text-slate-500">Valeur: <span className="font-800 text-ink">{formatFCFA(remaining * item.price)}</span></div>
               </div>
 
-              {/* Bottom: big thumb buttons */}
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {/* Quantity + action buttons */}
+              <div className="mt-3 flex items-center gap-2">
+                <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
                 <button
-                  onClick={() => updateItem(item.id, { newStock: item.newStock + 1 })}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-royal-200 bg-royal-50 px-4 py-3 text-sm font-700 text-royal-700 transition active:scale-95"
+                  onClick={() => buyQty(item)}
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-2 border-royal-200 bg-royal-50 px-2 py-2.5 text-xs font-700 text-royal-700 transition active:scale-95"
                 >
-                  <Plus className="h-5 w-5" /> Achat +1
+                  <Plus className="h-4 w-4" /> Achat
                 </button>
                 <button
-                  onClick={() => quickSell(item)}
+                  onClick={() => sellQty(item)}
                   disabled={out}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-4 py-3 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-2 py-2.5 text-xs font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
                 >
-                  <Zap className="h-5 w-5" /> Vente -1
+                  <Zap className="h-4 w-4" /> Vente
                 </button>
               </div>
               <button
@@ -257,7 +335,7 @@ function TenuesPanel({
                 <th className="px-3 py-3 text-right">Vendus</th>
                 <th className="px-3 py-3 text-right">Prix unitaire</th>
                 <th className="px-3 py-3 text-right">Total disponible</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3 text-right">Qté + Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -299,12 +377,19 @@ function TenuesPanel({
                     <td className={`px-3 py-3 text-right font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
+                        <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
                         <button
-                          onClick={() => quickSell(item)}
+                          onClick={() => buyQty(item)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border-2 border-royal-200 bg-royal-50 px-3 py-1.5 text-xs font-700 text-royal-700 transition hover:bg-royal-100 active:scale-95"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Achat
+                        </button>
+                        <button
+                          onClick={() => sellQty(item)}
                           disabled={out}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 px-3 py-1.5 text-xs font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
                         >
-                          <Zap className="h-3.5 w-3.5" /> Vente Rapide (-1)
+                          <Zap className="h-3.5 w-3.5" /> Vente
                         </button>
                         <button
                           onClick={() => onChange(uniforms.filter((u) => u.id !== item.id))}
@@ -344,6 +429,17 @@ function TenuesPanel({
 
 function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b: BookStockItem[]) => void }) {
   const [activeClass, setActiveClass] = useState<BookClass>('Jardin');
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [qtys, setQtys] = useState<Record<string, number>>({});
+
+  const getQty = (id: string) => qtys[id] ?? 1;
+  const setQty = (id: string, v: number) => setQtys(prev => ({ ...prev, [id]: v }));
+  const resetQty = (id: string) => setQtys(prev => ({ ...prev, [id]: 1 }));
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const classItems = useMemo(
     () => books.filter((b) => b.className === activeClass),
@@ -360,10 +456,23 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
     onChange(books.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   };
 
-  const quickSell = (id: string) => {
-    const item = books.find((b) => b.id === id);
-    if (!item || bookRemaining(item) <= 0) return;
-    onChange(books.map((b) => (b.id === id ? { ...b, sold: b.sold + 1 } : b)));
+  const buyQty = (item: BookStockItem) => {
+    const qty = getQty(item.id);
+    updateItem(item.id, { inStock: item.inStock + qty });
+    resetQty(item.id);
+    showToast(`Réapprovisionnement — ${qty} livre(s) ${item.subject} ajouté(s)`);
+  };
+
+  const sellQty = (item: BookStockItem) => {
+    const qty = getQty(item.id);
+    const remaining = bookRemaining(item);
+    if (qty > remaining) {
+      showToast(`Stock insuffisant : ${remaining} disponible(s), ${qty} demandé(s)`, 'error');
+      return;
+    }
+    onChange(books.map((b) => (b.id === item.id ? { ...b, sold: b.sold + qty } : b)));
+    resetQty(item.id);
+    showToast(`Distribution — ${qty} livre(s) ${item.subject} distribué(s)`);
   };
 
   const ensureSubject = (subject: BookSubject) => {
@@ -374,6 +483,8 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
 
   return (
     <div>
+      {toast && <Toast message={toast.msg} type={toast.type} />}
+
       {/* class tabs */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         {BOOK_CLASSES.map((c) => (
@@ -414,7 +525,6 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
               key={item.id}
               className={`rounded-2xl border bg-white p-4 shadow-card ${low ? 'border-red-200' : 'border-slate-200'}`}
             >
-              {/* Top: title */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className={`grid h-11 w-11 place-items-center rounded-xl ${low ? 'bg-red-100 text-red-700' : 'bg-royal-50 text-royal-700'}`}>
@@ -436,7 +546,6 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 ) : null}
               </div>
 
-              {/* Middle: all stock details */}
               <div className="mt-3 grid grid-cols-3 gap-2.5">
                 <div className="rounded-xl bg-royal-50 px-2.5 py-2.5 text-center">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Qté Initiale</div>
@@ -452,20 +561,21 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 </div>
               </div>
 
-              {/* Bottom: big thumb buttons */}
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {/* Quantity + action buttons */}
+              <div className="mt-3 flex items-center gap-2">
+                <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
                 <button
-                  onClick={() => updateItem(item.id, { inStock: item.inStock + 1 })}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-royal-200 bg-royal-50 px-4 py-3 text-sm font-700 text-royal-700 transition active:scale-95"
+                  onClick={() => buyQty(item)}
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-2 border-royal-200 bg-royal-50 px-2 py-2.5 text-xs font-700 text-royal-700 transition active:scale-95"
                 >
-                  <Plus className="h-5 w-5" /> Réappro +1
+                  <Plus className="h-4 w-4" /> Réappro
                 </button>
                 <button
-                  onClick={() => quickSell(item.id)}
+                  onClick={() => sellQty(item)}
                   disabled={out}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-4 py-3 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-2 py-2.5 text-xs font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
                 >
-                  <Zap className="h-5 w-5" /> Distrib. -1
+                  <Zap className="h-4 w-4" /> Distrib.
                 </button>
               </div>
               <button
@@ -498,7 +608,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 <th className="px-3 py-3 text-right">Qté Initiale</th>
                 <th className="px-3 py-3 text-right">Distribuée</th>
                 <th className="px-3 py-3 text-right">Reste Armoire</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3 text-right">Qté + Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -535,12 +645,19 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                     <td className={`px-3 py-3 text-right font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
+                        <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
                         <button
-                          onClick={() => quickSell(item.id)}
+                          onClick={() => buyQty(item)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border-2 border-royal-200 bg-royal-50 px-3 py-1.5 text-xs font-700 text-royal-700 transition hover:bg-royal-100 active:scale-95"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Réappro
+                        </button>
+                        <button
+                          onClick={() => sellQty(item)}
                           disabled={out}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 px-3 py-1.5 text-xs font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none"
                         >
-                          <Zap className="h-3.5 w-3.5" /> Distribution Rapide (-1)
+                          <Zap className="h-3.5 w-3.5" /> Distrib.
                         </button>
                         <button
                           onClick={() => onChange(books.filter((b) => b.id !== item.id))}

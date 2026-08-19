@@ -62,7 +62,6 @@ export default function App() {
   const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [stockSales, setStockSales] = useState<number>(0);
-  const [stockToast, setStockToast] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
   // ── Load all school data when user logs in ────────────
@@ -209,8 +208,6 @@ export default function App() {
 
   const handleUniformSell = (item: UniformStockItem) => {
     setStockSales(v => v + item.price);
-    setStockToast(`+${item.price.toLocaleString('fr-FR')} FCFA — Tenue ${item.size} ajoutée à la caisse`);
-    setTimeout(() => setStockToast(null), 3000);
   };
 
   // ── Fee config save handler ───────────────────────────
@@ -412,12 +409,6 @@ export default function App() {
                 onSaveGradePeriods={handleSaveGradePeriods}
               />}
             </>
-          )}
-
-          {stockToast && (
-            <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> {stockToast}</span>
-            </div>
           )}
 
           <footer className="mt-10 flex flex-col items-center gap-1 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
