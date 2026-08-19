@@ -265,7 +265,7 @@ function TenuesPanel({
               <div className="mt-3 grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Ancien stock</div>
-                  <div className="font-display text-xl font-800 text-slate-700">{item.oldStock}</div>
+                  <NumberInput value={item.oldStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
                 </div>
                 <div className="rounded-xl bg-royal-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
@@ -273,7 +273,7 @@ function TenuesPanel({
                 </div>
                 <div className="rounded-xl bg-gold-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-gold-700">Prix unitaire</div>
-                  <div className="font-display text-base font-800 text-gold-700">{formatFCFA(item.price)}</div>
+                  <NumberInput value={item.price} onChange={(v) => updateItem(item.id, { price: v })} />
                 </div>
                 <div className={`rounded-xl px-3 py-2.5 ${out ? 'bg-slate-50' : low ? 'bg-red-50' : 'bg-emerald-50'}`}>
                   <div className={`text-[10px] font-700 uppercase tracking-wider ${out ? 'text-slate-400' : low ? 'text-red-700' : 'text-emerald-700'}`}>Disponible</div>
