@@ -288,7 +288,7 @@ function TenuesPanel({
 
               {/* Quantity + action buttons */}
               <div className="mt-3 flex items-center gap-2">
-                <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
+                <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} />
                 <button
                   onClick={() => buyQty(item)}
                   className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-2 border-royal-200 bg-royal-50 px-2 py-2.5 text-xs font-700 text-royal-700 transition active:scale-95"
@@ -377,7 +377,7 @@ function TenuesPanel({
                     <td className={`px-3 py-3 text-right font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
-                        <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
+                        <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} />
                         <button
                           onClick={() => buyQty(item)}
                           className="inline-flex items-center gap-1.5 rounded-lg border-2 border-royal-200 bg-royal-50 px-3 py-1.5 text-xs font-700 text-royal-700 transition hover:bg-royal-100 active:scale-95"
@@ -563,7 +563,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
 
               {/* Quantity + action buttons */}
               <div className="mt-3 flex items-center gap-2">
-                <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
+                <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} />
                 <button
                   onClick={() => buyQty(item)}
                   className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-2 border-royal-200 bg-royal-50 px-2 py-2.5 text-xs font-700 text-royal-700 transition active:scale-95"
@@ -645,7 +645,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                     <td className={`px-3 py-3 text-right font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
-                        <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} max={out ? 1 : remaining} />
+                        <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} />
                         <button
                           onClick={() => buyQty(item)}
                           className="inline-flex items-center gap-1.5 rounded-lg border-2 border-royal-200 bg-royal-50 px-3 py-1.5 text-xs font-700 text-royal-700 transition hover:bg-royal-100 active:scale-95"
