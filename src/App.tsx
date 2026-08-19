@@ -61,7 +61,7 @@ export default function App() {
   const [receiptStudentId, setReceiptStudentId] = useState<string | null>(null);
   const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [stockSales, setStockSales] = useState<number>(0);
+  const stockSales = useMemo(() => uniforms.reduce((sum, item) => sum + item.sold * item.price, 0), [uniforms]);
   const [payError, setPayError] = useState<string | null>(null);
 
   // ── Load all school data when user logs in ────────────
@@ -206,9 +206,6 @@ export default function App() {
     }
   }, [profile?.schoolId, books]);
 
-  const handleUniformSell = (item: UniformStockItem) => {
-    setStockSales(v => v + item.price);
-  };
 
   // ── Fee config save handler ───────────────────────────
   const handleFeeConfigSave = async (newTranches: TrancheDef[], newFeeTypes: FeeTypeDef[], newRows: FeeConfigRow[]) => {
@@ -248,8 +245,7 @@ export default function App() {
         loadBookStock(profile.schoolId),
       ]);
       setUniforms(unis);
-      setBooks(bks);
-      setStockSales(0);
+      setBooks(bks)
     } catch (err) {
       console.error('Year-end reset failed:', err);
     }
@@ -394,7 +390,7 @@ export default function App() {
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
 
-              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
+              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} />}
 
               {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}
