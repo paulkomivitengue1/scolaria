@@ -118,14 +118,15 @@ export default function App() {
   }, [students, query]);
 
   const { totalCollected, outstanding, recoveryRate } = useMemo(() => {
-    const total = students.reduce((s, st) => s + studentExpected(st), 0);
-    const coll = students.reduce((s, st) => s + studentCollected(st), 0) + stockSales;
-    return {
-      totalCollected: coll,
-      outstanding: Math.max(0, total - coll),
-      recoveryRate: total > 0 ? Math.round(coll / total * 100) : 0,
-    };
-  }, [students, stockSales]);
+  const total = students.reduce((s, st) => s + studentExpected(st), 0);
+  const feesCollected = students.reduce((s, st) => s + studentCollected(st), 0);
+  const coll = feesCollected + stockSales;
+  return {
+    totalCollected: coll,
+    outstanding: Math.max(0, total - feesCollected),
+    recoveryRate: total > 0 ? Math.round(feesCollected / total * 100) : 0,
+  };
+}, [students, stockSales]);
 
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
