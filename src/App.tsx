@@ -61,7 +61,11 @@ export default function App() {
   const [receiptStudentId, setReceiptStudentId] = useState<string | null>(null);
   const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const stockSales = useMemo(() => uniforms.reduce((sum, item) => sum + item.sold * item.price, 0), [uniforms]);
+ const stockSales = useMemo(() => {
+  const uniformSales = uniforms.reduce((sum, item) => sum + item.sold * item.price, 0);
+  const bookSales = books.reduce((sum, item) => sum + item.sold * item.price, 0);
+  return uniformSales + bookSales;
+}, [uniforms, books]);
   const [payError, setPayError] = useState<string | null>(null);
 
   // ── Load all school data when user logs in ────────────
