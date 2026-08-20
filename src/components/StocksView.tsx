@@ -642,6 +642,9 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                       <NumberInput value={item.inStock} onChange={(v) => updateItem(item.id, { inStock: v })} />
                     </td>
                     <td className="px-3 py-3 text-right font-700 text-slate-600">{item.sold}</td>
+                    <td className="px-3 py-3 text-right">
+                      <NumberInput value={item.price} onChange={(v) => updateItem(item.id, { price: v })} />
+                    </td>
                     <td className={`px-3 py-3 text-right font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
