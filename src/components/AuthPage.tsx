@@ -12,8 +12,9 @@ interface AuthPageProps {
 type Mode = 'login' | 'signup';
 
 export function AuthPage({ onBack }: AuthPageProps) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [schoolName, setSchoolName] = useState('');
@@ -49,7 +50,18 @@ export function AuthPage({ onBack }: AuthPageProps) {
       setLoading(false);
     }
   };
-
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError('Veuillez saisir votre adresse e-mail ci-dessus, puis cliquer à nouveau sur "Mot de passe oublié".');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const { error: err } = await resetPassword(email.trim());
+    setLoading(false);
+    if (err) setError(err);
+    else setResetSent(true);
+  };
   const switchMode = (m: Mode) => {
     setMode(m);
     setPassword('');
@@ -148,6 +160,20 @@ export function AuthPage({ onBack }: AuthPageProps) {
                 )}
               </button>
             </form>
+
+            {mode === 'login' && (
+              <div className="mt-3 text-center">
+                {resetSent ? (
+                  <p className="text-sm font-600 text-emerald-600">
+                    E-mail envoyé ! Vérifiez votre boîte de réception (et vos spams).
+                  </p>
+                ) : (
+                  <button type="button" onClick={handleForgotPassword} className="text-sm font-700 text-royal-700 transition hover:text-royal-900 hover:underline">
+                    Mot de passe oublié ?
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Switch link */}
             <p className="mt-6 text-center text-sm text-slate-500">
