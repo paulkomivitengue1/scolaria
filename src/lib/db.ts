@@ -235,7 +235,7 @@ export async function loadUniformStock(schoolId: string): Promise<UniformStockIt
 export async function loadBookStock(schoolId: string): Promise<BookStockItem[]> {
   const { data, error } = await getSupabase()
     .from('stock_items')
-    .select('id, class_level, subject, in_stock, sold')
+    .select('id, class_level, subject, in_stock, sold, price')
     .eq('school_id', schoolId)
     .eq('category', 'livre')
     .order('created_at', { ascending: true });
@@ -246,6 +246,7 @@ export async function loadBookStock(schoolId: string): Promise<BookStockItem[]> 
     subject: r.subject as BookSubject,
     inStock: r.in_stock,
     sold: r.sold,
+    price: r.price,
   }));
 }
 
