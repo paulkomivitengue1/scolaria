@@ -26,6 +26,7 @@ import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
 import { ClassView } from './components/ClassView';
+import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, AppView } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
@@ -61,11 +62,7 @@ export default function App() {
   const [receiptStudentId, setReceiptStudentId] = useState<string | null>(null);
   const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
- const stockSales = useMemo(() => {
-  const uniformSales = uniforms.reduce((sum, item) => sum + item.sold * item.price, 0);
-  const bookSales = books.reduce((sum, item) => sum + item.sold * item.price, 0);
-  return uniformSales + bookSales;
-}, [uniforms, books]);
+  const [stockSales, setStockSales] = useState<number>(0);
   const [payError, setPayError] = useState<string | null>(null);
 
   // ── Load all school data when user logs in ────────────
@@ -122,15 +119,14 @@ export default function App() {
   }, [students, query]);
 
   const { totalCollected, outstanding, recoveryRate } = useMemo(() => {
-  const total = students.reduce((s, st) => s + studentExpected(st), 0);
-  const feesCollected = students.reduce((s, st) => s + studentCollected(st), 0);
-  const coll = feesCollected + stockSales;
-  return {
-    totalCollected: coll,
-    outstanding: Math.max(0, total - feesCollected),
-    recoveryRate: total > 0 ? Math.round(feesCollected / total * 100) : 0,
-  };
-}, [students, stockSales]);
+    const total = students.reduce((s, st) => s + studentExpected(st), 0);
+    const coll = students.reduce((s, st) => s + studentCollected(st), 0) + stockSales;
+    return {
+      totalCollected: coll,
+      outstanding: Math.max(0, total - coll),
+      recoveryRate: total > 0 ? Math.round(coll / total * 100) : 0,
+    };
+  }, [students, stockSales]);
 
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
@@ -211,6 +207,9 @@ export default function App() {
     }
   }, [profile?.schoolId, books]);
 
+  const handleUniformSell = (item: UniformStockItem) => {
+    setStockSales(v => v + item.price);
+  };
 
   // ── Fee config save handler ───────────────────────────
   const handleFeeConfigSave = async (newTranches: TrancheDef[], newFeeTypes: FeeTypeDef[], newRows: FeeConfigRow[]) => {
@@ -250,7 +249,8 @@ export default function App() {
         loadBookStock(profile.schoolId),
       ]);
       setUniforms(unis);
-      setBooks(bks)
+      setBooks(bks);
+      setStockSales(0);
     } catch (err) {
       console.error('Year-end reset failed:', err);
     }
@@ -393,9 +393,13 @@ export default function App() {
                 />
               )}
 
+              {view === 'impayes' && (
+                <UnpaidTranchesView students={students} feeConfig={feeConfig} />
+              )}
+
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
 
-              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} />}
+              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
 
               {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}

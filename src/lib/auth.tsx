@@ -23,7 +23,6 @@ interface AuthContextValue {
   isTrialExpired: boolean;
   signUp: (email: string, password: string, schoolName: string, directorName: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  resetPassword: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -119,13 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message };
     return {};
   }
-  async function resetPassword(email: string): Promise<{ error?: string }> {
-    const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
-    });
-    if (error) return { error: error.message };
-    return {};
-}
+
   async function signOut(): Promise<void> {
     await getSupabase().auth.signOut();
     setUser(null);
@@ -138,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, isTrialExpired, signUp, signIn, resetPassword, signOut, refreshProfile }}
+      value={{ user, profile, loading, isTrialExpired, signUp, signIn, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

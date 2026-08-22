@@ -235,7 +235,7 @@ export async function loadUniformStock(schoolId: string): Promise<UniformStockIt
 export async function loadBookStock(schoolId: string): Promise<BookStockItem[]> {
   const { data, error } = await getSupabase()
     .from('stock_items')
-    .select('id, class_level, subject, in_stock, sold, price')
+    .select('id, class_level, subject, in_stock, sold')
     .eq('school_id', schoolId)
     .eq('category', 'livre')
     .order('created_at', { ascending: true });
@@ -246,7 +246,6 @@ export async function loadBookStock(schoolId: string): Promise<BookStockItem[]> 
     subject: r.subject as BookSubject,
     inStock: r.in_stock,
     sold: r.sold,
-    price: r.price,
   }));
 }
 
@@ -308,17 +307,17 @@ export async function syncBookStock(
         .insert({
           school_id: schoolId, category: 'livre', name: '',
           class_level: item.className, subject: item.subject,
-          in_stock: item.inStock, sold: item.sold, price: item.price,
+          in_stock: item.inStock, sold: item.sold,
         })
         .select('id')
         .single();
       if (!error && data) result[i] = { ...item, id: data.id };
     } else {
       const old = prevMap.get(item.id)!;
-      if (old.inStock !== item.inStock || old.sold !== item.sold || old.price !== item.price) {
+      if (old.inStock !== item.inStock || old.sold !== item.sold) {
         await getSupabase()
           .from('stock_items')
-          .update({ in_stock: item.inStock, sold: item.sold, price: item.price })
+          .update({ in_stock: item.inStock, sold: item.sold })
           .eq('id', item.id);
       }
     }

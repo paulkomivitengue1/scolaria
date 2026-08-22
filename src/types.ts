@@ -1,4 +1,4 @@
-export type AppView = 'dashboard' | 'cahier' | 'classes' | 'bulletins' | 'stocks' | 'parametres';
+export type AppView = 'dashboard' | 'cahier' | 'classes' | 'bulletins' | 'stocks' | 'impayes' | 'parametres';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 
@@ -231,7 +231,6 @@ export interface BookStockItem {
   subject: BookSubject;
   inStock: number;
   sold: number;
-  price: number;
 }
 export type BookStockMap = Record<string, BookStockItem>;
 
