@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -45,6 +45,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { view: 'cahier', label: 'Paiements', icon: Wallet },
       { view: 'impayes', label: 'Impayés par tranche', icon: AlertCircle },
+      { view: 'depenses', label: 'Dépenses', icon: Receipt },
       { view: 'stocks', label: 'Stocks', icon: Boxes },
     ],
   },
