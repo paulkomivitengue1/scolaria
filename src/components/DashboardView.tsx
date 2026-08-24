@@ -1,7 +1,7 @@
 import {
   Users, TrendingUp, AlertCircle, PieChart,
   GraduationCap, ClipboardList, Boxes, Settings2,
-  ArrowRight, Sparkles,
+  ArrowRight, Sparkles, Receipt,
 } from 'lucide-react';
 import type { AppView, Student } from '../types';
 import { formatFCFA, studentExpected } from '../types';
@@ -12,6 +12,7 @@ interface Props {
   outstanding: number;
   recoveryRate: number;
   stockSales: number;
+  totalExpenses: number;
   onNavigate: (view: AppView) => void;
 }
 
@@ -26,7 +27,7 @@ interface DashCard {
   actionLabel: string;
 }
 
-export function DashboardView({ students, totalCollected, outstanding, recoveryRate, stockSales, onNavigate }: Props) {
+export function DashboardView({ students, totalCollected, outstanding, recoveryRate, stockSales, totalExpenses, onNavigate }: Props) {
   const totalExpected = students.reduce((s, st) => s + studentExpected(st), 0);
   const totalCollectedAll = totalCollected;
   const classes = new Set(students.map(s => s.className)).size;
@@ -51,6 +52,16 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
       iconColor: 'text-emerald-600',
       target: 'cahier',
       actionLabel: 'Voir les paiements',
+    },
+    {
+      label: 'Total Dépenses',
+      value: formatFCFA(totalExpenses),
+      sub: 'Cumul des dépenses enregistrées',
+      icon: Receipt,
+      iconBg: 'bg-red-50',
+      iconColor: 'text-red-600',
+      target: 'depenses',
+      actionLabel: 'Voir les dépenses',
     },
     {
       label: 'Reste à Recouvrer',
