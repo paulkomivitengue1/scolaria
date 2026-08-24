@@ -10,6 +10,7 @@ import {
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock,
   loadSchoolFeeConfig, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
+  loadExpenses, addExpenseDB, deleteExpenseDB,
   updateSchoolName, yearEndStockReset,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
@@ -27,7 +28,8 @@ import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
 import { ClassView } from './components/ClassView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
-import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, AppView } from './types';
+import { ExpensesView } from './components/ExpensesView';
+import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
@@ -46,6 +48,7 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>([]);
   const [uniforms, setUniforms] = useState<UniformStockItem[]>([]);
   const [books, setBooks] = useState<BookStockItem[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [feeConfig, setFeeConfig] = useState<SchoolFeeConfig>(EMPTY_FEE_CONFIG);
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -72,16 +75,18 @@ export default function App() {
       const schoolConfig = await loadSchoolFeeConfig(schoolId);
       setFeeConfig(schoolConfig);
 
-      const [stus, unis, bks, periods] = await Promise.all([
+      const [stus, unis, bks, periods, exps] = await Promise.all([
         loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
         loadUniformStock(schoolId),
         loadBookStock(schoolId),
         loadGradePeriods(schoolId),
+        loadExpenses(schoolId),
       ]);
       if (periods.length > 0) setGradePeriods(periods);
       setStudents(stus);
       setUniforms(unis);
       setBooks(bks);
+      setExpenses(exps);
     } catch (err) {
       console.error('Failed to load school data:', err);
     } finally {
@@ -96,6 +101,7 @@ export default function App() {
       setStudents([]);
       setUniforms([]);
       setBooks([]);
+      setExpenses([]);
       setDataLoading(false);
     }
   }, [user, profile?.schoolId, loadAllData]);
@@ -127,6 +133,8 @@ export default function App() {
       recoveryRate: total > 0 ? Math.round(coll / total * 100) : 0,
     };
   }, [students, stockSales]);
+
+  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
 
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
@@ -209,6 +217,26 @@ export default function App() {
 
   const handleUniformSell = (item: UniformStockItem) => {
     setStockSales(v => v + item.price);
+  };
+
+  // ── Expense handlers ──────────────────────────────────
+  const handleAddExpense = async (expense: Omit<Expense, 'id'>) => {
+    if (!profile?.schoolId) return;
+    try {
+      const dbId = await addExpenseDB(profile.schoolId, expense);
+      setExpenses(prev => [{ ...expense, id: dbId }, ...prev]);
+    } catch (err) {
+      console.error('Failed to add expense:', err);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    try {
+      await deleteExpenseDB(id);
+      setExpenses(prev => prev.filter(e => e.id !== id));
+    } catch (err) {
+      console.error('Failed to delete expense:', err);
+    }
   };
 
   // ── Fee config save handler ───────────────────────────
@@ -346,6 +374,7 @@ export default function App() {
                   outstanding={outstanding}
                   recoveryRate={recoveryRate}
                   stockSales={stockSales}
+                  totalExpenses={totalExpenses}
                   onNavigate={handleNavigate}
                 />
               )}
@@ -395,6 +424,10 @@ export default function App() {
 
               {view === 'impayes' && (
                 <UnpaidTranchesView students={students} feeConfig={feeConfig} />
+              )}
+
+              {view === 'depenses' && (
+                <ExpensesView expenses={expenses} onAdd={handleAddExpense} onDelete={handleDeleteExpense} />
               )}
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
@@ -486,4 +519,4 @@ function TrialExpired({ schoolName, onLogout }: { schoolName: string; onLogout: 
       </div>
     </div>
   );
-}
+                                      }
