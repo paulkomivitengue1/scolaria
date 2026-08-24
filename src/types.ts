@@ -1,4 +1,4 @@
-export type AppView = 'dashboard' | 'cahier' | 'classes' | 'bulletins' | 'stocks' | 'impayes' | 'parametres';
+export type AppView = 'dashboard' | 'cahier' | 'classes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'parametres';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 
@@ -296,3 +296,21 @@ export const gradeColor = (avg: number): string => {
   if (avg >= 8) return 'text-orange-600';
   return 'text-red-600';
 };
+
+/* ---- Dépenses ---- */
+export type ExpenseCategory = 'salaire' | 'fournitures' | 'entretien' | 'autre';
+
+export const EXPENSE_CATEGORIES: { id: ExpenseCategory; label: string }[] = [
+  { id: 'salaire', label: 'Salaires' },
+  { id: 'fournitures', label: 'Fournitures' },
+  { id: 'entretien', label: 'Entretien' },
+  { id: 'autre', label: 'Autre' },
+];
+
+export interface Expense {
+  id: string;
+  label: string;
+  amount: number;
+  category: ExpenseCategory;
+  expenseDate: string; // format ISO 'YYYY-MM-DD'
+  }
