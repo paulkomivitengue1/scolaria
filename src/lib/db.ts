@@ -517,3 +517,44 @@ export async function deleteGrade(gradeId: string): Promise<void> {
   const { error } = await getSupabase().from('grades').delete().eq('id', gradeId);
   if (error) throw error;
 }
+// ── Dépenses ───────────────────────────────────────────
+
+export async function loadExpenses(schoolId: string): Promise<import('../types').Expense[]> {
+  const { data, error } = await getSupabase()
+    .from('expenses')
+    .select('id, label, amount, category, expense_date')
+    .eq('school_id', schoolId)
+    .order('expense_date', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(r => ({
+    id: r.id,
+    label: r.label,
+    amount: r.amount,
+    category: r.category,
+    expenseDate: r.expense_date,
+  }));
+}
+
+export async function addExpenseDB(
+  schoolId: string,
+  expense: Omit<import('../types').Expense, 'id'>
+): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('expenses')
+    .insert({
+      school_id: schoolId,
+      label: expense.label,
+      amount: expense.amount,
+      category: expense.category,
+      expense_date: expense.expenseDate,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function deleteExpenseDB(expenseId: string): Promise<void> {
+  const { error } = await getSupabase().from('expenses').delete().eq('id', expenseId);
+  if (error) throw error;
+}
