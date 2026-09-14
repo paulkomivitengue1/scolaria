@@ -65,7 +65,7 @@ export default function App() {
   const [receiptStudentId, setReceiptStudentId] = useState<string | null>(null);
   const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [stockSales, setStockSales] = useState<number>(0);
+
   const [payError, setPayError] = useState<string | null>(null);
 
   // ── Load all school data when user logs in ────────────
@@ -123,6 +123,12 @@ export default function App() {
       s.parentName.toLowerCase().includes(q)
     );
   }, [students, query]);
+
+  const stockSales = useMemo(
+    () => uniforms.reduce((s, u) => s + u.sold * u.price, 0)
+              + books.reduce((s, b) => s + b.sold * b.price, 0),
+    [uniforms, books],
+  );
 
   const { totalCollected, outstanding, recoveryRate } = useMemo(() => {
     const total = students.reduce((s, st) => s + studentExpected(st), 0);
@@ -215,14 +221,6 @@ export default function App() {
     }
   }, [profile?.schoolId, books]);
 
-  const handleUniformSell = (item: UniformStockItem) => {
-    setStockSales(v => v + item.price);
-  };
-
-  const handleBookSell = (item: BookStockItem) => {
-    setStockSales(v => v + item.price);
-  };
-
   // ── Expense handlers ──────────────────────────────────
   const handleAddExpense = async (expense: Omit<Expense, 'id'>) => {
     if (!profile?.schoolId) return;
@@ -282,7 +280,6 @@ export default function App() {
       ]);
       setUniforms(unis);
       setBooks(bks);
-      setStockSales(0);
     } catch (err) {
       console.error('Year-end reset failed:', err);
     }
@@ -436,7 +433,7 @@ export default function App() {
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
 
-              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} onBookSell={handleBookSell} />}
+              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} />}
 
               {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}

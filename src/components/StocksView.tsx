@@ -19,11 +19,9 @@ interface Props {
   books: BookStockItem[];
   onUniformsChange: (u: UniformStockItem[]) => void;
   onBooksChange: (b: BookStockItem[]) => void;
-  onUniformSell?: (item: UniformStockItem) => void;
-  onBookSell?: (item: BookStockItem) => void;
 }
 
-export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, onUniformSell, onBookSell }: Props) {
+export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }: Props) {
   const [sub, setSub] = useState<SubTab>('tenues');
 
   return (
@@ -58,9 +56,9 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, o
       </div>
 
       {sub === 'tenues' ? (
-        <TenuesPanel uniforms={uniforms} onChange={onUniformsChange} onSell={onUniformSell} />
+        <TenuesPanel uniforms={uniforms} onChange={onUniformsChange} />
       ) : (
-        <LivresPanel books={books} onChange={onBooksChange} onSell={onBookSell} />
+        <LivresPanel books={books} onChange={onBooksChange} />
       )}
     </div>
   );
@@ -133,11 +131,10 @@ function Toast({ message, type }: { message: string; type: 'success' | 'error' }
 /* ---------- Tenues ---------- */
 
 function TenuesPanel({
-  uniforms, onChange, onSell,
+  uniforms, onChange,
 }: {
   uniforms: UniformStockItem[];
   onChange: (u: UniformStockItem[]) => void;
-  onSell?: (item: UniformStockItem) => void;
 }) {
   const [activeCycle, setActiveCycle] = useState<UniformCycle>('maternelle');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -184,7 +181,6 @@ function TenuesPanel({
       return;
     }
     onChange(uniforms.map((u) => (u.id === item.id ? { ...u, sold: u.sold + qty } : u)));
-    onSell?.({ ...item, price: item.price * qty });
     resetQty(item.id);
     showToast(`Vente enregistrée — ${qty} × ${formatFCFA(item.price)} = ${formatFCFA(qty * item.price)}`);
   };
@@ -434,7 +430,7 @@ function TenuesPanel({
 
 /* ---------- Livres ---------- */
 
-function LivresPanel({ books, onChange, onSell }: { books: BookStockItem[]; onChange: (b: BookStockItem[]) => void; onSell?: (item: BookStockItem) => void }) {
+function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b: BookStockItem[]) => void }) {
   const [activeClass, setActiveClass] = useState<BookClass>('Jardin');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [qtys, setQtys] = useState<Record<string, number>>({});
@@ -478,7 +474,6 @@ function LivresPanel({ books, onChange, onSell }: { books: BookStockItem[]; onCh
       return;
     }
     onChange(books.map((b) => (b.id === item.id ? { ...b, sold: b.sold + qty } : b)));
-    onSell?.({ ...item, price: item.price * qty });
     resetQty(item.id);
     showToast(`Vente — ${qty} × ${formatFCFA(item.price)} = ${formatFCFA(qty * item.price)}`);
   };
