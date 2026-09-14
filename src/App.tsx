@@ -219,6 +219,10 @@ export default function App() {
     setStockSales(v => v + item.price);
   };
 
+  const handleBookSell = (item: BookStockItem) => {
+    setStockSales(v => v + item.price);
+  };
+
   // ── Expense handlers ──────────────────────────────────
   const handleAddExpense = async (expense: Omit<Expense, 'id'>) => {
     if (!profile?.schoolId) return;
@@ -432,7 +436,7 @@ export default function App() {
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
 
-              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} />}
+              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onUniformSell={handleUniformSell} onBookSell={handleBookSell} />}
 
               {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}

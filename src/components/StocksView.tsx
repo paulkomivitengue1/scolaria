@@ -20,9 +20,10 @@ interface Props {
   onUniformsChange: (u: UniformStockItem[]) => void;
   onBooksChange: (b: BookStockItem[]) => void;
   onUniformSell?: (item: UniformStockItem) => void;
+  onBookSell?: (item: BookStockItem) => void;
 }
 
-export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, onUniformSell }: Props) {
+export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, onUniformSell, onBookSell }: Props) {
   const [sub, setSub] = useState<SubTab>('tenues');
 
   return (
@@ -59,7 +60,7 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, o
       {sub === 'tenues' ? (
         <TenuesPanel uniforms={uniforms} onChange={onUniformsChange} onSell={onUniformSell} />
       ) : (
-        <LivresPanel books={books} onChange={onBooksChange} />
+        <LivresPanel books={books} onChange={onBooksChange} onSell={onBookSell} />
       )}
     </div>
   );
@@ -433,7 +434,7 @@ function TenuesPanel({
 
 /* ---------- Livres ---------- */
 
-function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b: BookStockItem[]) => void }) {
+function LivresPanel({ books, onChange, onSell }: { books: BookStockItem[]; onChange: (b: BookStockItem[]) => void; onSell?: (item: BookStockItem) => void }) {
   const [activeClass, setActiveClass] = useState<BookClass>('Jardin');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [qtys, setQtys] = useState<Record<string, number>>({});
@@ -477,8 +478,9 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
       return;
     }
     onChange(books.map((b) => (b.id === item.id ? { ...b, sold: b.sold + qty } : b)));
+    onSell?.({ ...item, price: item.price * qty });
     resetQty(item.id);
-    showToast(`Distribution — ${qty} livre(s) ${item.subject} distribué(s)`);
+    showToast(`Vente — ${qty} × ${formatFCFA(item.price)} = ${formatFCFA(qty * item.price)}`);
   };
 
   const ensureSubject = (subject: BookSubject) => {
@@ -567,6 +569,22 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 </div>
               </div>
 
+              <div className="mt-2.5 flex items-center justify-between rounded-xl bg-gold-50 px-3 py-2">
+                <div className="text-[10px] font-700 uppercase tracking-wider text-gold-700">Prix unitaire</div>
+                <input
+                  type="number"
+                  min={0}
+                  value={item.price}
+                  onChange={(e) => updateItem(item.id, { price: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                  className="w-24 bg-transparent text-right font-display text-base font-800 text-gold-700 outline-none"
+                />
+              </div>
+
+              <div className="mt-2.5 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                <div className="text-[11px] font-600 text-slate-500">Distribués: <span className="font-800 text-gold-700">{item.sold}</span></div>
+                <div className="text-[11px] font-600 text-slate-500">Valeur: <span className="font-800 text-ink">{formatFCFA(remaining * item.price)}</span></div>
+              </div>
+
               {/* Quantity + action buttons */}
               <div className="mt-3 flex items-center gap-2">
                 <QtyInput value={getQty(item.id)} onChange={(v) => setQty(item.id, v)} />
@@ -613,6 +631,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 <th className="px-5 py-3">Matière</th>
                 <th className="px-3 py-3 text-right">Qté Initiale</th>
                 <th className="px-3 py-3 text-right">Distribuée</th>
+                <th className="px-3 py-3 text-right">Prix unitaire</th>
                 <th className="px-3 py-3 text-right">Reste Armoire</th>
                 <th className="px-5 py-3 text-right">Qté + Actions</th>
               </tr>
@@ -620,7 +639,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <tbody>
               {classItems.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-400">
                     Aucun livre enregistré pour cette classe. Ajoutez une matière ci-dessous.
                   </td>
                 </tr>
@@ -648,6 +667,9 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                       <NumberInput value={item.inStock} onChange={(v) => updateItem(item.id, { inStock: v })} />
                     </td>
                     <td className="px-3 py-3 text-right font-700 text-slate-600">{item.sold}</td>
+                    <td className="px-3 py-3 text-right">
+                      <NumberInput value={item.price} onChange={(v) => updateItem(item.id, { price: v })} />
+                    </td>
                     <td className={`px-3 py-3 text-right font-800 ${out ? 'text-slate-400' : low ? 'text-red-600' : 'text-emerald-600'}`}>{remaining}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">

@@ -231,6 +231,7 @@ export interface BookStockItem {
   subject: BookSubject;
   inStock: number;
   sold: number;
+  price: number;
 }
 export type BookStockMap = Record<string, BookStockItem>;
 
