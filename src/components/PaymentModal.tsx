@@ -10,7 +10,7 @@ interface Props {
   trancheKey: number | 'single' | null;
   open: boolean;
   onClose: () => void;
-  onValidate: (id: string, feeType: string, trancheKey: number | 'single', amt: number) => void;
+  onValidate: (id: string, feeType: string, trancheKey: number | 'single', amt: number) => Promise<void>;
   feeTypes: FeeTypeDef[];
   tranches: TrancheDef[];
 }
@@ -19,6 +19,7 @@ export function PaymentModal({ student, feeType, trancheKey, open, onClose, onVa
   const [amount, setAmount] = useState('');
   const [selFeeType, setSelFeeType] = useState<string>('');
   const [selTrancheKey, setSelTrancheKey] = useState<number | 'single'>('single');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -50,10 +51,17 @@ export function PaymentModal({ student, feeType, trancheKey, open, onClose, onVa
   const outstanding = studentOutstanding(student);
   const quick = [Math.round(remaining), Math.round(expectedAmount)].filter((q, i, a) => q > 0 && a.indexOf(q) === i);
 
-  const handleValidate = () => {
+  const handleValidate = async () => {
     if (v <= 0) return;
-    onValidate(student.id, selFeeType, selTrancheKey, v);
-    onClose();
+    setSubmitting(true);
+    try {
+      await onValidate(student.id, selFeeType, selTrancheKey, v);
+      onClose();
+    } catch {
+      // error already handled in parent
+    } finally {
+      setSubmitting(false);
+    }
   };
 
 
@@ -164,7 +172,7 @@ export function PaymentModal({ student, feeType, trancheKey, open, onClose, onVa
         <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-3">
           <div className="flex gap-2">
             <button onClick={onClose} className="flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-600 text-slate-600 transition hover:bg-slate-50 active:scale-95">Annuler</button>
-            <button onClick={handleValidate} disabled={v <= 0} className="flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 text-sm font-700 text-white shadow-cardLg transition hover:brightness-110 active:scale-95 disabled:opacity-40"><Check className="h-4 w-4" strokeWidth={3} />Valider le paiement</button>
+            <button onClick={handleValidate} disabled={v <= 0 || submitting} className="flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 text-sm font-700 text-white shadow-cardLg transition hover:brightness-110 active:scale-95 disabled:opacity-40">{submitting ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />Enregistrement…</> : <><Check className="h-4 w-4" strokeWidth={3} />Valider le paiement</>}</button>
           </div>
         </div>
       </div>

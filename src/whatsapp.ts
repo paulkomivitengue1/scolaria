@@ -68,6 +68,65 @@ export function buildWhatsAppMessage(ctx: WhatsAppContext): string {
   return lines.join('\n');
 }
 
+export interface WhatsAppTrancheContext extends WhatsAppContext {
+  trancheKey: number | 'single';
+  paidAmount: number;
+}
+
+export function buildWhatsAppTrancheMessage(ctx: WhatsAppTrancheContext): string {
+  const { student, feeType, tranches, feeTypes, schoolName, trancheKey, paidAmount } = ctx;
+  const fee = student.fees.find(f => f.feeType === feeType);
+  const ft = feeTypes.find(f => f.feeType === feeType);
+  const label = ft?.label ?? feeType;
+
+  const studentName = `${student.firstName} ${student.lastName}`;
+  const className = student.className;
+  const parentName = student.parentName || 'Cher parent';
+  const school = schoolName?.trim() || DEFAULT_SCHOOL;
+
+  const trancheLabel = trancheKey === 'single'
+    ? label
+    : (tranches.find(t => t.index === trancheKey)?.label ?? `Tranche ${trancheKey}`);
+
+  const lines: string[] = [
+    `Bonjour ${parentName},`,
+    `Ici la direction de l'école ${school}.`,
+    `Nous confirmons la réception de votre paiement de ${formatFCFA(paidAmount)} pour ${trancheLabel} (${label}) concernant votre enfant ${studentName} (${className}).`,
+  ];
+
+  const totalPaid = fee ? Object.values(fee.payments).reduce((s, p) => s + p.paid, 0) : 0;
+  const totalExpected = fee ? fee.totalExpected : 0;
+  const feeRemaining = Math.max(0, totalExpected - totalPaid);
+
+  const yearExpected = student.fees.reduce((s, f) => s + f.totalExpected, 0);
+  const yearCollected = student.fees.reduce((s, f) => s + Object.values(f.payments).reduce((ss, p) => ss + p.paid, 0), 0);
+  const yearRemaining = Math.max(0, yearExpected - yearCollected);
+
+  if (feeRemaining > 0) {
+    lines.push(`Reste à payer sur les ${label}: ${formatFCFA(feeRemaining)}.`);
+  } else {
+    lines.push(`Les ${label} sont entièrement soldés. Nous vous remercions !`);
+  }
+
+  if (yearRemaining > 0) {
+    lines.push(`Solde global restant sur l'année: ${formatFCFA(yearRemaining)}.`);
+  } else {
+    lines.push(`L'ensemble des frais de l'année est entièrement réglé. Félicitations !`);
+  }
+
+  lines.push('Cordialement,');
+  lines.push('La Direction.');
+
+  return lines.join('\n');
+}
+
+export function buildWhatsAppTrancheLink(ctx: WhatsAppTrancheContext): string {
+  const message = buildWhatsAppTrancheMessage(ctx);
+  const phone = sanitizePhone(ctx.student.parentPhone);
+  const encoded = encodeURIComponent(message);
+  return `https://wa.me/${phone}?text=${encoded}`;
+}
+
 export function sanitizePhone(raw: string): string {
   let digits = raw.replace(/[^\d]/g, '');
   if (digits.startsWith('00')) {

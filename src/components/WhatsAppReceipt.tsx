@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { X, MessageCircle, Send, ChevronDown } from 'lucide-react';
+import { X, MessageCircle, Send } from 'lucide-react';
 import type { Student, FeeTypeDef, TrancheDef } from '../types';
-import { formatFCFA } from '../types';
-import { buildWhatsAppMessage, buildWhatsAppLink } from '../whatsapp';
+import { formatFCFA, studentOutstanding } from '../types';
+import { buildWhatsAppMessage, buildWhatsAppLink, buildWhatsAppTrancheMessage, buildWhatsAppTrancheLink } from '../whatsapp';
 import { StatusBadge } from './StatusBadge';
 
 interface Props {
@@ -13,9 +13,12 @@ interface Props {
   initialFeeType?: string | null;
   feeTypes: FeeTypeDef[];
   tranches: TrancheDef[];
+  trancheKey?: number | 'single' | null;
+  paidAmount?: number;
 }
 
-export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFeeType, feeTypes, tranches }: Props) {
+export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFeeType, feeTypes, tranches, trancheKey, paidAmount }: Props) {
+  const isTrancheMode = trancheKey !== undefined && trancheKey !== null && paidAmount !== undefined;
   const [selFeeType, setSelFeeType] = useState<string>('');
 
   if (open && student && initialFeeType && selFeeType !== initialFeeType) {
@@ -32,9 +35,15 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
   const remaining = Math.max(0, (fee?.totalExpected ?? 0) - totalPaid);
   const status = fee ? (totalPaid >= (fee.totalExpected - 0.5) ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid') : 'unpaid';
 
-  const ctx = { student, feeType: selFeeType, tranches, feeTypes, schoolName };
-  const message = buildWhatsAppMessage(ctx);
-  const link = buildWhatsAppLink(ctx);
+  const outstanding = studentOutstanding(student);
+
+  const baseCtx = { student, feeType: selFeeType, tranches, feeTypes, schoolName };
+  const message = isTrancheMode
+    ? buildWhatsAppTrancheMessage({ ...baseCtx, trancheKey: trancheKey!, paidAmount: paidAmount! })
+    : buildWhatsAppMessage(baseCtx);
+  const link = isTrancheMode
+    ? buildWhatsAppTrancheLink({ ...baseCtx, trancheKey: trancheKey!, paidAmount: paidAmount! })
+    : buildWhatsAppLink(baseCtx);
 
   const send = () => { window.open(link, '_blank'); };
 
@@ -56,24 +65,27 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-5 py-5">
-          <div className="mb-4">
-            <label className="mb-1 block text-[11px] font-700 uppercase tracking-wide text-slate-500">Type de frais</label>
-            <div className="relative">
-              <select value={selFeeType} onChange={e => setSelFeeType(e.target.value)} className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 text-sm font-600 text-ink outline-none transition focus:border-royal-400 focus:ring-4">
-                {feeTypes.map(f => <option key={f.feeType} value={f.feeType}>{f.label}</option>)}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          {isTrancheMode ? (
+            <div className="mb-4 flex items-center justify-between rounded-2xl bg-emerald-50 px-4 py-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-600 text-slate-500">Paiement enregistré</span>
+                <span className="font-display text-lg font-800 text-emerald-700">{formatFCFA(paidAmount!)}</span>
+              </div>
+              <div className="flex flex-col gap-1 text-right">
+                <span className="text-[11px] font-600 text-slate-500">Solde global de l'élève</span>
+                <span className={`font-display font-700 ${outstanding > 0 ? 'text-gold-600' : 'text-emerald-600'}`}>{formatFCFA(outstanding)}</span>
+              </div>
             </div>
-          </div>
-
-          <div className="mb-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-600 text-slate-500">Total dû: <strong className="text-ink">{formatFCFA(fee?.totalExpected ?? 0)}</strong></span>
-              <span className="text-[11px] font-600 text-slate-500">Payé: <strong className="text-teal-600">{formatFCFA(Math.round(totalPaid))}</strong></span>
-              <span className="text-[11px] font-600 text-slate-500">Reste: <strong className={remaining > 0 ? 'text-gold-600' : 'text-emerald-600'}>{formatFCFA(Math.round(remaining))}</strong></span>
+          ) : (
+            <div className="mb-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-600 text-slate-500">Total dû: <strong className="text-ink">{formatFCFA(fee?.totalExpected ?? 0)}</strong></span>
+                <span className="text-[11px] font-600 text-slate-500">Payé: <strong className="text-teal-600">{formatFCFA(Math.round(totalPaid))}</strong></span>
+                <span className="text-[11px] font-600 text-slate-500">Reste: <strong className={remaining > 0 ? 'text-gold-600' : 'text-emerald-600'}>{formatFCFA(Math.round(remaining))}</strong></span>
+              </div>
+              <StatusBadge status={status as 'paid' | 'partial' | 'unpaid'} paid={totalPaid} monthlyFee={fee?.totalExpected ?? 0} size="sm" />
             </div>
-            <StatusBadge status={status as 'paid' | 'partial' | 'unpaid'} paid={totalPaid} monthlyFee={fee?.totalExpected ?? 0} size="sm" />
-          </div>
+          )}
 
           <h3 className="mb-2 text-xs font-700 uppercase tracking-wider text-slate-500">Aperçu du message</h3>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">

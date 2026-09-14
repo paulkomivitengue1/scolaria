@@ -64,6 +64,13 @@ export default function App() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptStudentId, setReceiptStudentId] = useState<string | null>(null);
   const [receiptFeeType, setReceiptFeeType] = useState<string | null>(null);
+
+  const [trancheReceiptOpen, setTrancheReceiptOpen] = useState(false);
+  const [trancheReceiptStudentId, setTrancheReceiptStudentId] = useState<string | null>(null);
+  const [trancheReceiptFeeType, setTrancheReceiptFeeType] = useState<string | null>(null);
+  const [trancheReceiptKey, setTrancheReceiptKey] = useState<number | 'single' | null>(null);
+  const [trancheReceiptAmount, setTrancheReceiptAmount] = useState(0);
+
   const [addOpen, setAddOpen] = useState(false);
 
   const [payError, setPayError] = useState<string | null>(null);
@@ -75,18 +82,28 @@ export default function App() {
       const schoolConfig = await loadSchoolFeeConfig(schoolId);
       setFeeConfig(schoolConfig);
 
-      const [stus, unis, bks, periods, exps] = await Promise.all([
+      const results = await Promise.allSettled([
         loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
         loadUniformStock(schoolId),
         loadBookStock(schoolId),
         loadGradePeriods(schoolId),
         loadExpenses(schoolId),
       ]);
-      if (periods.length > 0) setGradePeriods(periods);
-      setStudents(stus);
-      setUniforms(unis);
-      setBooks(bks);
-      setExpenses(exps);
+
+      if (results[0].status === 'fulfilled') setStudents(results[0].value);
+      else console.error('Failed to load students:', results[0].reason);
+
+      if (results[1].status === 'fulfilled') setUniforms(results[1].value);
+      else console.error('Failed to load uniforms:', results[1].reason);
+
+      if (results[2].status === 'fulfilled') setBooks(results[2].value);
+      else console.error('Failed to load books:', results[2].reason);
+
+      if (results[3].status === 'fulfilled' && results[3].value.length > 0) setGradePeriods(results[3].value);
+      else if (results[3].status === 'rejected') console.error('Failed to load grade periods:', results[3].reason);
+
+      if (results[4].status === 'fulfilled') setExpenses(results[4].value);
+      else console.error('Failed to load expenses:', results[4].reason);
     } catch (err) {
       console.error('Failed to load school data:', err);
     } finally {
@@ -144,6 +161,7 @@ export default function App() {
 
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
+  const trancheReceiptStudent = students.find(s => s.id === trancheReceiptStudentId) ?? null;
 
   // ── Handlers ──────────────────────────────────────────
   const openCell = (id: string, feeType: string, trancheKey: number | 'single') => {
@@ -168,8 +186,14 @@ export default function App() {
           },
         } : f),
       } : s));
+      setTrancheReceiptStudentId(id);
+      setTrancheReceiptFeeType(feeType);
+      setTrancheReceiptKey(trancheKey);
+      setTrancheReceiptAmount(amt);
+      setTrancheReceiptOpen(true);
     } catch (err: any) {
       setPayError(err.message || 'Erreur lors de l\'enregistrement du paiement.');
+      throw err;
     }
   };
 
@@ -475,6 +499,17 @@ export default function App() {
         initialFeeType={receiptFeeType}
         feeTypes={feeConfig.feeTypes}
         tranches={feeConfig.tranches}
+      />
+      <WhatsAppReceipt
+        student={trancheReceiptStudent}
+        open={trancheReceiptOpen}
+        onClose={() => setTrancheReceiptOpen(false)}
+        schoolName={profile?.schoolName || ''}
+        initialFeeType={trancheReceiptFeeType}
+        feeTypes={feeConfig.feeTypes}
+        tranches={feeConfig.tranches}
+        trancheKey={trancheReceiptKey}
+        paidAmount={trancheReceiptAmount}
       />
       <AddStudentModal
         open={addOpen}
