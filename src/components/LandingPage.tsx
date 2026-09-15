@@ -265,7 +265,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
                 </ul>
                 <button
                   onClick={onEnter}
-                  className={`mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl text-sm font-700 transition active:scale-95 ${p.featured ? 'bg-gradient-to-br from-gold-400 to-gold-600 text-royal-900 shadow-glow-gold hover:brightness-110' : 'bg-slate-700 text-white border border-slate-600 hover:bg-slate-600'}`}
+                  className={`mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl text-sm font-700 transition active:scale-95 ${p.featured ? 'bg-gradient-to-br from-gold-400 to-gold-600 text-royal-900 shadow-glow-gold hover:brightness-110' : 'bg-royal-900 text-white border border-slate-600 hover:bg-royal-700'}`}
                 >
                   Démarrer l'essai gratuit
                 </button>
@@ -285,7 +285,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
                 <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm transition">
                   <button
                     onClick={() => setOpenFaq(isOpen ? null : i)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left bg-slate-800 text-white"
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left bg-royal-800 text-white"
                   >
                     <span className="text-sm font-700 text-white">{item.q}</span>
                     <ChevronDown className={`h-4 w-4 shrink-0 text-gold-300 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
