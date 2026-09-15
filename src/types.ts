@@ -51,6 +51,8 @@ export interface Student {
   parentName: string;
   parentPhone: string;
   fees: FeeSubscription[];
+  matricule: string;
+  sexe: 'M' | 'F';
 }
 
 // ── School config (loaded from DB) ─────────────────────

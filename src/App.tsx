@@ -5,8 +5,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
-import {
-  loadStudents, addStudentDB, recordPayment,
+import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock,
   loadSchoolFeeConfig, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
@@ -229,7 +228,7 @@ export default function App() {
     setEditOpen(true);
   };
 
-  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[] }) => {
+  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[]; matricule: string; sexe: 'M' | 'F' }) => {
     try {
       await updateStudentDB(id, updates);
       setStudents(prev => prev.map(s => s.id === id ? {
@@ -239,6 +238,8 @@ export default function App() {
         className: updates.className,
         parentName: updates.parentName,
         parentPhone: updates.parentPhone,
+        matricule: updates.matricule,
+        sexe: updates.sexe,
         fees: updates.fees,
       } : s));
     } catch (err: any) {
@@ -570,6 +571,9 @@ export default function App() {
         feeTypes={feeConfig.feeTypes}
         feeConfig={feeConfig.feeConfig}
         tranches={feeConfig.tranches}
+        schoolName={profile?.schoolName || ''}
+        schoolId={profile?.schoolId || ''}
+        onGenerateMatricule={generateMatricule}
       />
       <EditStudentModal
         student={editStudent}

@@ -10,16 +10,19 @@ interface AddStudentModalProps {
   feeTypes: FeeTypeDef[];
   feeConfig: FeeConfigRow[];
   tranches: TrancheDef[];
+  schoolName: string;
+  schoolId: string;
+  onGenerateMatricule: (schoolId: string, schoolName: string) => Promise<string>;
 }
 
 const FEE_ICONS: Record<string, typeof GraduationCap> = {
   GraduationCap, FileText, PartyPopper, Utensils, Bus, Layers,
 };
 
-interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; }
-const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '' };
+interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; matricule: string; sexe: 'M' | 'F'; }
+const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', matricule: '', sexe: 'M' };
 
-export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tranches }: AddStudentModalProps) {
+export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, onGenerateMatricule }: AddStudentModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [plans, setPlans] = useState<Record<string, boolean>>({});
 
@@ -28,8 +31,13 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
       const initialPlans: Record<string, boolean> = {};
       feeTypes.forEach(f => { initialPlans[f.feeType] = f.feeType === 'scolarite'; });
       setPlans(initialPlans);
+      setForm(EMPTY_FORM);
+      // Auto-generate matricule
+      onGenerateMatricule(schoolId, schoolName).then(m => {
+        setForm(f => ({ ...f, matricule: m }));
+      }).catch(() => {});
     }
-  }, [open, feeTypes]);
+  }, [open, feeTypes, schoolId, schoolName]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +48,7 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
 
   useEffect(() => { if (open) setForm(EMPTY_FORM); }, [open]);
 
-  const valid = form.firstName.trim() && form.lastName.trim() && form.className && form.parentName.trim() && form.parentPhone.trim() && Object.values(plans).some(Boolean);
+  const valid = form.firstName.trim() && form.lastName.trim() && form.className && form.parentName.trim() && form.parentPhone.trim() && form.sexe && Object.values(plans).some(Boolean);
   const selectedFeeTypes = feeTypes.filter(f => plans[f.feeType]);
 
   const totalForClass = (feeType: string) => form.className ? getFeeTotalForClass(feeConfig, feeType, form.className) : 0;
@@ -62,6 +70,8 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
       className: form.className.trim(),
       parentName: form.parentName.trim(),
       parentPhone: form.parentPhone.trim(),
+      matricule: form.matricule.trim(),
+      sexe: form.sexe,
       fees,
     });
   };
@@ -87,6 +97,16 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
           <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{CLASS_LIST.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
           <Field label="Nom du parent"><input value={form.parentName} onChange={e => setForm({ ...form, parentName: e.target.value })} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
           <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => setForm({ ...form, parentPhone: e.target.value })} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
+
+          <Field label="Matricule"><input value={form.matricule} onChange={e => setForm({ ...form, matricule: e.target.value })} placeholder="ECOLE-2026-001" className={inputCls} /></Field>
+
+          <div className="mt-3">
+            <label className="mb-1 block text-xs font-600 text-slate-500">Sexe</label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setForm({ ...form, sexe: 'M' })} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'M' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♂</span>Garçon</button>
+              <button type="button" onClick={() => setForm({ ...form, sexe: 'F' })} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'F' ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♀</span>Fille</button>
+            </div>
+          </div>
 
           <h3 className="mb-2 mt-5 text-xs font-700 uppercase tracking-wider text-slate-500">Frais souscrits</h3>
           <div className="space-y-2">

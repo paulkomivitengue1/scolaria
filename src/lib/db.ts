@@ -112,7 +112,7 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
   const supa = getSupabase();
   const { data: rows, error } = await supa
     .from('students')
-    .select('id, first_name, last_name, class_name, parent_name, parent_phone, fees_json')
+    .select('id, first_name, last_name, class_name, parent_name, parent_phone, fees_json, matricule, sexe')
     .eq('school_id', schoolId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -156,6 +156,8 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
       parentName: r.parent_name,
       parentPhone: r.parent_phone,
       fees,
+      matricule: r.matricule || '',
+      sexe: (r.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
     };
   });
 }
@@ -177,6 +179,8 @@ export async function addStudentDB(schoolId: string, student: Omit<Student, 'id'
       parent_phone: student.parentPhone,
       fees_json: feesJson,
       status: 'actif',
+      matricule: student.matricule || null,
+      sexe: student.sexe,
     })
     .select('id')
     .single();
@@ -196,6 +200,8 @@ export async function updateStudentDB(studentId: string, updates: {
   parentName: string;
   parentPhone: string;
   fees: FeeSubscription[];
+  matricule: string;
+  sexe: 'M' | 'F';
 }): Promise<void> {
   const feesJson = updates.fees.map(f => ({
     feeType: f.feeType,
@@ -211,9 +217,34 @@ export async function updateStudentDB(studentId: string, updates: {
       parent_name: updates.parentName,
       parent_phone: updates.parentPhone,
       fees_json: feesJson,
+      matricule: updates.matricule || null,
+      sexe: updates.sexe,
     })
     .eq('id', studentId);
   if (error) throw error;
+}
+
+export async function generateMatricule(schoolId: string, schoolName: string): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = (schoolName || 'ECOLE')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 5) || 'ECOLE';
+  const { data, error } = await getSupabase()
+    .from('students')
+    .select('matricule')
+    .eq('school_id', schoolId)
+    .like('matricule', `${prefix}-${year}-%`);
+  if (error) throw error;
+  let maxSeq = 0;
+  (data || []).forEach(r => {
+    if (r.matricule) {
+      const match = r.matricule.match(/-(\d+)$/);
+      if (match) maxSeq = Math.max(maxSeq, parseInt(match[1], 10));
+    }
+  });
+  const next = maxSeq + 1;
+  return `${prefix}-${year}-${String(next).padStart(3, '0')}`;
 }
 
 // ── Payments ────────────────────────────────────────────

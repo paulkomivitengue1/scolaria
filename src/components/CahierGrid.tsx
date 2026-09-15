@@ -94,6 +94,7 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
                             <div className="leading-tight">
                               <div className="font-600 text-ink">{s.firstName} {s.lastName}</div>
                               <div className="text-[11px] text-slate-400">{s.parentName}</div>
+                              {s.matricule && <div className="text-[10px] font-600 text-royal-400">{s.matricule}</div>}
                             </div>
                           </div>
                         </td>
@@ -130,6 +131,7 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
                       <div className="leading-tight">
                         <div className="font-600 text-ink">{s.firstName} {s.lastName}</div>
                         <div className="text-[11px] text-slate-400">{s.className} · {s.parentName}</div>
+                        {s.matricule && <div className="text-[10px] font-600 text-royal-400">{s.matricule}</div>}
                       </div>
                     </div>
                     <button onClick={() => onWhatsApp(s, activeFeeType)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-sm transition active:scale-95" style={{ background: '#25D366' }}><MessageCircle className="h-4.5 w-4.5" /></button>

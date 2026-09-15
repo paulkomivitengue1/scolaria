@@ -23,6 +23,8 @@ interface Props {
 interface ClassStat {
   className: string;
   total: number;
+  boys: number;
+  girls: number;
   paid: number;
   unpaid: number;
   outstanding: number;
@@ -46,16 +48,22 @@ export function ClassView({ students, feeTypes, tranches, onCellClick, onWhatsAp
       let outstanding = 0;
       let collected = 0;
       let expected = 0;
+      let boys = 0;
+      let girls = 0;
       for (const s of sts) {
         const out = studentOutstanding(s);
         if (out <= 0) paid++;
         else outstanding += out;
         collected += studentCollected(s);
         expected += studentExpected(s);
+        if (s.sexe === 'F') girls++;
+        else boys++;
       }
       return {
         className,
         total: sts.length,
+        boys,
+        girls,
         paid,
         unpaid: sts.length - paid,
         outstanding,
@@ -136,6 +144,10 @@ export function ClassView({ students, feeTypes, tranches, onCellClick, onWhatsAp
                 <div>
                   <h3 className="font-display text-base font-800 text-ink">{cs.className}</h3>
                   <p className="text-[11px] font-600 text-slate-400">{cs.total} élève{cs.total !== 1 ? 's' : ''}</p>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] font-600">
+                    <span className="inline-flex items-center gap-0.5 text-blue-600"><span className="text-xs leading-none">♂</span>{cs.boys}</span>
+                    <span className="inline-flex items-center gap-0.5 text-pink-600"><span className="text-xs leading-none">♀</span>{cs.girls}</span>
+                  </div>
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-slate-300 transition group-hover:translate-x-1 group-hover:text-royal-700" />
@@ -190,14 +202,16 @@ function ClassDetail({
   const ft = feeTypes.find(f => f.feeType === activeFeeType) ?? feeTypes[0];
 
   const totals = useMemo(() => {
-    let collected = 0, expected = 0, outstanding = 0, paid = 0;
+    let collected = 0, expected = 0, outstanding = 0, paid = 0, boys = 0, girls = 0;
     for (const s of students) {
       collected += studentCollected(s);
       expected += studentExpected(s);
       outstanding += studentOutstanding(s);
       if (studentOutstanding(s) <= 0) paid++;
+      if (s.sexe === 'F') girls++;
+      else boys++;
     }
-    return { collected, expected, outstanding, paid, count: students.length };
+    return { collected, expected, outstanding, paid, count: students.length, boys, girls };
   }, [students]);
 
   return (
@@ -217,6 +231,10 @@ function ClassDetail({
           </div>
           <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">{className}</h1>
           <p className="mt-1 text-sm text-slate-500">{totals.count} élève{totals.count !== 1 ? 's' : ''} · {totals.paid} à jour · {formatFCFA(totals.outstanding)} d'impayé</p>
+          <div className="mt-1 flex items-center gap-3 text-xs font-600">
+            <span className="inline-flex items-center gap-1 text-blue-600"><span className="text-sm leading-none">♂</span>{totals.boys} garçon{totals.boys !== 1 ? 's' : ''}</span>
+            <span className="inline-flex items-center gap-1 text-pink-600"><span className="text-sm leading-none">♀</span>{totals.girls} fille{totals.girls !== 1 ? 's' : ''}</span>
+          </div>
         </div>
       </div>
 
@@ -260,6 +278,7 @@ function ClassDetail({
                     <div className="leading-tight">
                       <div className="font-600 text-ink">{s.firstName} {s.lastName}</div>
                       <div className="text-[11px] text-slate-400">{s.parentName}</div>
+                      {s.matricule && <div className="text-[10px] font-600 text-royal-400">{s.matricule}</div>}
                     </div>
                   </div>
                   <button

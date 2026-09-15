@@ -7,7 +7,7 @@ interface Props {
   student: Student | null;
   open: boolean;
   onClose: () => void;
-  onSave: (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[] }) => Promise<void>;
+  onSave: (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[]; matricule: string; sexe: 'M' | 'F' }) => Promise<void>;
   feeTypes: FeeTypeDef[];
   feeConfig: FeeConfigRow[];
   tranches: TrancheDef[];
@@ -17,10 +17,10 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
   GraduationCap, FileText, PartyPopper, Utensils, Bus, Layers,
 };
 
-interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; }
+interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; matricule: string; sexe: 'M' | 'F'; }
 
 export function EditStudentModal({ student, open, onClose, onSave, feeTypes, feeConfig, tranches }: Props) {
-  const [form, setForm] = useState<FormState>({ firstName: '', lastName: '', className: '', parentName: '', parentPhone: '' });
+  const [form, setForm] = useState<FormState>({ firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', matricule: '', sexe: 'M' });
   const [plans, setPlans] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,6 +32,8 @@ export function EditStudentModal({ student, open, onClose, onSave, feeTypes, fee
         className: student.className,
         parentName: student.parentName,
         parentPhone: student.parentPhone,
+        matricule: student.matricule || '',
+        sexe: student.sexe || 'M',
       });
       const initialPlans: Record<string, boolean> = {};
       feeTypes.forEach(f => {
@@ -50,7 +52,7 @@ export function EditStudentModal({ student, open, onClose, onSave, feeTypes, fee
 
   if (!student) return null;
 
-  const valid = form.firstName.trim() && form.lastName.trim() && form.className && form.parentName.trim() && form.parentPhone.trim() && Object.values(plans).some(Boolean);
+  const valid = form.firstName.trim() && form.lastName.trim() && form.className && form.parentName.trim() && form.parentPhone.trim() && form.sexe && Object.values(plans).some(Boolean);
   const selectedFeeTypes = feeTypes.filter(f => plans[f.feeType]);
   const totalForClass = (feeType: string) => form.className ? getFeeTotalForClass(feeConfig, feeType, form.className) : 0;
   const grandTotal = selectedFeeTypes.reduce((sum, f) => sum + totalForClass(f.feeType), 0);
@@ -77,6 +79,8 @@ export function EditStudentModal({ student, open, onClose, onSave, feeTypes, fee
         className: form.className.trim(),
         parentName: form.parentName.trim(),
         parentPhone: form.parentPhone.trim(),
+        matricule: form.matricule.trim(),
+        sexe: form.sexe,
         fees,
       });
       onClose();
@@ -108,6 +112,16 @@ export function EditStudentModal({ student, open, onClose, onSave, feeTypes, fee
           <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{CLASS_LIST.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
           <Field label="Nom du parent"><input value={form.parentName} onChange={e => setForm({ ...form, parentName: e.target.value })} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
           <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => setForm({ ...form, parentPhone: e.target.value })} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
+
+          <Field label="Matricule"><input value={form.matricule} onChange={e => setForm({ ...form, matricule: e.target.value })} placeholder="ECOLE-2026-001" className={inputCls} /></Field>
+
+          <div className="mt-3">
+            <label className="mb-1 block text-xs font-600 text-slate-500">Sexe</label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setForm({ ...form, sexe: 'M' })} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'M' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♂</span>Garçon</button>
+              <button type="button" onClick={() => setForm({ ...form, sexe: 'F' })} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'F' ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♀</span>Fille</button>
+            </div>
+          </div>
 
           <h3 className="mb-2 mt-5 text-xs font-700 uppercase tracking-wider text-slate-500">Frais souscrits</h3>
           <div className="space-y-2">
