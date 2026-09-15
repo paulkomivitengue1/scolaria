@@ -189,6 +189,33 @@ export async function deleteStudentDB(studentId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function updateStudentDB(studentId: string, updates: {
+  firstName: string;
+  lastName: string;
+  className: string;
+  parentName: string;
+  parentPhone: string;
+  fees: FeeSubscription[];
+}): Promise<void> {
+  const feesJson = updates.fees.map(f => ({
+    feeType: f.feeType,
+    paymentMode: f.paymentMode,
+    totalExpected: f.totalExpected,
+  }));
+  const { error } = await getSupabase()
+    .from('students')
+    .update({
+      first_name: updates.firstName,
+      last_name: updates.lastName,
+      class_name: updates.className,
+      parent_name: updates.parentName,
+      parent_phone: updates.parentPhone,
+      fees_json: feesJson,
+    })
+    .eq('id', studentId);
+  if (error) throw error;
+}
+
 // ── Payments ────────────────────────────────────────────
 
 export async function recordPayment(

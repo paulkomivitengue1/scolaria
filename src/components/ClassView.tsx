@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   GraduationCap, Users, CheckCircle2, AlertCircle, ChevronRight,
-  ChevronLeft, Layers, MessageCircle,
+  ChevronLeft, Layers, MessageCircle, Pencil, Trash2,
 } from 'lucide-react';
 import type { Student, FeeTypeDef, TrancheDef } from '../types';
 import {
@@ -16,6 +16,8 @@ interface Props {
   tranches: TrancheDef[];
   onCellClick: (id: string, feeType: string, trancheKey: number | 'single') => void;
   onWhatsApp: (s: Student, feeType: string) => void;
+  onEdit: (s: Student) => void;
+  onDelete: (s: Student) => void;
 }
 
 interface ClassStat {
@@ -28,7 +30,7 @@ interface ClassStat {
   expected: number;
 }
 
-export function ClassView({ students, feeTypes, tranches, onCellClick, onWhatsApp }: Props) {
+export function ClassView({ students, feeTypes, tranches, onCellClick, onWhatsApp, onEdit, onDelete }: Props) {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [activeFeeType, setActiveFeeType] = useState<string>('scolarite');
 
@@ -79,6 +81,8 @@ export function ClassView({ students, feeTypes, tranches, onCellClick, onWhatsAp
         onFeeTypeChange={setActiveFeeType}
         onCellClick={onCellClick}
         onWhatsApp={onWhatsApp}
+        onEdit={onEdit}
+        onDelete={onDelete}
         onBack={() => setSelectedClass(null)}
       />
     );
@@ -169,7 +173,7 @@ export function ClassView({ students, feeTypes, tranches, onCellClick, onWhatsAp
 
 function ClassDetail({
   className, students, feeTypes, tranches, activeFeeType, onFeeTypeChange,
-  onCellClick, onWhatsApp, onBack,
+  onCellClick, onWhatsApp, onEdit, onDelete, onBack,
 }: {
   className: string;
   students: Student[];
@@ -179,6 +183,8 @@ function ClassDetail({
   onFeeTypeChange: (ft: string) => void;
   onCellClick: (id: string, feeType: string, trancheKey: number | 'single') => void;
   onWhatsApp: (s: Student, feeType: string) => void;
+  onEdit: (s: Student) => void;
+  onDelete: (s: Student) => void;
   onBack: () => void;
 }) {
   const ft = feeTypes.find(f => f.feeType === activeFeeType) ?? feeTypes[0];
@@ -263,6 +269,10 @@ function ClassDetail({
                   >
                     <MessageCircle className="h-4.5 w-4.5" />
                   </button>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button onClick={() => onEdit(s)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-xs font-600 text-slate-600 transition hover:bg-royal-50 hover:text-royal-700 active:scale-95"><Pencil className="h-3.5 w-3.5" />Modifier</button>
+                  <button onClick={() => onDelete(s)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-xs font-600 text-slate-600 transition hover:bg-red-50 hover:text-red-600 active:scale-95"><Trash2 className="h-3.5 w-3.5" />Supprimer</button>
                 </div>
                 <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                   <span className="text-[11px] font-600 uppercase tracking-wide text-slate-500">Solde dû (total)</span>

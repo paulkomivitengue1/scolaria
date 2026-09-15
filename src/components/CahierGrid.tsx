@@ -1,4 +1,4 @@
-import { MessageCircle, ChevronRight, Inbox, FileText, PartyPopper, Utensils, Bus, GraduationCap, Layers } from 'lucide-react';
+import { MessageCircle, ChevronRight, Inbox, FileText, PartyPopper, Utensils, Bus, GraduationCap, Layers, Pencil, Trash2 } from 'lucide-react';
 import type { Student, FeeTypeDef, TrancheDef, FeeSubscription } from '../types';
 import { formatFCFA, studentOutstanding, cellStatus, getFeeAccent, FEE_TYPE_ICONS } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -12,13 +12,15 @@ interface GridProps {
   onCellClick: (id: string, feeType: string, trancheKey: number | 'single') => void;
   onWhatsApp: (s: Student, feeType: string) => void;
   onAddClick: () => void;
+  onEdit: (s: Student) => void;
+  onDelete: (s: Student) => void;
 }
 
 const FEE_ICONS: Record<string, typeof GraduationCap> = {
   GraduationCap, FileText, PartyPopper, Utensils, Bus, Layers,
 };
 
-export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeTypeChange, onCellClick, onWhatsApp, onAddClick }: GridProps) {
+export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeTypeChange, onCellClick, onWhatsApp, onAddClick, onEdit, onDelete }: GridProps) {
   const ft = feeTypes.find(f => f.feeType === activeFeeType) ?? feeTypes[0];
 
   return (
@@ -70,6 +72,7 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
     )}
                     <th rowSpan={2} className="px-4 py-3 text-right align-bottom text-xs font-700 uppercase tracking-wider text-slate-500">Solde dû</th>
                     <th rowSpan={2} className="px-3 py-3 align-bottom text-xs font-700 uppercase tracking-wider text-slate-500">Reçu</th>
+                    <th rowSpan={2} className="px-3 py-3 align-bottom text-xs font-700 uppercase tracking-wider text-slate-500">Actions</th>
                   </tr>
                   <tr className="border-b border-slate-200 bg-slate-50">
                     {ft?.paymentMode === 'tranche' && tranches.map(t => (
@@ -98,6 +101,12 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
                         {fee ? cells(fee, ft, tranches, expectedPerTranche, s.id, onCellClick) : empties(ft, tranches)}
                         <td className="px-4 py-3 text-right"><span className={`font-display text-sm font-700 ${out > 0 ? 'text-gold-600' : 'text-emerald-600'}`}>{out > 0 ? formatFCFA(out) : 'Soldé'}</span></td>
                         <td className="px-3 py-3 text-center"><button onClick={() => onWhatsApp(s, activeFeeType)} className="inline-grid h-9 w-9 place-items-center rounded-xl text-white shadow-sm transition hover:scale-105 active:scale-95" style={{ background: '#25D366' }} aria-label="Reçu WhatsApp"><MessageCircle className="h-4.5 w-4.5" /></button></td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <button onClick={() => onEdit(s)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95" aria-label="Modifier"><Pencil className="h-4 w-4" /></button>
+                            <button onClick={() => onDelete(s)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 active:scale-95" aria-label="Supprimer"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -124,6 +133,10 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
                       </div>
                     </div>
                     <button onClick={() => onWhatsApp(s, activeFeeType)} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-sm transition active:scale-95" style={{ background: '#25D366' }}><MessageCircle className="h-4.5 w-4.5" /></button>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button onClick={() => onEdit(s)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-xs font-600 text-slate-600 transition hover:bg-royal-50 hover:text-royal-700 active:scale-95"><Pencil className="h-3.5 w-3.5" />Modifier</button>
+                    <button onClick={() => onDelete(s)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-xs font-600 text-slate-600 transition hover:bg-red-50 hover:text-red-600 active:scale-95"><Trash2 className="h-3.5 w-3.5" />Supprimer</button>
                   </div>
                   <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                     <span className="text-[11px] font-600 uppercase tracking-wide text-slate-500">Solde dû (total)</span>

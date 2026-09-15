@@ -12,6 +12,7 @@ import {
   loadGradePeriods, saveGradePeriods,
   loadExpenses, addExpenseDB, deleteExpenseDB,
   updateSchoolName, yearEndStockReset,
+  updateStudentDB, deleteStudentDB,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
@@ -22,6 +23,8 @@ import { CahierGrid } from './components/CahierGrid';
 import { PaymentModal } from './components/PaymentModal';
 import { WhatsAppReceipt } from './components/WhatsAppReceipt';
 import { AddStudentModal } from './components/AddStudentModal';
+import { EditStudentModal } from './components/EditStudentModal';
+import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
@@ -29,7 +32,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { ClassView } from './components/ClassView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
-import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView } from './types';
+import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
@@ -72,6 +75,11 @@ export default function App() {
   const [trancheReceiptAmount, setTrancheReceiptAmount] = useState(0);
 
   const [addOpen, setAddOpen] = useState(false);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editStudentId, setEditStudentId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
 
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -162,6 +170,8 @@ export default function App() {
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
   const trancheReceiptStudent = students.find(s => s.id === trancheReceiptStudentId) ?? null;
+  const editStudent = students.find(s => s.id === editStudentId) ?? null;
+  const deleteStudent = students.find(s => s.id === deleteStudentId) ?? null;
 
   // ── Handlers ──────────────────────────────────────────
   const openCell = (id: string, feeType: string, trancheKey: number | 'single') => {
@@ -211,6 +221,44 @@ export default function App() {
       setAddOpen(false);
     } catch (err: any) {
       console.error('Failed to add student:', err);
+    }
+  };
+
+  const openEdit = (s: Student) => {
+    setEditStudentId(s.id);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[] }) => {
+    try {
+      await updateStudentDB(id, updates);
+      setStudents(prev => prev.map(s => s.id === id ? {
+        ...s,
+        firstName: updates.firstName,
+        lastName: updates.lastName,
+        className: updates.className,
+        parentName: updates.parentName,
+        parentPhone: updates.parentPhone,
+        fees: updates.fees,
+      } : s));
+    } catch (err: any) {
+      setPayError(err.message || 'Erreur lors de la modification de l\'élève.');
+      throw err;
+    }
+  };
+
+  const openDelete = (s: Student) => {
+    setDeleteStudentId(s.id);
+    setDeleteOpen(true);
+  };
+
+  const handleDeleteConfirm = async (id: string) => {
+    try {
+      await deleteStudentDB(id);
+      setStudents(prev => prev.filter(s => s.id !== id));
+    } catch (err: any) {
+      setPayError(err.message || 'Erreur lors de la suppression de l\'élève.');
+      throw err;
     }
   };
 
@@ -433,6 +481,8 @@ export default function App() {
                     onCellClick={openCell}
                     onWhatsApp={openReceipt}
                     onAddClick={() => setAddOpen(true)}
+                    onEdit={openEdit}
+                    onDelete={openDelete}
                   />
                 </div>
               </>)}
@@ -444,6 +494,8 @@ export default function App() {
                   tranches={feeConfig.tranches}
                   onCellClick={openCell}
                   onWhatsApp={openReceipt}
+                  onEdit={openEdit}
+                  onDelete={openDelete}
                 />
               )}
 
@@ -518,6 +570,21 @@ export default function App() {
         feeTypes={feeConfig.feeTypes}
         feeConfig={feeConfig.feeConfig}
         tranches={feeConfig.tranches}
+      />
+      <EditStudentModal
+        student={editStudent}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSave={handleEditSave}
+        feeTypes={feeConfig.feeTypes}
+        feeConfig={feeConfig.feeConfig}
+        tranches={feeConfig.tranches}
+      />
+      <DeleteConfirmModal
+        student={deleteStudent}
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );
