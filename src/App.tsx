@@ -12,6 +12,8 @@ import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   loadExpenses, addExpenseDB, deleteExpenseDB,
   updateSchoolName, yearEndStockReset,
   updateStudentDB, deleteStudentDB,
+  loadTeachers, addTeacherDB, updateTeacherDB, deleteTeacherDB,
+  loadSalaryPayments, paySalaryDB, unpaySalaryDB,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
@@ -31,7 +33,8 @@ import { AdminPanel } from './components/AdminPanel';
 import { ClassView } from './components/ClassView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
-import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription } from './types';
+import { TeachersView } from './components/TeachersView';
+import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription, Teacher, SalaryPayment } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
@@ -51,6 +54,8 @@ export default function App() {
   const [uniforms, setUniforms] = useState<UniformStockItem[]>([]);
   const [books, setBooks] = useState<BookStockItem[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [salaryPayments, setSalaryPayments] = useState<SalaryPayment[]>([]);
   const [feeConfig, setFeeConfig] = useState<SchoolFeeConfig>(EMPTY_FEE_CONFIG);
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
@@ -95,6 +100,8 @@ export default function App() {
         loadBookStock(schoolId),
         loadGradePeriods(schoolId),
         loadExpenses(schoolId),
+        loadTeachers(schoolId),
+        loadSalaryPayments(schoolId),
       ]);
 
       if (results[0].status === 'fulfilled') setStudents(results[0].value);
@@ -111,6 +118,12 @@ export default function App() {
 
       if (results[4].status === 'fulfilled') setExpenses(results[4].value);
       else console.error('Failed to load expenses:', results[4].reason);
+
+      if (results[5].status === 'fulfilled') setTeachers(results[5].value);
+      else console.error('Failed to load teachers:', results[5].reason);
+
+      if (results[6].status === 'fulfilled') setSalaryPayments(results[6].value);
+      else console.error('Failed to load salary payments:', results[6].reason);
     } catch (err) {
       console.error('Failed to load school data:', err);
     } finally {
@@ -126,6 +139,8 @@ export default function App() {
       setUniforms([]);
       setBooks([]);
       setExpenses([]);
+      setTeachers([]);
+      setSalaryPayments([]);
       setDataLoading(false);
     }
   }, [user, profile?.schoolId, loadAllData]);
@@ -165,6 +180,7 @@ export default function App() {
   }, [students, stockSales]);
 
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
+  const totalSalaryPaid = useMemo(() => salaryPayments.reduce((s, p) => s + p.amount, 0), [salaryPayments]);
 
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
@@ -311,6 +327,55 @@ export default function App() {
       setExpenses(prev => prev.filter(e => e.id !== id));
     } catch (err) {
       console.error('Failed to delete expense:', err);
+    }
+  };
+
+  // ── Teacher handlers ──────────────────────────────────
+  const handleAddTeacher = async (t: Omit<Teacher, 'id'>) => {
+    if (!profile?.schoolId) return;
+    try {
+      const dbId = await addTeacherDB(profile.schoolId, t);
+      setTeachers(prev => [{ ...t, id: dbId }, ...prev]);
+    } catch (err) {
+      console.error('Failed to add teacher:', err);
+    }
+  };
+
+  const handleUpdateTeacher = async (id: string, updates: { firstName: string; lastName: string; phone: string; subject: string; monthlySalary: number }) => {
+    try {
+      await updateTeacherDB(id, updates);
+      setTeachers(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    } catch (err) {
+      console.error('Failed to update teacher:', err);
+    }
+  };
+
+  const handleDeleteTeacher = async (id: string) => {
+    try {
+      await deleteTeacherDB(id);
+      setTeachers(prev => prev.filter(t => t.id !== id));
+      setSalaryPayments(prev => prev.filter(p => p.teacherId !== id));
+    } catch (err) {
+      console.error('Failed to delete teacher:', err);
+    }
+  };
+
+  const handlePaySalary = async (teacherId: string, month: string, amount: number) => {
+    if (!profile?.schoolId) return;
+    try {
+      const dbId = await paySalaryDB(profile.schoolId, teacherId, month, amount);
+      setSalaryPayments(prev => [{ id: dbId, teacherId, month, amount, paidAt: new Date().toISOString() }, ...prev]);
+    } catch (err) {
+      console.error('Failed to pay salary:', err);
+    }
+  };
+
+  const handleUnpaySalary = async (paymentId: string) => {
+    try {
+      await unpaySalaryDB(paymentId);
+      setSalaryPayments(prev => prev.filter(p => p.id !== paymentId));
+    } catch (err) {
+      console.error('Failed to unpay salary:', err);
     }
   };
 
@@ -505,7 +570,19 @@ export default function App() {
               )}
 
               {view === 'depenses' && (
-                <ExpensesView expenses={expenses} onAdd={handleAddExpense} onDelete={handleDeleteExpense} />
+                <ExpensesView expenses={expenses} onAdd={handleAddExpense} onDelete={handleDeleteExpense} totalSalaryPaid={totalSalaryPaid} />
+              )}
+
+              {view === 'enseignants' && (
+                <TeachersView
+                  teachers={teachers}
+                  salaryPayments={salaryPayments}
+                  onAdd={handleAddTeacher}
+                  onUpdate={handleUpdateTeacher}
+                  onDelete={handleDeleteTeacher}
+                  onPaySalary={handlePaySalary}
+                  onUnpaySalary={handleUnpaySalary}
+                />
               )}
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}

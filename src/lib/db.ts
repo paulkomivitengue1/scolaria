@@ -15,6 +15,8 @@ import type {
   GradePeriod,
   ReportCard,
   GradeRow,
+  Teacher,
+  SalaryPayment,
 } from '../types';
 import { CLASS_LIST, DEFAULT_FEE_TYPES } from '../types';
 
@@ -615,5 +617,107 @@ export async function addExpenseDB(
 
 export async function deleteExpenseDB(expenseId: string): Promise<void> {
   const { error } = await getSupabase().from('expenses').delete().eq('id', expenseId);
+  if (error) throw error;
+}
+
+// ── Teachers & Salary Payments ─────────────────────────
+
+export async function loadTeachers(schoolId: string): Promise<Teacher[]> {
+  const { data, error } = await getSupabase()
+    .from('teachers')
+    .select('id, first_name, last_name, phone, subject, monthly_salary')
+    .eq('school_id', schoolId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(r => ({
+    id: r.id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    phone: r.phone || '',
+    subject: r.subject || '',
+    monthlySalary: r.monthly_salary ?? 0,
+  }));
+}
+
+export async function addTeacherDB(
+  schoolId: string,
+  teacher: Omit<Teacher, 'id'>,
+): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('teachers')
+    .insert({
+      school_id: schoolId,
+      first_name: teacher.firstName,
+      last_name: teacher.lastName,
+      phone: teacher.phone,
+      subject: teacher.subject,
+      monthly_salary: teacher.monthlySalary,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function updateTeacherDB(
+  teacherId: string,
+  updates: { firstName: string; lastName: string; phone: string; subject: string; monthlySalary: number },
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('teachers')
+    .update({
+      first_name: updates.firstName,
+      last_name: updates.lastName,
+      phone: updates.phone,
+      subject: updates.subject,
+      monthly_salary: updates.monthlySalary,
+    })
+    .eq('id', teacherId);
+  if (error) throw error;
+}
+
+export async function deleteTeacherDB(teacherId: string): Promise<void> {
+  const { error } = await getSupabase().from('teachers').delete().eq('id', teacherId);
+  if (error) throw error;
+}
+
+export async function loadSalaryPayments(schoolId: string): Promise<SalaryPayment[]> {
+  const { data, error } = await getSupabase()
+    .from('salary_payments')
+    .select('id, teacher_id, month, amount, paid_at')
+    .eq('school_id', schoolId)
+    .order('paid_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(r => ({
+    id: r.id,
+    teacherId: r.teacher_id,
+    month: r.month,
+    amount: r.amount,
+    paidAt: r.paid_at,
+  }));
+}
+
+export async function paySalaryDB(
+  schoolId: string,
+  teacherId: string,
+  month: string,
+  amount: number,
+): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('salary_payments')
+    .insert({
+      school_id: schoolId,
+      teacher_id: teacherId,
+      month,
+      amount,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function unpaySalaryDB(paymentId: string): Promise<void> {
+  const { error } = await getSupabase().from('salary_payments').delete().eq('id', paymentId);
   if (error) throw error;
 }

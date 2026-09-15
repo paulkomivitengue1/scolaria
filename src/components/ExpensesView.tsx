@@ -7,15 +7,17 @@ interface Props {
   expenses: Expense[];
   onAdd: (expense: Omit<Expense, 'id'>) => void;
   onDelete: (id: string) => void;
+  totalSalaryPaid: number;
 }
 
-export function ExpensesView({ expenses, onAdd, onDelete }: Props) {
+export function ExpensesView({ expenses, onAdd, onDelete, totalSalaryPaid }: Props) {
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('autre');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const grandTotal = total + totalSalaryPaid;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,9 +40,19 @@ export function ExpensesView({ expenses, onAdd, onDelete }: Props) {
         <p className="mt-1 text-sm text-slate-500">Suivez les sorties d'argent de l'école.</p>
       </div>
 
-      <div className="mb-6 rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">
-        <p className="text-xs font-700 uppercase tracking-wider text-slate-500">Total Dépenses</p>
-        <p className="mt-1.5 font-display text-2xl font-800 tracking-tight text-ink">{formatFCFA(total)}</p>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">
+          <p className="text-xs font-700 uppercase tracking-wider text-slate-500">Dépenses manuelles</p>
+          <p className="mt-1.5 font-display text-2xl font-800 tracking-tight text-ink">{formatFCFA(total)}</p>
+        </div>
+        <div className="rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">
+          <p className="text-xs font-700 uppercase tracking-wider text-slate-500">Salaires payés</p>
+          <p className="mt-1.5 font-display text-2xl font-800 tracking-tight text-ink">{formatFCFA(totalSalaryPaid)}</p>
+        </div>
+        <div className="rounded-2.5xl border border-slate-200 bg-gold-50 p-5 shadow-card">
+          <p className="text-xs font-700 uppercase tracking-wider text-gold-600">Total Dépenses</p>
+          <p className="mt-1.5 font-display text-2xl font-800 tracking-tight text-ink">{formatFCFA(grandTotal)}</p>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="mb-6 rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">

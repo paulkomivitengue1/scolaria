@@ -1,4 +1,4 @@
-export type AppView = 'dashboard' | 'cahier' | 'classes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'parametres';
+export type AppView = 'dashboard' | 'cahier' | 'classes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'enseignants' | 'parametres';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 
@@ -317,3 +317,34 @@ export interface Expense {
   category: ExpenseCategory;
   expenseDate: string; // format ISO 'YYYY-MM-DD'
   }
+
+/* ---- Enseignants & Salaires ---- */
+export interface Teacher {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  subject: string;
+  monthlySalary: number;
+}
+
+export interface SalaryPayment {
+  id: string;
+  teacherId: string;
+  month: string; // 'YYYY-MM'
+  amount: number;
+  paidAt: string;
+}
+
+export const SCHOOL_MONTHS = [
+  '10', '11', '12', '01', '02', '03', '04', '05', '06',
+];
+
+export const monthLabel = (yyyymm: string): string => {
+  const [, m] = yyyymm.split('-');
+  const names: Record<string, string> = {
+    '01': 'Janvier', '02': 'Février', '03': 'Mars', '04': 'Avril',
+    '05': 'Mai', '06': 'Juin', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre',
+  };
+  return names[m] ?? m;
+};

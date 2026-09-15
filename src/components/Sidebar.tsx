@@ -45,6 +45,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { view: 'cahier', label: 'Paiements', icon: Wallet },
       { view: 'impayes', label: 'Impayés par tranche', icon: AlertCircle },
+      { view: 'enseignants', label: 'Enseignants & Salaires', icon: Users },
       { view: 'depenses', label: 'Dépenses', icon: Receipt },
       { view: 'stocks', label: 'Stocks', icon: Boxes },
     ],
