@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Camera, CreditCard, Printer, Upload, Users, UserRound, ImagePlus } from 'lucide-react';
+import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
 
 type Mode = 'individual' | 'class';
