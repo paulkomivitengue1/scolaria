@@ -3,8 +3,6 @@ import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-re
 import type { Student } from '../types';
 
 type Mode = 'individual' | 'class';
-type CropTarget = { kind: 'logo' } | { kind: 'student'; studentId: string };
-type CropDraft = { data: string; target: CropTarget };
 
 export function StudentCardsView({ students, schoolName }: { students: Student[]; schoolName: string }) {
   const [mode, setMode] = useState<Mode>('class');
@@ -12,10 +10,6 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
   const [studentId, setStudentId] = useState('');
   const [schoolLogo, setSchoolLogo] = useState('');
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const [cropDraft, setCropDraft] = useState<CropDraft | null>(null);
-  const [cropZoom, setCropZoom] = useState(1);
-  const [cropX, setCropX] = useState(50);
-  const [cropY, setCropY] = useState(50);
   const [accent, setAccent] = useState('#273c75');
   const logoGalleryRef = useRef<HTMLInputElement>(null);
   const logoCameraRef = useRef<HTMLInputElement>(null);
@@ -99,32 +93,6 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
     }
   };
 
-  const confirmCrop = () => {
-    if (!cropDraft) return;
-    const draft = cropDraft;
-    const image = new Image();
-    image.onload = () => {
-      const ratio = draft.target.kind === 'logo' ? 1 : 4 / 5;
-      const baseWidth = Math.min(image.naturalWidth, image.naturalHeight * ratio);
-      const cropWidth = baseWidth / cropZoom;
-      const cropHeight = cropWidth / ratio;
-      const sx = Math.max(0, image.naturalWidth - cropWidth) * (cropX / 100);
-      const sy = Math.max(0, image.naturalHeight - cropHeight) * (cropY / 100);
-      const canvas = document.createElement('canvas');
-      canvas.width = 400;
-      canvas.height = draft.target.kind === 'logo' ? 400 : 500;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(image, sx, sy, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
-      const cropped = canvas.toDataURL('image/jpeg', 0.86);
-      if (draft.target.kind === 'logo') setSchoolLogo(cropped);
-      else setPhotos(prev => ({ ...prev, [draft.target.studentId]: cropped }));
-      setCropDraft(null);
-    };
-    image.onerror = () => window.alert('Impossible de cadrer cette image. Choisissez-en une autre.');
-    image.src = draft.data;
-  };
-
   const printCards = () => {
     if (!selectedStudents.length) {
       window.alert(mode === 'individual' ? 'Sélectionnez un élève.' : 'Sélectionnez une classe.');
@@ -149,28 +117,6 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
           .student-cards-print-empty { display: none !important; }
         }
       `}</style>
-
-      {cropDraft && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="Cadrer l'image">
-          <div className="my-auto w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div><h2 className="text-lg font-800 text-slate-900">Cadrer {cropDraft.target.kind === 'logo' ? 'le logo' : 'la photo de l’élève'}</h2><p className="mt-1 text-sm text-slate-500">Ajustez le zoom et la position avant de valider.</p></div>
-              <button type="button" onClick={() => setCropDraft(null)} className="rounded-lg px-3 py-2 text-sm text-slate-500">Annuler</button>
-            </div>
-            <div className="mx-auto flex h-64 w-full items-center justify-center overflow-hidden rounded-xl bg-slate-100 p-3">
-              <div className={cropDraft.target.kind === 'logo' ? 'h-52 w-52 overflow-hidden rounded-lg border-2 border-white shadow' : 'h-56 w-44 overflow-hidden rounded-lg border-2 border-white shadow'}>
-                <img src={cropDraft.data} alt="Aperçu à cadrer" className="h-full w-full object-cover" style={{ objectPosition: cropX + '% ' + cropY + '%', transform: 'scale(' + cropZoom + ')', transformOrigin: cropX + '% ' + cropY + '%' }} />
-              </div>
-            </div>
-            <div className="mt-4 space-y-4">
-              <label className="block text-sm font-600 text-slate-700">Zoom<input type="range" min="1" max="2.5" step="0.05" value={cropZoom} onChange={e => setCropZoom(Number(e.target.value))} className="mt-2 w-full" /></label>
-              <label className="block text-sm font-600 text-slate-700">Déplacer horizontalement<input type="range" min="0" max="100" value={cropX} onChange={e => setCropX(Number(e.target.value))} className="mt-2 w-full" /></label>
-              <label className="block text-sm font-600 text-slate-700">Déplacer verticalement<input type="range" min="0" max="100" value={cropY} onChange={e => setCropY(Number(e.target.value))} className="mt-2 w-full" /></label>
-            </div>
-            <button type="button" onClick={confirmCrop} className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-royal-800 px-4 py-3 font-700 text-white">Valider le cadrage</button>
-          </div>
-        </div>
-      )}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -226,7 +172,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                     <button type="button" onClick={() => logoGalleryRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> Galerie / fichiers</button>
                     <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
                   </div>
-                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setCropZoom(1); setCropX(50); setCropY(50); setCropDraft({ data, target: { kind: 'logo' } }); }); input.value = ''; }} />
+                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
                   <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setCropZoom(1); setCropX(50); setCropY(50); setCropDraft({ data, target: { kind: 'logo' } }); }); input.value = ''; }} />
                 </div>
               </div>
@@ -285,7 +231,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                     <button type="button" onClick={() => photoInputRefs.current['gallery-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-3.5 w-3.5" /> Galerie / fichiers</button>
                     <button type="button" onClick={() => photoInputRefs.current['camera-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> Prendre une photo</button>
                   </div>
-                  <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setCropZoom(1); setCropX(50); setCropY(50); setCropDraft({ data, target: { kind: 'student', studentId: s.id } }); }); input.value = ''; }} />
+                  <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
                   <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setCropZoom(1); setCropX(50); setCropY(50); setCropDraft({ data, target: { kind: 'student', studentId: s.id } }); }); input.value = ''; }} />
                 </div>
               </div>
