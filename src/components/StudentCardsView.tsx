@@ -43,6 +43,9 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
       window.alert(mode === 'individual' ? 'Sélectionnez un élève.' : 'Sélectionnez une classe.');
       return;
     }
+    const previousTitle = document.title;
+    document.title = schoolName?.trim() || 'Carte scolaire';
+    window.addEventListener('afterprint', () => { document.title = previousTitle; }, { once: true });
     window.print();
   };
 
