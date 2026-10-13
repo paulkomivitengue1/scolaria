@@ -40,7 +40,6 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
     } catch { window.alert('Impossible de recadrer cette image. Choisissez une autre image.'); }
     finally { setBusy(false); }
   };
-  const baseScale = Math.max(frameWidth / (320), frameHeight / (320 / aspectRatio));
   const [naturalSize, setNaturalSize] = useState({ width: 320, height: 320 / aspectRatio });
   useEffect(() => {
     const img = new Image(); img.onload = () => setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight }); img.src = image;
