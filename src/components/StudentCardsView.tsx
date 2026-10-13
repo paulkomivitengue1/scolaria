@@ -101,9 +101,10 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
 
   const confirmCrop = () => {
     if (!cropDraft) return;
+    const draft = cropDraft;
     const image = new Image();
     image.onload = () => {
-      const ratio = cropDraft.target.kind === 'logo' ? 1 : 4 / 5;
+      const ratio = draft.target.kind === 'logo' ? 1 : 4 / 5;
       const baseWidth = Math.min(image.naturalWidth, image.naturalHeight * ratio);
       const baseHeight = baseWidth / ratio;
       const cropWidth = baseWidth / cropZoom;
@@ -112,17 +113,17 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
       const sy = Math.max(0, image.naturalHeight - cropHeight) * (cropY / 100);
       const canvas = document.createElement('canvas');
       canvas.width = 400;
-      canvas.height = cropDraft.target.kind === 'logo' ? 400 : 500;
+      canvas.height = draft.target.kind === 'logo' ? 400 : 500;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.drawImage(image, sx, sy, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
       const cropped = canvas.toDataURL('image/jpeg', 0.86);
-      if (cropDraft.target.kind === 'logo') setSchoolLogo(cropped);
-      else setPhotos(prev => ({ ...prev, [cropDraft.target.kind === 'student' ? cropDraft.target.studentId : '']: cropped }));
+      if (draft.target.kind === 'logo') setSchoolLogo(cropped);
+      else setPhotos(prev => ({ ...prev, [draft.target.studentId]: cropped }));
       setCropDraft(null);
     };
     image.onerror = () => window.alert('Impossible de cadrer cette image. Choisissez-en une autre.');
-    image.src = cropDraft.data;
+    image.src = draft.data;
   };
 
   const printCards = () => {
