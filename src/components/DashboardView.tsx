@@ -27,16 +27,24 @@ interface DashCard {
   actionLabel: string;
 }
 
+function getAcademicYearLabel(date = new Date()): string {
+  const year = date.getFullYear();
+  // In Mali, the school year generally starts around September/October.
+  const startYear = date.getMonth() >= 8 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
 export function DashboardView({ students, totalCollected, outstanding, recoveryRate, stockSales, totalExpenses, onNavigate }: Props) {
   const totalExpected = students.reduce((s, st) => s + studentExpected(st), 0);
   const totalCollectedAll = totalCollected;
   const classes = new Set(students.map(s => s.className)).size;
+  const academicYear = getAcademicYearLabel();
 
   const cards: DashCard[] = [
     {
       label: 'Total Élèves',
       value: String(students.length),
-      sub: `${classes} classe${classes !== 1 ? 's' : ''} · Année 2025-2026`,
+      sub: `${classes} classe${classes !== 1 ? 's' : ''} · Année ${academicYear}`,
       icon: Users,
       iconBg: 'bg-royal-50',
       iconColor: 'text-royal-700',
@@ -105,13 +113,13 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
     },
     {
       label: 'Bulletins',
-      value: String(students.length),
-      sub: 'Élèves éligibles aux bulletins',
+      value: 'Ouvrir',
+      sub: 'Saisir, consulter et imprimer les bulletins',
       icon: ClipboardList,
       iconBg: 'bg-indigo-50',
       iconColor: 'text-indigo-700',
       target: 'bulletins',
-      actionLabel: 'Saisir les bulletins',
+      actionLabel: 'Gérer les bulletins',
     },
     {
       label: 'Paramètres',
