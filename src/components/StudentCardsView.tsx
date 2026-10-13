@@ -1,14 +1,15 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
 
 type Mode = 'individual' | 'class';
 
-export function StudentCardsView({ students, schoolName }: { students: Student[]; schoolName: string }) {
+export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLogoChange }: { students: Student[]; schoolName: string; schoolLogo: string; onSchoolLogoChange: (logoData: string) => Promise<void> }) {
   const [mode, setMode] = useState<Mode>('class');
   const [className, setClassName] = useState('');
   const [studentId, setStudentId] = useState('');
-  const [schoolLogo, setSchoolLogo] = useState('');
+  const [localSchoolLogo, setLocalSchoolLogo] = useState(schoolLogo);
+  useEffect(() => { setLocalSchoolLogo(schoolLogo); }, [schoolLogo]);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [accent, setAccent] = useState('#273c75');
   const logoGalleryRef = useRef<HTMLInputElement>(null);
@@ -172,8 +173,8 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                     <button type="button" onClick={() => logoGalleryRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> Galerie / fichiers</button>
                     <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
                   </div>
-                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
-                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
+                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setLocalSchoolLogo(data); void onSchoolLogoChange(data).catch(() => window.alert('Le logo n’a pas pu être enregistré. Gérez-le dans Paramètres.')); }); input.value = ''; }} />
+                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setLocalSchoolLogo(data); void onSchoolLogoChange(data).catch(() => window.alert('Le logo n’a pas pu être enregistré. Gérez-le dans Paramètres.')); }); input.value = ''; }} />
                 </div>
               </div>
               <div>
@@ -181,7 +182,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                 <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 px-3"><input aria-label="Couleur de la carte" type="color" value={accent} onChange={e => setAccent(e.target.value)} className="h-7 w-10 cursor-pointer border-0 bg-transparent" /><span className="text-sm text-slate-600">{accent.toUpperCase()}</span></div>
               </div>
             </div>
-            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">Choisissez une image dans la galerie ou prenez une photo. Les images sont réduites automatiquement pour faciliter l’utilisation sur téléphone. Elles restent temporaires et ne sont pas enregistrées dans la fiche élève.</p>
+            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">Le logo est enregistré automatiquement pour votre école. Les photos des élèves restent pour le moment temporaires pendant la session.</p>
           </section>
 
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -200,7 +201,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                   <div className="absolute inset-x-0 top-0 h-16 opacity-10" style={{ background: accent }} />
                   <div className="relative flex min-w-0 flex-1 flex-col p-3">
                     <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                      {schoolLogo ? <img src={schoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
+                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: accent }}>{schoolName || 'Établissement scolaire'}</p>
                         <p className="text-[8px] font-700 uppercase tracking-widest text-slate-500">CARTE SCOLAIRE</p>
