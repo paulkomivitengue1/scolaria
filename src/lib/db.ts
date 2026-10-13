@@ -416,6 +416,17 @@ export async function updateSchoolName(schoolId: string, name: string): Promise<
   if (error) throw error;
 }
 
+export async function loadSchoolLogo(schoolId: string): Promise<string> {
+  const { data, error } = await getSupabase().from('schools').select('logo_data').eq('id', schoolId).single();
+  if (error) throw error;
+  return typeof data.logo_data === 'string' ? data.logo_data : '';
+}
+
+export async function saveSchoolLogo(schoolId: string, logoData: string): Promise<void> {
+  const { error } = await getSupabase().from('schools').update({ logo_data: logoData || null }).eq('id', schoolId);
+  if (error) throw error;
+}
+
 // ── Year-end stock reset ────────────────────────────────
 
 export async function yearEndStockReset(
