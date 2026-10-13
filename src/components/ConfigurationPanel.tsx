@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X, ClipboardList, Upload, Image as ImageIcon } from 'lucide-react';
 import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem, GradePeriod } from '../types';
+import { ImageCropper } from './ImageCropper';
 import { CLASS_LIST, formatFCFA, getFeeTotalForClass, uniformRemaining, bookRemaining, FEE_TYPE_ICONS, getFeeAccent } from '../types';
 
 interface ConfigPanelProps {
@@ -36,6 +37,8 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
   const [logoStatus, setLogoStatus] = useState<SaveState>('idle');
   const [logoPreview, setLogoPreview] = useState(schoolLogo);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoCameraInputRef = useRef<HTMLInputElement>(null);
+  const [logoCropDraft, setLogoCropDraft] = useState<string | null>(null);
   const [activeFeeType, setActiveFeeType] = useState<string>(feeConfig.feeTypes[0]?.feeType ?? 'scolarite');
   const [newFeeName, setNewFeeName] = useState('');
   const [showAddFee, setShowAddFee] = useState(false);
@@ -233,7 +236,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
         };
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); }; img.src = url;
       });
-      await onSchoolLogoChange(data); setLogoPreview(data); setLogoStatus('saved'); setTimeout(() => setLogoStatus('idle'), 2200);
+      setLogoCropDraft(data); setLogoStatus('idle');
     } catch (err) { console.error('Failed to save school logo:', err); setLogoStatus('idle'); window.alert('Le logo n’a pas pu être enregistré. Réessayez.'); }
   };
   const handleRemoveLogo = async () => {
@@ -254,6 +257,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
 
   return (
     <div className="space-y-5">
+      {logoCropDraft && <ImageCropper image={logoCropDraft} aspectRatio={1} title="le logo de l’école" onCancel={() => setLogoCropDraft(null)} onApply={image => { setLogoCropDraft(null); setLogoStatus('saving'); void onSchoolLogoChange(image).then(() => { setLogoPreview(image); setLogoStatus('saved'); setTimeout(() => setLogoStatus('idle'), 2200); }).catch(err => { console.error('Failed to save cropped school logo:', err); setLogoStatus('idle'); window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.'); }); }} />}
       {/* Header */}
       <div className="relative overflow-hidden rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
         <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full blur-2xl" style={{ background: 'var(--royal-50)' }} />
@@ -297,7 +301,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
       <div className="relative overflow-hidden rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card sm:p-8">
         <div className="mb-5 flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-royal-50 text-royal-700"><ImageIcon className="h-6 w-6" /></span><div><h2 className="font-display text-xl font-700 text-ink">Logo de l’école</h2><p className="text-sm text-slate-500">Enregistré pour votre école et réutilisé automatiquement sur les cartes scolaires.</p></div></div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center"><div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">{logoPreview ? <img src={logoPreview} alt="Aperçu du logo de l’école" className="h-full w-full object-contain p-2" /> : <School className="h-8 w-8 text-slate-300" />}</div>
-          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center"><input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const input=e.currentTarget; const file=input.files?.[0]; void handleLogoUpload(file); input.value=''; }} /><button type="button" onClick={() => logoInputRef.current?.click()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-700 text-white"><Upload className="h-4 w-4" /> Choisir un logo</button>{logoPreview && <button type="button" onClick={() => void handleRemoveLogo()} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-600 text-slate-600">Supprimer</button>}<SaveIndicator status={logoStatus} /></div>
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center"><input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const input=e.currentTarget; const file=input.files?.[0]; void handleLogoUpload(file); input.value=''; }} /><input ref={logoCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input=e.currentTarget; const file=input.files?.[0]; void handleLogoUpload(file); input.value=''; }} /><button type="button" onClick={() => logoInputRef.current?.click()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-700 text-white"><Upload className="h-4 w-4" /> Galerie / fichiers</button><button type="button" onClick={() => logoCameraInputRef.current?.click()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-700 text-slate-700"><ImageIcon className="h-4 w-4" /> Prendre une photo</button>{logoPreview && <button type="button" onClick={() => void handleRemoveLogo()} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-600 text-slate-600">Supprimer</button>}<SaveIndicator status={logoStatus} /></div>
         </div><p className="mt-3 text-xs leading-relaxed text-slate-500">Le logo est réduit automatiquement pour limiter sa taille. Il reste enregistré après fermeture de l’application et reconnexion.</p>
       </div>
 
