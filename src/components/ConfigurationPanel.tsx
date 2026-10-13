@@ -301,7 +301,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
         </div><p className="mt-3 text-xs leading-relaxed text-slate-500">Le logo est réduit automatiquement pour limiter sa taille. Il reste enregistré après fermeture de l’application et reconnexion.</p>
       </div>
 
-      {/* Tranche configurator */
+      {/* Tranche configurator */}
       <div className="rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-royal-50 text-royal-700"><Layers className="h-5 w-5" /></span>
