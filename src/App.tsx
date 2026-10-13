@@ -31,6 +31,7 @@ import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
 import { ClassView } from './components/ClassView';
+import { StudentCardsView } from './components/StudentCardsView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
 import { TeachersView } from './components/TeachersView';
@@ -552,6 +553,8 @@ export default function App() {
                   />
                 </div>
               </>)}
+
+              {view === 'cartes' && <StudentCardsView students={students} schoolName={profile.schoolName} />}
 
               {view === 'classes' && (
                 <ClassView
