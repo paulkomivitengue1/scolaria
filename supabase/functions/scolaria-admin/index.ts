@@ -1,16 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-const DEV_CODE = Deno.env.get("ADMIN_DEV_CODE") ?? "gestilys-admin-2026";
+const DEV_CODE = Deno.env.get("ADMIN_DEV_CODE");
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
-
-interface AuthBody {
-  code?: string;
-}
 
 interface ActionBody {
   code?: string;
@@ -21,6 +17,13 @@ interface ActionBody {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
+  }
+
+  if (!DEV_CODE) {
+    return new Response(
+      JSON.stringify({ error: "Configuration administrateur manquante" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {
@@ -81,7 +84,7 @@ Deno.serve(async (req: Request) => {
     }
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: err instanceof Error ? err.message : "Erreur interne" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
