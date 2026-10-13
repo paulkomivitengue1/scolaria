@@ -89,8 +89,31 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         .gl-btn-primary { color:#172554; background:linear-gradient(135deg,#f9d56e,#f4bd35); box-shadow:0 8px 24px rgba(244,189,53,.25); }
         .gl-btn-primary:hover { box-shadow:0 12px 30px rgba(244,189,53,.35); }
         .gl-btn-secondary { color:#fff; background:#172554; box-shadow:0 8px 22px rgba(23,37,84,.18); }
-        .gl-hero { position:relative; overflow:hidden; background:radial-gradient(ellipse at 10% 10%,rgba(59,130,246,.15),transparent 36%),radial-gradient(ellipse at 90% 0%,rgba(244,189,53,.18),transparent 30%),linear-gradient(180deg,#f8fbff 0%,#fff 100%); }
-        .gl-hero-grid { display:grid; grid-template-columns:1fr 1.03fr; align-items:center; gap:48px; padding-top:72px; padding-bottom:76px; }
+        .gl-hero { position:relative; isolation:isolate; overflow:hidden; background:radial-gradient(ellipse at 10% 10%,rgba(59,130,246,.20),transparent 36%),radial-gradient(ellipse at 90% 0%,rgba(244,189,53,.25),transparent 30%),linear-gradient(180deg,#f5f8ff 0%,#fff 100%); }
+        .gl-hero:before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(29,78,216,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.045) 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(to bottom,black,transparent 92%); }
+        .gl-hero:after { content:""; position:absolute; z-index:-1; width:390px; height:390px; right:-140px; top:90px; border-radius:50%; border:1px solid rgba(29,78,216,.12); box-shadow:0 0 0 35px rgba(29,78,216,.025),0 0 0 75px rgba(29,78,216,.02); pointer-events:none; }
+        .gl-hero-grid { display:grid; grid-template-columns:1fr 1.03fr; align-items:center; gap:48px; padding-top:72px; padding-bottom:76px; position:relative; }
+        @keyframes gl-rise { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes gl-float { 0%,100% { transform:translateY(0) rotate(.5deg); } 50% { transform:translateY(-9px) rotate(.5deg); } }
+        @keyframes gl-orbit { 0%,100% { transform:translate(0,0); } 50% { transform:translate(-9px,8px); } }
+        @keyframes gl-bar-grow { from { transform:scaleY(.65); } to { transform:scaleY(1); } }
+        .gl-hero-copy { animation:gl-rise .7s ease-out both; }
+        .gl-hero-copy .gl-eyebrow { box-shadow:0 6px 22px rgba(29,78,216,.08); }
+        .gl-mock { animation:gl-rise .8s .12s ease-out both,gl-float 6s 1s ease-in-out infinite; transform-origin:center; transition:box-shadow .25s,border-color .25s; }
+        .gl-mock:hover { box-shadow:0 36px 90px rgba(23,37,84,.2); border-color:#bfd3f6; }
+        .gl-float { animation:gl-orbit 4.5s ease-in-out infinite; }
+        .gl-bars i { transform-origin:bottom; animation:gl-bar-grow .8s ease-out both; }
+        .gl-bars i:nth-child(3n) { animation-delay:.12s; }
+        .gl-bars i:nth-child(3n + 1) { animation-delay:.22s; }
+        .gl-feature { position:relative; overflow:hidden; }
+        .gl-feature:after { content:""; position:absolute; width:90px; height:90px; border-radius:50%; right:-48px; top:-48px; background:rgba(219,234,254,.45); transition:transform .25s; }
+        .gl-feature:hover:after { transform:scale(1.8); }
+        .gl-step { transition:transform .2s,box-shadow .2s,border-color .2s; }
+        .gl-step:hover { transform:translateY(-4px); box-shadow:0 16px 34px rgba(23,37,84,.07); border-color:#cbdcfb; }
+        .gl-demo-card { transition:transform .25s,box-shadow .25s; }
+        .gl-demo-card:hover { transform:translateY(-3px); box-shadow:0 24px 55px rgba(23,37,84,.12); }
+        .gl-tab:focus-visible,.gl-btn:focus-visible,.gl-faq button:focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+        @media (prefers-reduced-motion:reduce) { .gl-hero-copy,.gl-mock,.gl-float,.gl-bars i { animation:none !important; } .gl-feature,.gl-step,.gl-demo-card,.gl-btn { transition:none !important; } }
         .gl-eyebrow { display:inline-flex; align-items:center; gap:8px; border:1px solid #dbeafe; background:#eff6ff; color:#1d4ed8; border-radius:999px; padding:7px 12px; font-size:11px; letter-spacing:.08em; font-weight:800; text-transform:uppercase; }
         .gl-title { font-size:clamp(38px,5vw,62px); line-height:1.05; letter-spacing:-.055em; color:#172554; font-weight:850; margin:20px 0 0; }
         .gl-title span { color:#1d4ed8; }
