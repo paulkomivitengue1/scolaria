@@ -106,7 +106,6 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
     image.onload = () => {
       const ratio = draft.target.kind === 'logo' ? 1 : 4 / 5;
       const baseWidth = Math.min(image.naturalWidth, image.naturalHeight * ratio);
-      const baseHeight = baseWidth / ratio;
       const cropWidth = baseWidth / cropZoom;
       const cropHeight = cropWidth / ratio;
       const sx = Math.max(0, image.naturalWidth - cropWidth) * (cropX / 100);
