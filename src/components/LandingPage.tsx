@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
-  MessageCircle, LayoutDashboard, Package, Smartphone, ChevronDown,
-  Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
+  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -76,10 +75,6 @@ const DEMO_VIEWS = [
 export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [demoView, setDemoView] = useState<(typeof DEMO_VIEWS)[number]['id']>('overview');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const closeMenu = () => setMobileMenuOpen(false);
-
   return (
     <div className="gestilys-landing min-h-screen bg-white text-ink">
       <style>{`
@@ -189,7 +184,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
 
       <header className="gl-nav">
         <div className="gl-container" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
-          <a href="#accueil" aria-label="Gestilys, accueil" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }} onClick={closeMenu}>
+          <a href="#accueil" aria-label="Gestilys, accueil" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
             <span style={{ width:39, height:39, borderRadius:13, display:'grid', placeItems:'center', background:'#172554', color:'#f9d56e' }}><GraduationCap size={23} /></span>
             <span style={{ color:'#172554', fontWeight:900, fontSize:21, letterSpacing:'-.05em' }}>Gestilys<span style={{ color:'#1d4ed8' }}>.</span><small style={{ display:'block', color:'#64748b', fontSize:9, fontWeight:800, letterSpacing:'.12em', textTransform:'uppercase', marginTop:-3 }}>Gestion scolaire</small></span>
           </a>
