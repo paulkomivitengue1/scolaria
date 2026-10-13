@@ -173,7 +173,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                     <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
                   </div>
                   <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
-                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setCropZoom(1); setCropX(50); setCropY(50); setCropDraft({ data, target: { kind: 'logo' } }); }); input.value = ''; }} />
+                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
                 </div>
               </div>
               <div>
@@ -232,7 +232,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                     <button type="button" onClick={() => photoInputRefs.current['camera-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> Prendre une photo</button>
                   </div>
                   <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
-                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setCropZoom(1); setCropX(50); setCropY(50); setCropDraft({ data, target: { kind: 'student', studentId: s.id } }); }); input.value = ''; }} />
+                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
                 </div>
               </div>
             ))}
