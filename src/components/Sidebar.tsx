@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus,
+  LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard,
   Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
 } from 'lucide-react';
 import type { AppView } from '../types';
@@ -36,6 +36,7 @@ const SECTIONS: NavSection[] = [
     title: 'Scolarité',
     items: [
       { view: 'classes', label: 'Classes', icon: GraduationCap },
+      { view: 'cartes', label: 'Cartes scolaires', icon: CreditCard },
       { view: 'cahier', label: 'Élèves', icon: Users },
       { view: 'cahier', label: 'Inscriptions', icon: UserPlus },
     ],
