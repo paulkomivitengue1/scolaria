@@ -34,24 +34,45 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
       return;
     }
     // Resize before keeping the image in React state: phone camera originals can be huge.
+    let objectUrl = '';
     try {
-      const bitmap = await createImageBitmap(file);
+      let source: CanvasImageSource;
+      let width: number;
+      let height: number;
+      if (typeof createImageBitmap === 'function') {
+        const bitmap = await createImageBitmap(file);
+        source = bitmap;
+        width = bitmap.width;
+        height = bitmap.height;
+      } else {
+        // Compatibility fallback for older mobile browsers.
+        objectUrl = URL.createObjectURL(file);
+        const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Image load failed'));
+          img.src = objectUrl;
+        });
+        source = image;
+        width = image.naturalWidth;
+        height = image.naturalHeight;
+      }
       const maxSide = 1000;
-      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const scale = Math.min(1, maxSide / Math.max(width, height));
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
       const context = canvas.getContext('2d');
       if (!context) {
-        bitmap.close();
+        if ('close' in source && typeof source.close === 'function') source.close();
         window.alert('Impossible de préparer cette image. Essayez une autre photo.');
         return;
       }
-      // Keep a white background if WebP encoding is unavailable on an older browser.
+      // JPEG compression keeps memory use low on mobile devices.
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      bitmap.close();
+      context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      if ('close' in source && typeof source.close === 'function') source.close();
       const data = await new Promise<string>((resolve, reject) => {
         canvas.toBlob(blob => {
           if (!blob) {
@@ -67,6 +88,8 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
       onRead(data);
     } catch {
       window.alert('Cette photo n’a pas pu être traitée. Essayez une image JPG ou PNG moins volumineuse.');
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     }
   };
 
