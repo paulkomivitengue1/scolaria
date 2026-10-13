@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { X, MessageCircle, Send } from 'lucide-react';
+import { X, MessageCircle, Send, FileText } from 'lucide-react';
+import { ReceiptPhotoPdf } from './ReceiptPhotoPdf';
 import type { Student, FeeTypeDef, TrancheDef } from '../types';
 import { formatFCFA, studentOutstanding } from '../types';
 import { buildWhatsAppMessage, buildWhatsAppLink, buildWhatsAppTrancheMessage, buildWhatsAppTrancheLink } from '../whatsapp';
@@ -20,6 +21,7 @@ interface Props {
 export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFeeType, feeTypes, tranches, trancheKey, paidAmount }: Props) {
   const isTrancheMode = trancheKey !== undefined && trancheKey !== null && paidAmount !== undefined;
   const [selFeeType, setSelFeeType] = useState<string>('');
+  const [photoPdfOpen, setPhotoPdfOpen] = useState(false);
 
   if (open && student && initialFeeType && selFeeType !== initialFeeType) {
     setSelFeeType(initialFeeType);
@@ -48,6 +50,7 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
   const send = () => { window.open(link, '_blank'); };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity .22s ease' }}>
       <div className="modal-backdrop is-open" onClick={onClose} style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity .22s ease' }} />
       <div className={`modal-panel relative flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-2.5xl bg-white shadow-2xl transition ${open ? 'animate-scaleIn' : 'opacity-0'}`}>
@@ -93,12 +96,17 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-3">
+        <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-3 space-y-2">
+          <button onClick={() => setPhotoPdfOpen(true)} className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 text-sm font-700 text-indigo-700 hover:bg-indigo-50">
+            <FileText className="h-4 w-4" /> Créer un PDF à partir d’une photo
+          </button>
           <button onClick={send} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-700 text-white shadow-sm transition hover:brightness-105 active:scale-95" style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
             <Send className="h-4 w-4" /> Envoyer sur WhatsApp
           </button>
         </div>
       </div>
     </div>
+    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} />
+    </>
   );
 }
