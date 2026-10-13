@@ -10,7 +10,7 @@ import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   loadSchoolFeeConfig, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
   loadExpenses, addExpenseDB, deleteExpenseDB,
-  updateSchoolName, yearEndStockReset,
+  updateSchoolName, loadSchoolLogo, saveSchoolLogo, yearEndStockReset,
   updateStudentDB, deleteStudentDB,
   loadTeachers, addTeacherDB, updateTeacherDB, deleteTeacherDB,
   loadSalaryPayments, paySalaryDB, unpaySalaryDB,
@@ -60,6 +60,7 @@ export default function App() {
   const [feeConfig, setFeeConfig] = useState<SchoolFeeConfig>(EMPTY_FEE_CONFIG);
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [schoolLogo, setSchoolLogo] = useState('');
 
   const [query, setQuery] = useState('');
   const [view, setView] = useState<AppView>('dashboard');
@@ -145,6 +146,13 @@ export default function App() {
       setDataLoading(false);
     }
   }, [user, profile?.schoolId, loadAllData]);
+
+  useEffect(() => {
+    if (!profile?.schoolId) { setSchoolLogo(''); return; }
+    let cancelled = false;
+    loadSchoolLogo(profile.schoolId).then(logo => { if (!cancelled) setSchoolLogo(logo); }).catch(err => console.error('Failed to load school logo:', err));
+    return () => { cancelled = true; };
+  }, [profile?.schoolId]);
 
   useEffect(() => {
     const onHash = () => {
@@ -283,13 +291,15 @@ export default function App() {
   const handleLogout = async () => { await signOut(); };
 
   const handleSchoolNameChange = async (name: string) => {
-    if (!profile?.schoolId) return;
-    try {
-      await updateSchoolName(profile.schoolId, name);
-      await refreshProfile();
-    } catch (err) {
-      console.error('Failed to update school name:', err);
-    }
+    if (!profile?.schoolId) throw new Error('École non identifiée.');
+    await updateSchoolName(profile.schoolId, name);
+    await refreshProfile();
+  };
+
+  const handleSchoolLogoChange = async (logoData: string) => {
+    if (!profile?.schoolId) throw new Error('École non identifiée.');
+    await saveSchoolLogo(profile.schoolId, logoData);
+    setSchoolLogo(logoData);
   };
 
   // ── Stock handlers ────────────────────────────────────
@@ -554,7 +564,7 @@ export default function App() {
                 </div>
               </>)}
 
-              {view === 'cartes' && <StudentCardsView students={students} schoolName={profile.schoolName} />}
+              {view === 'cartes' && <StudentCardsView students={students} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
 
               {view === 'classes' && (
                 <ClassView
@@ -598,6 +608,8 @@ export default function App() {
                 onReset={handleResetFeeConfig}
                 schoolName={profile.schoolName}
                 onSchoolNameChange={handleSchoolNameChange}
+                schoolLogo={schoolLogo}
+                onSchoolLogoChange={handleSchoolLogoChange}
                 uniforms={uniforms}
                 books={books}
                 onYearEnd={handleYearEnd}
