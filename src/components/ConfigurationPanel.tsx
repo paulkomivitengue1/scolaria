@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X, ClipboardList } from 'lucide-react';
+import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X, ClipboardList, Upload, Image as ImageIcon } from 'lucide-react';
 import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem, GradePeriod } from '../types';
 import { CLASS_LIST, formatFCFA, getFeeTotalForClass, uniformRemaining, bookRemaining, FEE_TYPE_ICONS, getFeeAccent } from '../types';
 
@@ -9,6 +9,8 @@ interface ConfigPanelProps {
   onReset: () => void;
   schoolName: string;
   onSchoolNameChange: (n: string) => void;
+  schoolLogo: string;
+  onSchoolLogoChange: (logoData: string) => Promise<void>;
   uniforms: UniformStockItem[];
   books: BookStockItem[];
   onYearEnd: () => void;
@@ -22,7 +24,7 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
-export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, uniforms, books, onYearEnd, gradePeriods, onSaveGradePeriods }: ConfigPanelProps) {
+export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, schoolLogo, onSchoolLogoChange, uniforms, books, onYearEnd, gradePeriods, onSaveGradePeriods }: ConfigPanelProps) {
   const [tranches, setTranches] = useState<TrancheDef[]>(feeConfig.tranches);
   const [feeTypes, setFeeTypes] = useState<FeeTypeDef[]>(feeConfig.feeTypes);
   const [configRows, setConfigRows] = useState<FeeConfigRow[]>(feeConfig.feeConfig);
@@ -31,6 +33,9 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
   const [configStatus, setConfigStatus] = useState<SaveState>('idle');
   const [schoolDraft, setSchoolDraft] = useState(schoolName);
   const [schoolStatus, setSchoolStatus] = useState<SaveState>('idle');
+  const [logoStatus, setLogoStatus] = useState<SaveState>('idle');
+  const [logoPreview, setLogoPreview] = useState(schoolLogo);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [activeFeeType, setActiveFeeType] = useState<string>(feeConfig.feeTypes[0]?.feeType ?? 'scolarite');
   const [newFeeName, setNewFeeName] = useState('');
   const [showAddFee, setShowAddFee] = useState(false);
@@ -44,6 +49,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
 
   useEffect(() => { configRef.current = feeConfig; }, [feeConfig]);
   useEffect(() => { schoolRef.current = schoolName; }, [schoolName]);
+  useEffect(() => { setLogoPreview(schoolLogo); }, [schoolLogo]);
   useEffect(() => { setPeriods(gradePeriods); }, [gradePeriods]);
 
   // Sync when feeConfig prop changes (e.g. after initial load)
@@ -211,6 +217,31 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
     }, 800);
   };
 
+  const handleLogoUpload = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { window.alert('Choisissez un fichier image JPG, PNG ou WebP.'); return; }
+    setLogoStatus('saving');
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const url = URL.createObjectURL(file); const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 1000 / Math.max(img.naturalWidth, img.naturalHeight)); const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(img.naturalHeight * scale)); const ctx = canvas.getContext('2d');
+          if (!ctx) { URL.revokeObjectURL(url); reject(new Error('Canvas indisponible')); return; }
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); URL.revokeObjectURL(url);
+          canvas.toBlob(blob => { if (!blob) { reject(new Error('Compression impossible')); return; } const reader = new FileReader(); reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Lecture impossible')); reader.onerror = () => reject(new Error('Lecture impossible')); reader.readAsDataURL(blob); }, 'image/jpeg', 0.78);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); }; img.src = url;
+      });
+      await onSchoolLogoChange(data); setLogoPreview(data); setLogoStatus('saved'); setTimeout(() => setLogoStatus('idle'), 2200);
+    } catch (err) { console.error('Failed to save school logo:', err); setLogoStatus('idle'); window.alert('Le logo n’a pas pu être enregistré. Réessayez.'); }
+  };
+  const handleRemoveLogo = async () => {
+    setLogoStatus('saving');
+    try { await onSchoolLogoChange(''); setLogoPreview(''); setLogoStatus('saved'); setTimeout(() => setLogoStatus('idle'), 2200); }
+    catch (err) { console.error('Failed to remove school logo:', err); setLogoStatus('idle'); window.alert('Impossible de supprimer le logo pour le moment.'); }
+  };
+
   const handleSchoolReset = () => {
     if (schoolTimer.current) clearTimeout(schoolTimer.current);
     setSchoolDraft('');
@@ -262,7 +293,15 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
         </div>
       </div>
 
-      {/* Tranche configurator */}
+      {/* School logo */}
+      <div className="relative overflow-hidden rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card sm:p-8">
+        <div className="mb-5 flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-royal-50 text-royal-700"><ImageIcon className="h-6 w-6" /></span><div><h2 className="font-display text-xl font-700 text-ink">Logo de l’école</h2><p className="text-sm text-slate-500">Enregistré pour votre école et réutilisé automatiquement sur les cartes scolaires.</p></div></div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center"><div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">{logoPreview ? <img src={logoPreview} alt="Aperçu du logo de l’école" className="h-full w-full object-contain p-2" /> : <School className="h-8 w-8 text-slate-300" />}</div>
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center"><input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const input=e.currentTarget; const file=input.files?.[0]; void handleLogoUpload(file); input.value=''; }} /><button type="button" onClick={() => logoInputRef.current?.click()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-700 text-white"><Upload className="h-4 w-4" /> Choisir un logo</button>{logoPreview && <button type="button" onClick={() => void handleRemoveLogo()} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-600 text-slate-600">Supprimer</button>}<SaveIndicator status={logoStatus} /></div>
+        </div><p className="mt-3 text-xs leading-relaxed text-slate-500">Le logo est réduit automatiquement pour limiter sa taille. Il reste enregistré après fermeture de l’application et reconnexion.</p>
+      </div>
+
+      {/* Tranche configurator */
       <div className="rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-royal-50 text-royal-700"><Layers className="h-5 w-5" /></span>
