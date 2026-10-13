@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import {
-  ArrowRight, Sparkles, Check, ShieldCheck, Wallet, GraduationCap,
-  Calculator, MessageCircle, LayoutDashboard, Package, FileText,
-  Smartphone, ChevronDown, Mail, Phone, MapPin, PlayCircle,
-  UserPlus, Settings, Send,
+  ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
+  MessageCircle, LayoutDashboard, Package, Smartphone, ChevronDown,
+  Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -13,338 +12,371 @@ interface LandingPageProps {
 const FEATURES = [
   {
     icon: Calculator,
-    title: 'Suivi des paiements',
-    desc: "Enregistrez chaque paiement par élève et par classe. Gestilys calcule automatiquement les soldes, les restes à payer et le taux de recouvrement.",
-    accent: 'royal',
+    title: 'Paiements et frais scolaires',
+    desc: 'Enregistrez les règlements par élève, consultez les montants déjà payés et repérez rapidement les soldes restants.',
+    tone: 'blue',
   },
   {
-    icon: MessageCircle,
-    title: 'Reçus WhatsApp instantanés',
-    desc: "Générez et envoyez en un clic un reçu détaillé directement sur le WhatsApp du parent. Fini les reçus manuels illisibles.",
-    accent: 'gold',
+    icon: ReceiptText,
+    title: 'Reçus faciles à partager',
+    desc: 'Préparez un reçu clair après un paiement et partagez-le avec le parent par WhatsApp.',
+    tone: 'gold',
   },
   {
     icon: Package,
-    title: 'Gestion des stocks',
-    desc: "Suivez vos tenues scolaires et vos livres : quantités en stock, ventes, et valeur du stock restant — tout au même endroit.",
-    accent: 'emerald',
+    title: 'Stocks de livres et uniformes',
+    desc: 'Gardez une vue sur les quantités disponibles, les mouvements et les stocks restants.',
+    tone: 'teal',
   },
   {
-    icon: FileText,
-    title: 'Bulletins scolaires',
-    desc: "Créez des bulletins par période avec calcul automatique des moyennes pondérées et génération d'appréciations.",
-    accent: 'royal',
+    icon: Users,
+    title: 'Élèves et classes',
+    desc: 'Retrouvez les informations des élèves et organisez votre suivi par classe depuis un seul espace.',
+    tone: 'violet',
   },
   {
-    icon: LayoutDashboard,
-    title: 'Tableau de bord par classe',
-    desc: "Visualisez en temps réel le total encaissé, le reste à recouvrer et les statistiques par classe — garçons, filles, élèves à jour.",
-    accent: 'gold',
+    icon: TrendingUp,
+    title: 'Vue d’ensemble financière',
+    desc: 'Consultez les encaissements et les dépenses pour mieux comprendre la situation de votre établissement.',
+    tone: 'blue',
   },
   {
     icon: Smartphone,
-    title: 'Accessible partout',
-    desc: "Fonctionne sur téléphone et ordinateur, sans aucune installation. Vos données sont synchronisées et sécurisées en continu.",
-    accent: 'emerald',
-  },
-];
-
-const STEPS = [
-  {
-    icon: UserPlus,
-    title: 'Inscrivez votre école',
-    desc: 'Créez votre compte en 2 minutes. Aucune installation, aucun logiciel à télécharger.',
-  },
-  {
-    icon: Settings,
-    title: 'Ajoutez vos élèves',
-    desc: 'Saisissez vos élèves et configurez vos tarifs par classe et par type de frais.',
-  },
-  {
-    icon: Send,
-    title: 'Suivez et envoyez',
-    desc: 'Enregistrez les paiements et envoyez les reçus aux parents par WhatsApp automatiquement.',
-  },
-];
-
-const PRICING = [
-  {
-    range: 'Moins de 100 élèves',
-    price: '5 000 FCFA',
-    period: '/ mois',
-    features: ['Toutes les fonctionnalités', 'Reçus WhatsApp illimités', 'Support par WhatsApp'],
-    featured: false,
-  },
-  {
-    range: '100 – 250 élèves',
-    price: '5 000 – 15 000 FCFA',
-    period: '/ mois',
-    features: ['Toutes les fonctionnalités', 'Reçus WhatsApp illimités', 'Support prioritaire', 'Gestion des stocks complète'],
-    featured: true,
-  },
-  {
-    range: '250 – 500 élèves',
-    price: '15 000 – 25 000 FCFA',
-    period: '/ mois',
-    features: ['Toutes les fonctionnalités', 'Reçus WhatsApp illimités', 'Support prioritaire', 'Bulletins scolaires', 'Multi-classes illimitées'],
-    featured: false,
-  },
-  {
-    range: '500 – 1000 élèves',
-    price: '20 000 – 50 000 FCFA',
-    period: '/ mois',
-    features: ['Toutes les fonctionnalités', 'Reçus WhatsApp illimités', 'Support dédié', 'Bulletins scolaires', 'Multi-classes illimitées', 'Formation incluse'],
-    featured: false,
+    title: 'Sur téléphone et ordinateur',
+    desc: 'Accédez à votre espace depuis un navigateur, sans installer un logiciel sur chaque appareil.',
+    tone: 'teal',
   },
 ];
 
 const FAQ = [
   {
-    q: 'Est-ce que mes données sont en sécurité ?',
-    a: 'Vos données sont hébergées sur une infrastructure sécurisée avec un accès protégé par mot de passe. Chaque école ne voit que ses propres données — personne d\'autre n\'y a accès.',
+    q: 'Dois-je installer une application ?',
+    a: 'Non. Gestilys s’utilise depuis le navigateur de votre téléphone, tablette ou ordinateur.',
   },
   {
-    q: 'Puis-je utiliser Gestilys sur téléphone ?',
-    a: 'Oui. Gestilys fonctionne sur téléphone, tablette et ordinateur. Aucune application à installer — tout se passe dans votre navigateur, et vos données sont synchronisées automatiquement.',
+    q: 'Puis-je suivre les paiements par élève ?',
+    a: 'Oui. Vous pouvez consulter les paiements enregistrés et les soldes associés aux frais configurés pour votre école.',
   },
   {
-    q: 'Que se passe-t-il à la fin de l\'essai gratuit ?',
-    a: 'Vous choisissez ensuite le forfait adapté à l\'effectif de votre école. Sans engagement, vous pouvez changer de forfait ou résilier à tout moment.',
+    q: 'Les parents doivent-ils créer un compte ?',
+    a: 'Non. Vous pouvez partager un reçu par WhatsApp avec les parents, sans leur demander d’installer Gestilys.',
   },
   {
-    q: 'Les parents doivent-ils installer une application ?',
-    a: 'Non. Les reçus sont envoyés directement via WhatsApp, que les parents utilisent déjà au quotidien. Aucune installation n\'est requise de leur côté.',
-  },
-  {
-    q: 'Puis-je changer de forfait plus tard ?',
-    a: 'Oui, vous pouvez passer à un forfait supérieur ou inférieur à tout moment, selon l\'évolution de votre effectif. Le changement prend effet immédiatement.',
-  },
-  {
-    q: 'Comment sont envoyés les reçus aux parents ?',
-    a: 'Après chaque paiement, un reçu détaillé est généré automatiquement avec le montant, la tranche concernée et le solde restant. Vous l\'envoyez en un clic via WhatsApp au numéro du parent.',
+    q: 'Puis-je voir Gestilys avant de m’engager ?',
+    a: 'Oui. Demandez une démonstration ou explorez l’essai disponible pour découvrir le fonctionnement avant de prendre une décision.',
   },
 ];
 
-const ACCENT_WRAP: Record<string, string> = {
-  royal: 'from-royal-400 to-royal-700',
-  gold: 'from-gold-400 to-gold-600',
-  emerald: 'from-teal-400 to-emerald-600',
-};
+const DEMO_VIEWS = [
+  { id: 'overview', label: 'Vue générale' },
+  { id: 'payments', label: 'Paiements' },
+  { id: 'students', label: 'Élèves' },
+] as const;
 
 export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [demoView, setDemoView] = useState<(typeof DEMO_VIEWS)[number]['id']>('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const closeMenu = () => setMobileMenuOpen(false);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-royal-900 to-royal-800">
-      {/* Decorative background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full blur-3xl animate-floatY" style={{ background: 'radial-gradient(circle, rgba(245,197,24,.18), transparent 70%)' }} />
-        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full blur-3xl animate-floatY" style={{ background: 'radial-gradient(circle, rgba(90,140,245,.16), transparent 70%)', animationDelay: '2s' }} />
-        <div className="absolute top-1/3 right-1/4 h-64 w-64 rounded-full blur-3xl animate-floatY" style={{ background: 'radial-gradient(circle, rgba(45,212,191,.10), transparent 70%)', animationDelay: '4s' }} />
-      </div>
-      <div className="bg-grid-light pointer-events-none absolute inset-0 opacity-40" />
+    <div className="gestilys-landing min-h-screen bg-white text-ink">
+      <style>{`
+        .gestilys-landing { --g-blue:#172554; --g-blue-2:#1d4ed8; --g-gold:#f4bd35; --g-muted:#64748b; scroll-behavior:smooth; }
+        .gestilys-landing * { box-sizing:border-box; }
+        .gl-container { width:min(1120px, calc(100% - 40px)); margin-inline:auto; }
+        .gl-nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92); backdrop-filter:blur(16px); border-bottom:1px solid #e8edf5; }
+        .gl-link { color:#475569; text-decoration:none; font-size:13px; font-weight:700; transition:color .2s; }
+        .gl-link:hover { color:#1d4ed8; }
+        .gl-btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; border-radius:14px; padding:13px 19px; font-size:14px; font-weight:800; cursor:pointer; border:0; transition:transform .18s, box-shadow .18s, background .18s; }
+        .gl-btn:hover { transform:translateY(-2px); }
+        .gl-btn-primary { color:#172554; background:linear-gradient(135deg,#f9d56e,#f4bd35); box-shadow:0 8px 24px rgba(244,189,53,.25); }
+        .gl-btn-primary:hover { box-shadow:0 12px 30px rgba(244,189,53,.35); }
+        .gl-btn-secondary { color:#fff; background:#172554; box-shadow:0 8px 22px rgba(23,37,84,.18); }
+        .gl-hero { position:relative; overflow:hidden; background:radial-gradient(ellipse at 10% 10%,rgba(59,130,246,.15),transparent 36%),radial-gradient(ellipse at 90% 0%,rgba(244,189,53,.18),transparent 30%),linear-gradient(180deg,#f8fbff 0%,#fff 100%); }
+        .gl-hero-grid { display:grid; grid-template-columns:1fr 1.03fr; align-items:center; gap:48px; padding-top:72px; padding-bottom:76px; }
+        .gl-eyebrow { display:inline-flex; align-items:center; gap:8px; border:1px solid #dbeafe; background:#eff6ff; color:#1d4ed8; border-radius:999px; padding:7px 12px; font-size:11px; letter-spacing:.08em; font-weight:800; text-transform:uppercase; }
+        .gl-title { font-size:clamp(38px,5vw,62px); line-height:1.05; letter-spacing:-.055em; color:#172554; font-weight:850; margin:20px 0 0; }
+        .gl-title span { color:#1d4ed8; }
+        .gl-lead { color:#52627a; font-size:16px; line-height:1.8; max-width:510px; margin-top:20px; }
+        .gl-trust { display:flex; flex-wrap:wrap; gap:14px 20px; margin-top:22px; color:#52627a; font-size:12px; font-weight:700; }
+        .gl-trust span { display:flex; align-items:center; gap:6px; }
+        .gl-mock { border:1px solid #dce5f2; background:#fff; border-radius:24px; box-shadow:0 30px 80px rgba(23,37,84,.14); padding:15px; transform:rotate(.5deg); }
+        .gl-mock-top { display:flex; align-items:center; justify-content:space-between; padding:7px 5px 15px; border-bottom:1px solid #edf1f7; }
+        .gl-dots { display:flex; gap:5px; }
+        .gl-dots i { display:block; width:7px; height:7px; border-radius:50%; background:#cbd5e1; }
+        .gl-mock-body { display:grid; grid-template-columns:95px 1fr; gap:12px; padding-top:13px; }
+        .gl-mock-side { border-radius:12px; background:#172554; padding:12px 8px; min-height:260px; color:#cbd5e1; }
+        .gl-side-line { height:7px; background:rgba(255,255,255,.14); border-radius:6px; margin:15px 4px; }
+        .gl-side-line.active { background:#f4bd35; }
+        .gl-stat-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+        .gl-stat { padding:12px 10px; border:1px solid #edf1f7; border-radius:12px; min-width:0; }
+        .gl-stat-label { color:#64748b; font-size:9px; font-weight:700; }
+        .gl-stat-value { color:#172554; font-size:clamp(13px,1.8vw,20px); font-weight:850; margin-top:6px; white-space:nowrap; }
+        .gl-chart { margin-top:10px; border:1px solid #edf1f7; border-radius:12px; padding:13px; }
+        .gl-bars { height:86px; display:flex; align-items:end; gap:7px; padding:8px 4px 0; }
+        .gl-bars i { flex:1; border-radius:5px 5px 2px 2px; background:linear-gradient(180deg,#60a5fa,#1d4ed8); min-width:4px; }
+        .gl-table-row { display:grid; grid-template-columns:1.1fr 1fr .8fr; gap:5px; padding:10px 4px; border-bottom:1px solid #f1f5f9; font-size:9px; color:#475569; }
+        .gl-pill { border-radius:999px; background:#dcfce7; color:#15803d; padding:3px 6px; font-weight:800; text-align:center; }
+        .gl-float { position:absolute; right:-18px; bottom:28px; background:white; border:1px solid #e7edf5; box-shadow:0 12px 34px rgba(15,23,42,.12); border-radius:15px; padding:12px 15px; display:flex; align-items:center; gap:10px; }
+        .gl-section { padding:76px 0; }
+        .gl-section-soft { background:#f7f9fd; }
+        .gl-kicker { color:#1d4ed8; text-transform:uppercase; font-size:11px; letter-spacing:.12em; font-weight:850; }
+        .gl-h2 { color:#172554; font-size:clamp(28px,3.6vw,42px); line-height:1.13; letter-spacing:-.04em; font-weight:850; margin-top:12px; }
+        .gl-sub { color:#64748b; line-height:1.8; font-size:14px; margin-top:12px; max-width:650px; }
+        .gl-feature-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:34px; }
+        .gl-feature { padding:23px; border:1px solid #e6ebf3; border-radius:20px; background:white; transition:transform .2s,box-shadow .2s,border-color .2s; }
+        .gl-feature:hover { transform:translateY(-4px); border-color:#cbdcfb; box-shadow:0 18px 36px rgba(23,37,84,.07); }
+        .gl-feature-icon { width:45px; height:45px; display:grid; place-items:center; border-radius:14px; background:#eff6ff; color:#1d4ed8; }
+        .gl-feature h3 { font-size:16px; color:#172554; font-weight:850; margin-top:17px; }
+        .gl-feature p { color:#64748b; font-size:13px; line-height:1.8; margin-top:8px; }
+        .gl-demo-wrap { display:grid; grid-template-columns:.8fr 1.2fr; gap:35px; align-items:center; margin-top:32px; }
+        .gl-demo-card { border:1px solid #dfe7f2; border-radius:22px; background:white; padding:20px; box-shadow:0 18px 48px rgba(23,37,84,.07); }
+        .gl-tabs { display:flex; gap:6px; padding:5px; border-radius:12px; background:#f1f5f9; }
+        .gl-tab { flex:1; border:0; border-radius:9px; padding:10px 7px; font-size:12px; font-weight:800; cursor:pointer; color:#64748b; background:transparent; }
+        .gl-tab.active { background:white; color:#1d4ed8; box-shadow:0 2px 8px rgba(15,23,42,.08); }
+        .gl-demo-list { display:grid; gap:10px; margin-top:17px; }
+        .gl-demo-item { display:flex; align-items:center; gap:11px; padding:12px; border:1px solid #edf1f7; border-radius:12px; }
+        .gl-demo-item p { font-size:12px; color:#172554; font-weight:800; }
+        .gl-demo-item small { display:block; color:#64748b; font-size:10px; margin-top:3px; }
+        .gl-step-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:34px; }
+        .gl-step { padding:24px; border:1px solid #e6ebf3; background:white; border-radius:20px; }
+        .gl-step-num { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; color:#172554; background:#f9d56e; font-weight:900; }
+        .gl-step h3 { margin-top:16px; color:#172554; font-weight:850; font-size:16px; }
+        .gl-step p { margin-top:8px; color:#64748b; font-size:13px; line-height:1.8; }
+        .gl-price { display:grid; grid-template-columns:1fr auto; gap:24px; align-items:center; border-radius:24px; background:linear-gradient(130deg,#172554,#1e40af); color:white; padding:32px; margin-top:32px; }
+        .gl-price h3 { font-size:24px; font-weight:850; }
+        .gl-price p { color:#dbeafe; font-size:13px; line-height:1.8; margin-top:8px; }
+        .gl-faq { border:1px solid #e5eaf2; border-radius:14px; overflow:hidden; background:white; }
+        .gl-faq + .gl-faq { margin-top:10px; }
+        .gl-faq button { width:100%; padding:17px 18px; border:0; background:white; display:flex; align-items:center; justify-content:space-between; gap:15px; text-align:left; color:#172554; font-size:13px; font-weight:800; cursor:pointer; }
+        .gl-faq p { padding:0 18px 17px; color:#64748b; font-size:13px; line-height:1.8; }
+        .gl-footer { background:#111d42; color:#dbeafe; padding:35px 0; }
+        @media (max-width:850px) {
+          .gl-hero-grid { grid-template-columns:1fr; gap:38px; padding-top:54px; padding-bottom:55px; }
+          .gl-hero-copy { text-align:center; }
+          .gl-lead { margin-inline:auto; }
+          .gl-trust { justify-content:center; }
+          .gl-hero-actions { justify-content:center; }
+          .gl-mock { max-width:620px; width:100%; margin-inline:auto; }
+          .gl-feature-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+          .gl-demo-wrap { grid-template-columns:1fr; }
+        }
+        @media (max-width:600px) {
+          .gl-container { width:min(100% - 28px, 1120px); }
+          .gl-nav-links { display:none !important; }
+          .gl-hero-grid { padding-top:40px; }
+          .gl-title { font-size:clamp(36px,10vw,48px); }
+          .gl-lead { font-size:14px; }
+          .gl-mock { padding:9px; border-radius:18px; transform:none; }
+          .gl-mock-body { grid-template-columns:55px 1fr; gap:7px; }
+          .gl-mock-side { min-height:230px; padding:8px 4px; }
+          .gl-side-line { margin:14px 2px; }
+          .gl-stat-grid { gap:5px; }
+          .gl-stat { padding:8px 5px; }
+          .gl-stat-label { font-size:8px; }
+          .gl-chart { padding:8px; }
+          .gl-bars { height:65px; gap:4px; }
+          .gl-float { right:4px; bottom:-12px; padding:9px 11px; }
+          .gl-section { padding:54px 0; }
+          .gl-feature-grid,.gl-step-grid { grid-template-columns:1fr; }
+          .gl-price { grid-template-columns:1fr; padding:24px; }
+          .gl-price-action { width:100%; }
+          .gl-stat-value { font-size:12px; }
+        }
+      `}</style>
 
-      <div className="relative z-10">
-        {/* ── Hero ──────────────────────────────────────────── */}
-        <section className="mx-auto flex max-w-5xl flex-col items-center px-6 pt-12 pb-8 text-center sm:pt-16 lg:pt-20">
-          <div className="animate-fadeUp inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-700 uppercase tracking-wider text-gold-300 backdrop-blur-sm">
-            <Sparkles className="h-3.5 w-3.5" /> Le Cahier de Caisse Moderne
-          </div>
-          <div className="animate-fadeUp delay-100 mt-8 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-glow-gold-lg">
-            <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
-          </div>
-          <h1 className="animate-fadeUp delay-200 mt-8 font-display text-4xl font-800 leading-tight tracking-tighter text-white sm:text-5xl lg:text-6xl">
-            Fini les reçus à la main.<br />Gérez votre école en toute sérénité.
-          </h1>
-          <p className="animate-fadeUp delay-300 mt-5 max-w-2xl text-lg leading-relaxed text-royal-100 sm:text-xl">
-            Suivre les paiements, rédiger des reçus et gérer les stocks sur des cahiers, c'est du temps perdu et des erreurs garanties. <span className="text-gold-300 font-700">Gestilys</span> automatise tout : encaissements, reçus WhatsApp, stocks et bulletins — depuis votre téléphone.
-          </p>
-          <button onClick={onEnter} className="animate-fadeUp delay-400 group mt-9 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 px-8 py-4 text-base font-800 text-royal-900 shadow-glow-gold-lg transition-all animate-glow hover:scale-[1.03] active:scale-95 sm:text-lg">
-            <Wallet className="h-5 w-5" /> Essayer gratuitement <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-          </button>
-          <div className="animate-fadeUp delay-500 mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-600 text-royal-100">
-            <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-gold-300" strokeWidth={3} /> Aucune installation</span>
-            <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-gold-300" strokeWidth={3} /> 100% en FCFA</span>
-            <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-gold-300" /> Données sécurisées</span>
-          </div>
-        </section>
+      <header className="gl-nav">
+        <div className="gl-container" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+          <a href="#accueil" aria-label="Gestilys, accueil" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }} onClick={closeMenu}>
+            <span style={{ width:39, height:39, borderRadius:13, display:'grid', placeItems:'center', background:'#172554', color:'#f9d56e' }}><GraduationCap size={23} /></span>
+            <span style={{ color:'#172554', fontWeight:900, fontSize:21, letterSpacing:'-.05em' }}>Gestilys<span style={{ color:'#1d4ed8' }}>.</span><small style={{ display:'block', color:'#64748b', fontSize:9, fontWeight:800, letterSpacing:'.12em', textTransform:'uppercase', marginTop:-3 }}>Gestion scolaire</small></span>
+          </a>
+          <nav className="gl-nav-links" style={{ display:'flex', alignItems:'center', gap:25 }}>
+            <a className="gl-link" href="#fonctionnalites">Fonctionnalités</a>
+            <a className="gl-link" href="#demonstration">Aperçu</a>
+            <a className="gl-link" href="#tarifs">Tarif</a>
+            <a className="gl-link" href="#questions">Questions</a>
+          </nav>
+          <button className="gl-btn gl-btn-primary" style={{ padding:'11px 15px', fontSize:12 }} onClick={onEnter}>Découvrir Gestilys <ArrowRight size={15} /></button>
+        </div>
+      </header>
 
-        {/* ── Demo video placeholder ───────────────────────── */}
-        <section className="mx-auto max-w-4xl px-6 pb-16">
-          <div id="demo-video" className="animate-fadeUp delay-700 flex aspect-video items-center justify-center rounded-2.5xl border-2 border-dashed border-white/15 bg-white/5 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <PlayCircle className="h-12 w-12 text-white/20" />
-              <p className="text-sm font-600 text-white/30">Vidéo de démonstration — bientôt disponible</p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Comment ça marche ────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-6 py-12">
-          <h2 className="text-center font-display text-3xl font-800 tracking-tight text-white sm:text-4xl">Comment ça marche</h2>
-          <p className="mt-3 text-center text-sm text-royal-100">Trois étapes simples pour digitaliser la gestion de votre école.</p>
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-            {STEPS.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <div key={step.title} className="animate-fadeUp relative rounded-3xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur-sm transition hover:bg-white/8" style={{ animationDelay: `${0.1 * i}s` }}>
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 px-3 py-1 text-xs font-800 text-royal-900 shadow-glow-gold">
-                    {i + 1}
-                  </div>
-                  <span className="mx-auto mt-3 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-royal-400 to-royal-700 shadow-lg">
-                    <Icon className="h-7 w-7 text-white" />
-                  </span>
-                  <h3 className="mt-4 font-display text-lg font-700 text-white">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-royal-100">{step.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── Fonctionnalités ──────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-6 py-12">
-          <h2 className="text-center font-display text-3xl font-800 tracking-tight text-white sm:text-4xl">Tout ce dont votre école a besoin</h2>
-          <p className="mt-3 text-center text-sm text-royal-100">Une seule plateforme pour gérer paiements, stocks, bulletins et communication avec les parents.</p>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div key={f.title} className="animate-fadeUp rounded-3xl border border-white/10 bg-white/5 p-6 text-left backdrop-blur-sm transition hover:bg-white/8 hover:scale-[1.02]" style={{ animationDelay: `${0.1 * i}s` }}>
-                  <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${ACCENT_WRAP[f.accent]} shadow-lg`}><Icon className="h-6 w-6 text-white" /></span>
-                  <h3 className="mt-4 font-display text-lg font-700 text-white">{f.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-royal-100">{f.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── Ils nous testent déjà ────────────────────────── */}
-        <section className="mx-auto max-w-4xl px-6 py-12">
-          <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/5 px-8 py-8 text-center backdrop-blur-sm">
-            <div className="flex items-center gap-2">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-gold-400 to-gold-600"><GraduationCap className="h-5 w-5 text-royal-900" /></span>
-              <span className="font-display text-xl font-700 text-white">Ils nous testent déjà</span>
-            </div>
-            <p className="max-w-lg text-sm leading-relaxed text-royal-100">
-              Déjà utilisé par plusieurs écoles à <span className="text-gold-300 font-700">Bamako</span>. Rejoignez-les et digitalisez la gestion de votre établissement.
-            </p>
-          </div>
-        </section>
-
-        {/* ── Tarifs ───────────────────────────────────────── */}
-        <section className="mx-auto max-w-5xl px-6 py-12">
-          <div className="flex flex-col items-center gap-4">
-            <h2 className="text-center font-display text-3xl font-800 tracking-tight text-white sm:text-4xl">Des tarifs adaptés à votre école</h2>
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-4 py-2 text-xs font-800 text-royal-900 shadow-glow-gold">
-              <Sparkles className="h-3.5 w-3.5" /> -20% pour les 10 premiers clients
-            </div>
-          </div>
-          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {PRICING.map((p, i) => (
-              <div
-                key={p.range}
-                className={`animate-fadeUp relative flex flex-col rounded-3xl border p-6 backdrop-blur-sm transition hover:scale-[1.03] ${p.featured ? 'border-gold-400/50 bg-gold-400/10 shadow-glow-gold' : 'border-white/10 bg-white/5'}`}
-                style={{ animationDelay: `${0.1 * i}s` }}
-              >
-                {p.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 px-3 py-1 text-[10px] font-800 uppercase tracking-wider text-royal-900 shadow-glow-gold">
-                    Recommandé
-                  </div>
-                )}
-                <p className="text-xs font-700 uppercase tracking-wider text-royal-100">{p.range}</p>
-                <p className="mt-3 font-display text-xl font-800 text-white">{p.price}</p>
-                <p className="text-xs font-600 text-royal-100">{p.period}</p>
-                <ul className="mt-4 flex-1 space-y-2">
-                  {p.features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-xs text-royal-100">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-300" strokeWidth={3} /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={onEnter}
-                  className={`mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl text-sm font-700 transition active:scale-95 ${p.featured ? 'bg-gradient-to-br from-gold-400 to-gold-600 text-royal-900 shadow-glow-gold hover:brightness-110' : 'bg-royal-900 text-white border border-slate-600 hover:bg-royal-700'}`}
-                >
-                  Démarrer l'essai gratuit
-                </button>
+      <main>
+        <section id="accueil" className="gl-hero">
+          <div className="gl-container gl-hero-grid">
+            <div className="gl-hero-copy">
+              <div className="gl-eyebrow"><span style={{ width:7, height:7, borderRadius:'50%', background:'#1d4ed8' }} /> Pensé pour la gestion scolaire</div>
+              <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
+              <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
+              <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
+                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Découvrir la plateforme <ArrowRight size={17} /></button>
+                <a href="#demonstration" className="gl-btn" style={{ border:'1px solid #dbe3ef', color:'#172554', textDecoration:'none', background:'white' }}>Voir l’aperçu</a>
               </div>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-xs text-royal-100">Tarifs indicatifs selon l'effectif. Essai gratuit sans engagement.</p>
-        </section>
+              <div className="gl-trust">
+                <span><Check size={15} color="#15803d" /> Sans installation</span>
+                <span><Check size={15} color="#15803d" /> Pensé pour le mobile</span>
+                <span><ShieldCheck size={15} color="#15803d" /> Accès protégé</span>
+              </div>
+            </div>
 
-        {/* ── FAQ ──────────────────────────────────────────── */}
-        <section className="mx-auto max-w-3xl px-6 py-12">
-          <h2 className="text-center font-display text-3xl font-800 tracking-tight text-white sm:text-4xl">Questions fréquentes</h2>
-          <div className="mt-8 space-y-3">
-            {FAQ.map((item, i) => {
-              const isOpen = openFaq === i;
-              return (
-                <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm transition">
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? null : i)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left bg-royal-800 text-white"
-                  >
-                    <span className="text-sm font-700 text-white">{item.q}</span>
-                    <ChevronDown className={`h-4 w-4 shrink-0 text-gold-300 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  <div className="grid transition-all" style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}>
-                    <div className="overflow-hidden">
-                      <p className="px-5 pb-4 text-sm leading-relaxed text-royal-100">{item.a}</p>
+            <div style={{ position:'relative', paddingBottom:20 }}>
+              <div className="gl-mock" aria-label="Aperçu illustratif du tableau de bord Gestilys">
+                <div className="gl-mock-top">
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ width:27, height:27, display:'grid', placeItems:'center', background:'#172554', color:'#f9d56e', borderRadius:8 }}><GraduationCap size={16} /></span>
+                    <div><div style={{ fontSize:11, fontWeight:900, color:'#172554' }}>Gestilys</div><div style={{ fontSize:9, color:'#64748b' }}>Tableau de bord</div></div>
+                  </div>
+                  <div className="gl-dots"><i /><i /><i /></div>
+                </div>
+                <div className="gl-mock-body">
+                  <aside className="gl-mock-side">
+                    <div style={{ color:'white', fontSize:9, fontWeight:800, padding:'4px 4px 12px' }}>MENU</div>
+                    <div className="gl-side-line active" />
+                    <div className="gl-side-line" />
+                    <div className="gl-side-line" />
+                    <div className="gl-side-line" />
+                    <div className="gl-side-line" />
+                  </aside>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', gap:5, alignItems:'center', marginBottom:10 }}>
+                      <div style={{ color:'#172554', fontSize:12, fontWeight:900 }}>Vue générale</div>
+                      <span style={{ fontSize:8, color:'#64748b', background:'#f1f5f9', borderRadius:6, padding:'5px 6px' }}>Exemple visuel</span>
+                    </div>
+                    <div className="gl-stat-grid">
+                      <div className="gl-stat"><div className="gl-stat-label">Élèves</div><div className="gl-stat-value">248</div></div>
+                      <div className="gl-stat"><div className="gl-stat-label">Encaissé</div><div className="gl-stat-value">3,2 M</div></div>
+                      <div className="gl-stat"><div className="gl-stat-label">À suivre</div><div className="gl-stat-value">840 k</div></div>
+                    </div>
+                    <div className="gl-chart">
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:6 }}><span style={{ color:'#172554', fontSize:10, fontWeight:850 }}>Activité des encaissements</span><span style={{ color:'#64748b', fontSize:8 }}>Exemple</span></div>
+                      <div className="gl-bars">{[35,52,43,70,58,86,64,96,73,82,60,91].map((h,i)=><i key={i} style={{ height:`${h}%`, opacity:.55+h/220 }} />)}</div>
+                      <div style={{ display:'flex', justifyContent:'space-between', color:'#94a3b8', fontSize:8, marginTop:7 }}><span>Début période</span><span>Fin période</span></div>
+                    </div>
+                    <div className="gl-chart" style={{ paddingTop:8, paddingBottom:4 }}>
+                      <div style={{ color:'#172554', fontSize:10, fontWeight:850, marginBottom:3 }}>Derniers mouvements</div>
+                      <div className="gl-table-row" style={{ fontWeight:800, color:'#94a3b8' }}><span>Élève</span><span>Opération</span><span>Statut</span></div>
+                      <div className="gl-table-row"><span>Élève exemple</span><span>Paiement</span><span className="gl-pill">Enregistré</span></div>
+                      <div className="gl-table-row" style={{ borderBottom:0 }}><span>Élève exemple</span><span>Reçu</span><span className="gl-pill">Prêt</span></div>
                     </div>
                   </div>
                 </div>
-              );
+              </div>
+              <div className="gl-float"><span style={{ width:35, height:35, display:'grid', placeItems:'center', borderRadius:11, background:'#dcfce7', color:'#15803d' }}><Check size={18} /></span><div><div style={{ fontSize:11, color:'#172554', fontWeight:900 }}>Un suivi plus clair</div><div style={{ fontSize:10, color:'#64748b' }}>Les informations au même endroit</div></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="fonctionnalites" className="gl-section">
+          <div className="gl-container">
+            <div className="gl-kicker">Un seul espace de travail</div>
+            <h2 className="gl-h2">Les tâches essentielles, réunies au même endroit.</h2>
+            <p className="gl-sub">Concentrez-vous sur votre établissement au lieu de disperser les informations entre plusieurs cahiers et fichiers.</p>
+            <div className="gl-feature-grid">
+              {FEATURES.map((f) => {
+                const Icon = f.icon;
+                const iconStyle = f.tone === 'gold' ? { background:'#fff7df', color:'#a16207' } : f.tone === 'teal' ? { background:'#e6fffb', color:'#0f766e' } : f.tone === 'violet' ? { background:'#f1edff', color:'#6d28d9' } : { background:'#eff6ff', color:'#1d4ed8' };
+                return <article className="gl-feature" key={f.title}><span className="gl-feature-icon" style={iconStyle}><Icon size={22} /></span><h3>{f.title}</h3><p>{f.desc}</p></article>;
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="demonstration" className="gl-section gl-section-soft">
+          <div className="gl-container">
+            <div className="gl-kicker">Aperçu interactif</div>
+            <h2 className="gl-h2">Voyez comment les informations s’organisent.</h2>
+            <p className="gl-sub">Explorez ces exemples visuels pour comprendre les grandes parties de l’interface. Les chiffres et noms affichés sont fictifs.</p>
+            <div className="gl-demo-wrap">
+              <div>
+                <div className="gl-tabs" role="tablist" aria-label="Choisir un aperçu">
+                  {DEMO_VIEWS.map(v => <button key={v.id} role="tab" aria-selected={demoView===v.id} className={`gl-tab ${demoView===v.id?'active':''}`} onClick={()=>setDemoView(v.id)}>{v.label}</button>)}
+                </div>
+                <h3 style={{ color:'#172554', fontSize:22, fontWeight:850, lineHeight:1.2, marginTop:23 }}>{demoView === 'overview' ? 'Une vision rapide de l’activité' : demoView === 'payments' ? 'Un suivi des règlements plus lisible' : 'Les informations élèves à portée de main'}</h3>
+                <p style={{ color:'#64748b', fontSize:14, lineHeight:1.8, marginTop:12 }}>{demoView === 'overview' ? 'Retrouvez les indicateurs importants sans devoir ouvrir plusieurs documents.' : demoView === 'payments' ? 'Consultez les mouvements de paiement et partagez les reçus avec les parents.' : 'Organisez les élèves par classe et retrouvez plus facilement les informations utiles.'}</p>
+                <div style={{ display:'flex', alignItems:'center', gap:9, color:'#166534', fontSize:12, fontWeight:800, marginTop:18 }}><Check size={16} /> Une interface pensée pour aller à l’essentiel</div>
+              </div>
+              <div className="gl-demo-card">
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:17 }}>
+                  <div><div style={{ color:'#172554', fontSize:15, fontWeight:900 }}>{demoView === 'overview' ? 'Résumé de l’école' : demoView === 'payments' ? 'Suivi des paiements' : 'Liste des élèves'}</div><div style={{ color:'#94a3b8', fontSize:10, marginTop:4 }}>Données de démonstration</div></div>
+                  <span style={{ borderRadius:9, background:'#eff6ff', color:'#1d4ed8', fontSize:10, fontWeight:800, padding:'7px 9px' }}>Exemple</span>
+                </div>
+                {demoView === 'overview' ? <div className="gl-demo-list">
+                  <div className="gl-demo-item"><span style={{ background:'#eff6ff', color:'#1d4ed8', padding:9, borderRadius:10 }}><Users size={19}/></span><div style={{ flex:1 }}><p>Effectif enregistré</p><small>Élèves répartis par classe</small></div><strong style={{ color:'#172554', fontSize:17 }}>248</strong></div>
+                  <div className="gl-demo-item"><span style={{ background:'#fff7df', color:'#a16207', padding:9, borderRadius:10 }}><Wallet size={19}/></span><div style={{ flex:1 }}><p>Encaissements</p><small>Montant illustratif</small></div><strong style={{ color:'#172554', fontSize:16 }}>3,2 M</strong></div>
+                  <div className="gl-demo-item"><span style={{ background:'#dcfce7', color:'#15803d', padding:9, borderRadius:10 }}><TrendingUp size={19}/></span><div style={{ flex:1 }}><p>Suivi financier</p><small>Vue synthétique</small></div><strong style={{ color:'#15803d', fontSize:12 }}>Disponible</strong></div>
+                </div> : demoView === 'payments' ? <div className="gl-demo-list">
+                  {[['Awa Traoré','Scolarité','Enregistré'],['Moussa Diallo','Inscription','Enregistré'],['Fatou Koné','Tranche 2','À vérifier']].map((r,i)=><div key={r[0]} className="gl-demo-item"><span style={{ width:35,height:35,display:'grid',placeItems:'center',background:'#eff6ff',borderRadius:10,color:'#1d4ed8',fontWeight:900 }}>{r[0].split(' ').map(n=>n[0]).join('')}</span><div style={{ flex:1 }}><p>{r[0]}</p><small>{r[1]}</small></div><span style={{ fontSize:10,fontWeight:800,color:i===2?'#a16207':'#15803d' }}>{r[2]}</span></div>)}
+                </div> : <div className="gl-demo-list">
+                  {[['Awa Traoré','6e A'],['Moussa Diallo','5e B'],['Fatou Koné','4e A']].map((r)=><div key={r[0]} className="gl-demo-item"><span style={{ width:35,height:35,display:'grid',placeItems:'center',background:'#f1edff',borderRadius:10,color:'#6d28d9',fontWeight:900 }}>{r[0].split(' ').map(n=>n[0]).join('')}</span><div style={{ flex:1 }}><p>{r[0]}</p><small>Classe : {r[1]}</small></div><span style={{ color:'#64748b', fontSize:10 }}>Élève</span></div>)}
+                </div>}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="gl-section">
+          <div className="gl-container">
+            <div className="gl-kicker">Simple pour commencer</div>
+            <h2 className="gl-h2">De la prise en main à votre suivi quotidien.</h2>
+            <div className="gl-step-grid">
+              <article className="gl-step"><div className="gl-step-num">01</div><h3>Découvrez l’espace</h3><p>Ouvrez Gestilys et explorez les rubriques disponibles pour votre établissement.</p></article>
+              <article className="gl-step"><div className="gl-step-num">02</div><h3>Configurez votre école</h3><p>Renseignez les informations utiles, les classes, les élèves et les frais à suivre.</p></article>
+              <article className="gl-step"><div className="gl-step-num">03</div><h3>Suivez les opérations</h3><p>Enregistrez les paiements et consultez les informations de gestion depuis votre espace.</p></article>
+            </div>
+          </div>
+        </section>
+
+        <section id="tarifs" className="gl-section gl-section-soft">
+          <div className="gl-container">
+            <div className="gl-kicker">Un tarif simple</div>
+            <h2 className="gl-h2">Un outil accessible pour votre école.</h2>
+            <p className="gl-sub">Découvrez la plateforme avant de décider si elle convient à votre établissement.</p>
+            <div className="gl-price">
+              <div>
+                <span style={{ display:'inline-flex', borderRadius:999, padding:'6px 10px', background:'rgba(255,255,255,.12)', color:'#fde68a', fontSize:10, fontWeight:900, letterSpacing:'.08em', textTransform:'uppercase' }}>Pour démarrer</span>
+                <h3 style={{ marginTop:13 }}>Gestilys</h3>
+                <p>Les outils de gestion scolaire réunis dans une interface simple.<br/>Contactez-nous pour confirmer le tarif adapté à votre établissement et les conditions de l’essai.</p>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginTop:17, fontSize:12, fontWeight:700, color:'#fff' }}><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accès depuis le navigateur</span><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accompagnement au démarrage</span></div>
+              </div>
+              <button className="gl-btn gl-btn-primary gl-price-action" onClick={onEnter}>Demander une démonstration <ArrowRight size={16}/></button>
+            </div>
+          </div>
+        </section>
+
+        <section id="questions" className="gl-section">
+          <div className="gl-container" style={{ maxWidth:790 }}>
+            <div className="gl-kicker">Questions fréquentes</div>
+            <h2 className="gl-h2" style={{ marginBottom:26 }}>Vous voulez en savoir plus ?</h2>
+            {FAQ.map((item,i)=> {
+              const isOpen = openFaq === i;
+              return <div className="gl-faq" key={item.q}><button aria-expanded={isOpen} onClick={()=>setOpenFaq(isOpen?null:i)}>{item.q}<ChevronDown size={18} style={{ flexShrink:0, transform:isOpen?'rotate(180deg)':'rotate(0)', transition:'transform .2s', color:'#1d4ed8' }}/></button>{isOpen && <p>{item.a}</p>}</div>;
             })}
           </div>
         </section>
 
-        {/* ── CTA final ────────────────────────────────────── */}
-        <section className="mx-auto max-w-3xl px-6 py-12">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-royal-700 to-royal-900 p-8 text-center shadow-cardLg sm:p-12">
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(255,255,255,.15) 1px,transparent 0)', backgroundSize: '20px 20px' }} />
-            <div className="relative">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-glow-gold-lg">
-                <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
-              </div>
-              <h2 className="mt-6 font-display text-3xl font-800 tracking-tight text-white sm:text-4xl">Prêt à digitaliser votre école ?</h2>
-              <p className="mt-4 text-sm leading-relaxed text-royal-100 sm:text-base">
-                Commencez gratuitement aujourd'hui. Aucune installation, aucune carte bancaire requise.
-              </p>
-              <button onClick={onEnter} className="group mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 px-8 py-4 text-base font-800 text-royal-900 shadow-glow-gold-lg transition-all hover:scale-[1.03] active:scale-95 sm:text-lg">
-                <Wallet className="h-5 w-5" /> Démarrer l'essai gratuit <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </button>
-            </div>
+        <section style={{ padding:'0 0 76px' }}>
+          <div className="gl-container" style={{ borderRadius:25, background:'linear-gradient(125deg,#172554,#1d4ed8)', padding:'clamp(28px,5vw,54px)', textAlign:'center', color:'white', overflow:'hidden', position:'relative' }}>
+            <div style={{ display:'inline-grid', placeItems:'center', width:54, height:54, borderRadius:17, background:'#f9d56e', color:'#172554' }}><GraduationCap size={28}/></div>
+            <h2 style={{ fontSize:'clamp(28px,4vw,42px)', letterSpacing:'-.04em', fontWeight:900, marginTop:18 }}>Prêt à découvrir une autre façon de gérer votre école ?</h2>
+            <p style={{ color:'#dbeafe', fontSize:14, lineHeight:1.8, maxWidth:560, margin:'12px auto 0' }}>Découvrez Gestilys et voyez comment il peut s’intégrer au quotidien de votre établissement.</p>
+            <button className="gl-btn gl-btn-primary" style={{ marginTop:23 }} onClick={onEnter}>Découvrir Gestilys <ArrowRight size={17}/></button>
           </div>
         </section>
+      </main>
 
-        {/* ── Footer ───────────────────────────────────────── */}
-        <footer className="border-t border-white/10 px-6 py-10">
-          <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-gold-300" />
-              <span className="font-display text-lg font-800 text-white">Gestilys</span>
-            </div>
-            <p className="max-w-md text-xs leading-relaxed text-royal-100">
-              La solution de gestion des frais de scolarité, stocks et bulletins pour les écoles d'Afrique de l'Ouest.
-            </p>
-            <div className="flex flex-col items-center gap-3 text-sm text-royal-100 sm:flex-row sm:gap-6">
-              <a href="mailto:paulkomivitengue@gmail.com" className="inline-flex items-center gap-2 transition hover:text-gold-300">
-                <Mail className="h-4 w-4 text-gold-300" /> paulkomivitengue@gmail.com
-              </a>
-              <a href="tel:+22373369410" className="inline-flex items-center gap-2 transition hover:text-gold-300">
-                <Phone className="h-4 w-4 text-gold-300" /> +223 73 36 94 10
-              </a>
-              <span className="inline-flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-gold-300" /> Bamako, Mali
-              </span>
-            </div>
-            <p className="mt-4 text-xs text-white/30">© {new Date().getFullYear()} Gestilys. Tous droits réservés.</p>
+      <footer className="gl-footer">
+        <div className="gl-container" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:22 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}><span style={{ width:38,height:38,borderRadius:12,display:'grid',placeItems:'center',background:'rgba(255,255,255,.12)',color:'#f9d56e' }}><GraduationCap size={22}/></span><div><div style={{ fontSize:18,fontWeight:900,color:'white' }}>Gestilys</div><div style={{ fontSize:10,color:'#bfdbfe' }}>La gestion scolaire, plus simplement.</div></div></div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center', fontSize:12 }}>
+            <a href="mailto:paulkomivitengue@gmail.com" style={{ color:'#dbeafe',textDecoration:'none',display:'flex',alignItems:'center',gap:6 }}><Mail size={14}/> Nous contacter</a>
+            <a href="tel:+22373369410" style={{ color:'#dbeafe',textDecoration:'none',display:'flex',alignItems:'center',gap:6 }}><Phone size={14}/> +223 73 36 94 10</a>
+            <span style={{ color:'#dbeafe',display:'flex',alignItems:'center',gap:6 }}><MapPin size={14}/> Bamako, Mali</span>
           </div>
-        </footer>
-      </div>
+          <div style={{ width:'100%', borderTop:'1px solid rgba(255,255,255,.12)', paddingTop:18, color:'#94a3b8', fontSize:11 }}>© {new Date().getFullYear()} Gestilys. Tous droits réservés.</div>
+        </div>
+      </footer>
     </div>
   );
 }
