@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
 
@@ -11,6 +11,8 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
   const [schoolLogo, setSchoolLogo] = useState('');
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [accent, setAccent] = useState('#273c75');
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [academicYear, setAcademicYear] = useState(() => {
     const now = new Date();
     const start = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
@@ -112,7 +114,10 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Logo de l'école (facultatif)</label>
-                <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> {schoolLogo ? 'Changer le logo' : 'Ajouter le logo'}<input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) readImage(f, setSchoolLogo); e.currentTarget.value = ''; }} /></label>
+                <div>
+                  <button type="button" onClick={() => logoInputRef.current?.click()} className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> {schoolLogo ? 'Changer le logo' : 'Ajouter le logo'}</button>
+                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) readImage(f, setSchoolLogo); input.value = ''; }} />
+                </div>
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Couleur principale</label>
@@ -164,7 +169,10 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                     </div>
                   </div>
                 </article>
-                <label className="student-card-photo-upload mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> {photos[s.id] ? 'Changer la photo' : 'Ajouter la photo de ' + s.firstName}<input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); e.currentTarget.value = ''; }} /></label>
+                <div className="student-card-photo-upload mt-2">
+                  <button type="button" onClick={() => photoInputRefs.current[s.id]?.click()} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> {photos[s.id] ? 'Changer la photo' : 'Ajouter la photo de ' + s.firstName}</button>
+                  <input ref={node => { photoInputRefs.current[s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
+                </div>
               </div>
             ))}
           </div>
