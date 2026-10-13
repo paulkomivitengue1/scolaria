@@ -11,7 +11,8 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
   const [schoolLogo, setSchoolLogo] = useState('');
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [accent, setAccent] = useState('#273c75');
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoGalleryRef = useRef<HTMLInputElement>(null);
+  const logoCameraRef = useRef<HTMLInputElement>(null);
   const photoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [academicYear, setAcademicYear] = useState(() => {
     const now = new Date();
@@ -27,17 +28,46 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
     ? eligibleStudents.filter(s => s.id === studentId)
     : eligibleStudents, [eligibleStudents, mode, studentId]);
 
-  const readImage = (file: File, onRead: (data: string) => void) => {
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) {
-      window.alert('Choisissez une image de 5 Mo maximum.');
+  const readImage = async (file: File, onRead: (data: string) => void) => {
+    if (!file.type.startsWith('image/')) {
+      window.alert('Choisissez un fichier image (JPG, PNG ou WebP).');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') onRead(reader.result);
-    };
-    reader.readAsDataURL(file);
+    // Resize before keeping the image in React state: phone camera originals can be huge.
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxSide = 1000;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) {
+        bitmap.close();
+        window.alert('Impossible de préparer cette image. Essayez une autre photo.');
+        return;
+      }
+      // Keep a white background if WebP encoding is unavailable on an older browser.
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      const data = await new Promise<string>((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (!blob) {
+            reject(new Error('Image compression failed'));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Image read failed'));
+          reader.onerror = () => reject(new Error('Image read failed'));
+          reader.readAsDataURL(blob);
+        }, 'image/jpeg', 0.82);
+      });
+      onRead(data);
+    } catch {
+      window.alert('Cette photo n’a pas pu être traitée. Essayez une image JPG ou PNG moins volumineuse.');
+    }
   };
 
   const printCards = () => {
@@ -115,8 +145,12 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Logo de l'école (facultatif)</label>
                 <div>
-                  <button type="button" onClick={() => logoInputRef.current?.click()} className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> {schoolLogo ? 'Changer le logo' : 'Ajouter le logo'}</button>
-                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) readImage(f, setSchoolLogo); input.value = ''; }} />
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button type="button" onClick={() => logoGalleryRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> Galerie / fichiers</button>
+                    <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
+                  </div>
+                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
+                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, setSchoolLogo); input.value = ''; }} />
                 </div>
               </div>
               <div>
@@ -124,7 +158,7 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                 <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 px-3"><input aria-label="Couleur de la carte" type="color" value={accent} onChange={e => setAccent(e.target.value)} className="h-7 w-10 cursor-pointer border-0 bg-transparent" /><span className="text-sm text-slate-600">{accent.toUpperCase()}</span></div>
               </div>
             </div>
-            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">Les photos et le logo sélectionnés sont utilisés temporairement dans cette session et ne sont pas enregistrés dans la fiche élève. Pour les conserver après fermeture, il faudra ensuite ajouter un stockage sécurisé par école.</p>
+            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">Choisissez une image dans la galerie ou prenez une photo. Les images sont réduites automatiquement pour faciliter l’utilisation sur téléphone. Elles restent temporaires et ne sont pas enregistrées dans la fiche élève.</p>
           </section>
 
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -170,8 +204,12 @@ export function StudentCardsView({ students, schoolName }: { students: Student[]
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
-                  <button type="button" onClick={() => photoInputRefs.current[s.id]?.click()} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> {photos[s.id] ? 'Changer la photo' : 'Ajouter la photo de ' + s.firstName}</button>
-                  <input ref={node => { photoInputRefs.current[s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button type="button" onClick={() => photoInputRefs.current['gallery-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-3.5 w-3.5" /> Galerie / fichiers</button>
+                    <button type="button" onClick={() => photoInputRefs.current['camera-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> Prendre une photo</button>
+                  </div>
+                  <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
+                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
                 </div>
               </div>
             ))}
