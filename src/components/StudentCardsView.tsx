@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
+import { ImageCropper } from './ImageCropper';
 
 type Mode = 'individual' | 'class';
 
@@ -11,6 +12,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
   const [localSchoolLogo, setLocalSchoolLogo] = useState(schoolLogo);
   useEffect(() => { setLocalSchoolLogo(schoolLogo); }, [schoolLogo]);
   const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
   const logoGalleryRef = useRef<HTMLInputElement>(null);
   const logoCameraRef = useRef<HTMLInputElement>(null);
@@ -119,6 +121,8 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
         }
       `}</style>
 
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 68 / 86} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
+
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700"><CreditCard className="h-3 w-3" /> Scolarité</div>
@@ -173,7 +177,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     <button type="button" onClick={() => logoGalleryRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-4 w-4" /> Galerie / fichiers</button>
                     <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
                   </div>
-                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setLocalSchoolLogo(data); void onSchoolLogoChange(data).catch(() => window.alert('Le logo n’a pas pu être enregistré. Gérez-le dans Paramètres.')); }); input.value = ''; }} />
+                  <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
                   <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setLocalSchoolLogo(data); void onSchoolLogoChange(data).catch(() => window.alert('Le logo n’a pas pu être enregistré. Gérez-le dans Paramètres.')); }); input.value = ''; }} />
                 </div>
               </div>
@@ -232,7 +236,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     <button type="button" onClick={() => photoInputRefs.current['gallery-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Upload className="h-3.5 w-3.5" /> Galerie / fichiers</button>
                     <button type="button" onClick={() => photoInputRefs.current['camera-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> Prendre une photo</button>
                   </div>
-                  <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
+                  <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: s.id })); input.value = ''; }} />
                   <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
                 </div>
               </div>
