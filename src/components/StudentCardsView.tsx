@@ -114,14 +114,14 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
         @media print {
           body * { visibility: hidden !important; }
           .student-cards-print, .student-cards-print * { visibility: visible !important; }
-          .student-cards-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; display: grid !important; grid-template-columns: repeat(2, 85.6mm) !important; gap: 6mm !important; }
-          .student-id-card { width: 85.6mm !important; height: 54mm !important; margin: 0 !important; box-shadow: none !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .student-cards-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; display: grid !important; grid-template-columns: repeat(2, 85.6mm) !important; gap: 6mm !important; align-items:start !important; }
+          .student-id-card { width: 85.6mm !important; height: 54mm !important; min-height:54mm !important; max-width:none !important; margin: 0 !important; box-shadow: none !important; overflow:hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n          .student-id-card > div.relative { padding: 2.5mm !important; }\n          .student-id-card img { max-width:100% !important; }\n          .student-id-card .student-photo-frame { width: 22mm !important; height: 29mm !important; }
           .student-card-photo-upload { display: none !important; }
           .student-cards-print-empty { display: none !important; }
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 48 / 62} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 22 / 29} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -212,8 +212,8 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                       </div>
                     </div>
                     <div className="mt-2 flex min-h-0 flex-1 gap-2">
-                      <div className="flex w-[52px] shrink-0 flex-col items-center">
-                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="h-[62px] w-[48px] rounded-md object-cover" /> : <div className="grid h-[62px] w-[48px] place-items-center rounded-md bg-slate-100 text-lg font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
+                      <div className="flex w-[26px] shrink-0 flex-col items-center">
+                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame h-[29px] w-[22px] rounded object-cover" /> : <div className="student-photo-frame grid h-[29px] w-[22px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
                       </div>
                       <div className="min-w-0 flex-1 space-y-1">
