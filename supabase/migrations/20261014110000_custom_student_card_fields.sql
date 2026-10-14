@@ -4,6 +4,7 @@ ALTER TABLE public.schools
   NOT NULL DEFAULT '{"matricule":true,"sexe":true,"parentName":false,"birthDate":false,"birthPlace":false}'::jsonb;
 
 ALTER TABLE public.students
+  ADD COLUMN IF NOT EXISTS birth_date date,
   ADD COLUMN IF NOT EXISTS birth_place text;
 
 COMMENT ON COLUMN public.schools.student_card_fields IS 'School-specific visibility preferences for student ID card fields.';
