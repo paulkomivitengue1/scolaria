@@ -442,23 +442,30 @@ export async function saveSchoolLogo(schoolId: string, logoData: string): Promis
 // ── Year-end stock reset ────────────────────────────────
 
 export async function yearEndStockReset(
-  _schoolId: string,
+  schoolId: string,
   uniforms: UniformStockItem[],
   books: BookStockItem[],
 ): Promise<void> {
+  const supa = getSupabase();
   for (const u of uniforms) {
     const remaining = Math.max(0, u.oldStock + u.newStock - u.sold);
-    await getSupabase()
+    const { error } = await supa
       .from('stock_items')
       .update({ old_stock: remaining, new_stock: 0, sold: 0 })
-      .eq('id', u.id);
+      .eq('id', u.id)
+      .eq('school_id', schoolId)
+      .eq('category', 'tenue');
+    if (error) throw error;
   }
   for (const b of books) {
     const remaining = Math.max(0, b.inStock - b.sold);
-    await getSupabase()
+    const { error } = await supa
       .from('stock_items')
       .update({ in_stock: remaining, sold: 0 })
-      .eq('id', b.id);
+      .eq('id', b.id)
+      .eq('school_id', schoolId)
+      .eq('category', 'livre');
+    if (error) throw error;
   }
 }
 
