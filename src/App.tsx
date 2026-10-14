@@ -308,7 +308,11 @@ export default function App() {
     if (profile?.schoolId) {
       syncUniformStock(profile.schoolId, uniforms, next).then(synced => {
         setUniforms(synced);
-      }).catch(err => console.error('Uniform sync failed:', err));
+      }).catch(err => {
+        console.error('Uniform sync failed:', err);
+        setUniforms(uniforms);
+        window.alert('Les modifications du stock de tenues n’ont pas été enregistrées. Vérifiez votre connexion puis réessayez.');
+      });
     }
   }, [profile?.schoolId, uniforms]);
 
@@ -317,7 +321,11 @@ export default function App() {
     if (profile?.schoolId) {
       syncBookStock(profile.schoolId, books, next).then(synced => {
         setBooks(synced);
-      }).catch(err => console.error('Book sync failed:', err));
+      }).catch(err => {
+        console.error('Book sync failed:', err);
+        setBooks(books);
+        window.alert('Les modifications du stock de livres n’ont pas été enregistrées. Vérifiez votre connexion puis réessayez.');
+      });
     }
   }, [profile?.schoolId, books]);
 
