@@ -11,6 +11,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
   const [busy, setBusy] = useState(false);
   const [rotation, setRotation] = useState(0);
   const frameRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ x: number; y: number; horizontal: number; vertical: number } | null>(null);
   const [frameWidth, setFrameWidth] = useState(320);
   const frameHeight = frameWidth / aspectRatio;
 
@@ -76,8 +77,27 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
   return createPortal(<div className="fixed inset-0 flex items-center justify-center bg-slate-950/80 p-3 sm:p-6" style={{ zIndex: 2147483647 }} role="dialog" aria-modal="true" aria-label={title}>
     <div className="max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-800 text-slate-900">Recadrer {title.toLowerCase()}</h2><p className="text-sm text-slate-500">Ajustez le zoom et le cadrage avant d’enregistrer.</p></div><button type="button" onClick={onCancel} aria-label="Fermer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"><X className="h-5 w-5" /></button></div>
-      <div ref={frameRef} className="mx-auto overflow-hidden rounded-xl bg-slate-100" style={{ width: 'min(100%, 320px)', aspectRatio: String(aspectRatio), position: 'relative' }}>
-        <img src={image} alt="Aperçu à recadrer" draggable={false} style={{ position: 'absolute', width, height, maxWidth: 'none', objectFit: 'fill', left: (frameWidth - width) * horizontal / 100, top: (frameHeight - height) * vertical / 100, transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }} />
+      <div
+        ref={frameRef}
+        className="mx-auto overflow-hidden rounded-xl bg-slate-100"
+        style={{ width: 'min(100%, 320px)', aspectRatio: String(aspectRatio), position: 'relative', touchAction: 'none', cursor: 'grab' }}
+        onPointerDown={e => {
+          if (busy) return;
+          dragRef.current = { x: e.clientX, y: e.clientY, horizontal, vertical };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={e => {
+          const start = dragRef.current;
+          if (!start) return;
+          const overflowX = Math.max(1, width - frameWidth);
+          const overflowY = Math.max(1, height - frameHeight);
+          setHorizontal(Math.max(0, Math.min(100, start.horizontal - (e.clientX - start.x) / overflowX * 100)));
+          setVertical(Math.max(0, Math.min(100, start.vertical - (e.clientY - start.y) / overflowY * 100)));
+        }}
+        onPointerUp={() => { dragRef.current = null; }}
+        onPointerCancel={() => { dragRef.current = null; }}
+      >
+        <img src={image} alt="Aperçu à recadrer" draggable={false} style={{ pointerEvents: 'none', position: 'absolute', width, height, maxWidth: 'none', objectFit: 'fill', left: (frameWidth - width) * horizontal / 100, top: (frameHeight - height) * vertical / 100, transform: `rotate(${rotation}deg)`, transformOrigin: 'center' }} />
       </div>
       <div className="mt-5 space-y-4">
         <label className="block text-sm font-600 text-slate-700">Zoom <span className="float-right text-slate-500">{zoom.toFixed(1)}×</span><input className="mt-2 w-full accent-indigo-600" type="range" min="1" max="3" step="0.1" value={zoom} onChange={e => setZoom(Number(e.target.value))} /></label>
