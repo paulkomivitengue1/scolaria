@@ -203,6 +203,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                   ['matricule', 'Matricule'],
                   ['sexe', 'Sexe'],
                   ['parentName', 'Nom du parent'],
+                  ['birthDate', 'Date de naissance'],
+                  ['birthPlace', 'Lieu de naissance'],
                 ] as [keyof StudentCardFields, string][]).map(([key, label]) => (
                   <label key={key} className="flex min-h-9 items-center justify-between gap-3 border-t border-slate-100 py-1.5 text-xs text-slate-600">
                     <span>{label}</span>
@@ -259,6 +261,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
                     </div>}
                     {cardFields.parentName && s.parentName && <p className="mt-1 truncate text-[8px] text-slate-600">Parent : {s.parentName}</p>}
+                    {cardFields.birthDate && s.birthDate && <p className="mt-1 truncate text-[8px] text-slate-600">Né(e) le : {new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR')}</p>}
+                    {cardFields.birthPlace && s.birthPlace && <p className="mt-1 truncate text-[8px] text-slate-600">Lieu : {s.birthPlace}</p>}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
