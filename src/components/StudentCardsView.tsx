@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
 import { ImageCropper } from './ImageCropper';
+import { DEFAULT_STUDENT_CARD_FIELDS, loadStudentCardFields, saveStudentCardFields, type StudentCardFields } from '../lib/db';
 
 type Mode = 'individual' | 'class';
 
-export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLogoChange }: { students: Student[]; schoolName: string; schoolLogo: string; onSchoolLogoChange: (logoData: string) => Promise<void> }) {
+export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, onSchoolLogoChange }: { students: Student[]; schoolId: string; schoolName: string; schoolLogo: string; onSchoolLogoChange: (logoData: string) => Promise<void> }) {
   const [mode, setMode] = useState<Mode>('class');
   const [className, setClassName] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -14,6 +15,18 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
+  const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
+  const [fieldsSaving, setFieldsSaving] = useState(false);
+  useEffect(() => { let alive = true; loadStudentCardFields(schoolId).then(fields => { if (alive) setCardFields(fields); }).catch(() => { if (alive) window.alert('Impossible de charger les options de carte.'); }); return () => { alive = false; }; }, [schoolId]);
+  const toggleCardField = async (key: keyof StudentCardFields) => {
+    const previous = cardFields;
+    const next = { ...previous, [key]: !previous[key] };
+    setCardFields(next);
+    setFieldsSaving(true);
+    try { await saveStudentCardFields(schoolId, next); }
+    catch { setCardFields(previous); window.alert('Les options de carte n’ont pas été enregistrées. Réessayez.'); }
+    finally { setFieldsSaving(false); }
+  };
   const logoGalleryRef = useRef<HTMLInputElement>(null);
   const logoCameraRef = useRef<HTMLInputElement>(null);
   const photoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -181,6 +194,24 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                   <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
                 </div>
               </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <label className="text-xs font-700 text-slate-600">Informations sur la carte</label>
+                  <span className="text-[10px] text-slate-400">{fieldsSaving ? 'Enregistrement…' : 'Enregistré automatiquement'}</span>
+                </div>
+                {([
+                  ['matricule', 'Matricule'],
+                  ['sexe', 'Sexe'],
+                  ['parentName', 'Nom du parent'],
+                  ['birthDate', 'Date de naissance'],
+                  ['birthPlace', 'Lieu de naissance'],
+                ] as [keyof StudentCardFields, string][]).map(([key, label]) => (
+                  <label key={key} className="flex min-h-9 items-center justify-between gap-3 border-t border-slate-100 py-1.5 text-xs text-slate-600">
+                    <span>{label}</span>
+                    <input type="checkbox" checked={cardFields[key]} onChange={() => void toggleCardField(key)} className="h-4 w-4 accent-blue-700" />
+                  </label>
+                ))}
+              </div>
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Couleur principale</label>
                 <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 px-3"><input aria-label="Couleur de la carte" type="color" value={accent} onChange={e => setAccent(e.target.value)} className="h-7 w-10 cursor-pointer border-0 bg-transparent" /><span className="text-sm text-slate-600">{accent.toUpperCase()}</span></div>
@@ -221,14 +252,15 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                         <p className="break-words text-[9px] text-slate-500">Nom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.lastName}</p>
                         <div className="mt-1 grid grid-cols-2 gap-1">
                           <div><p className="text-[8px] text-slate-500">Classe</p><p className="break-words text-[10px] font-700 text-slate-800">{s.className}</p></div>
-                          <div><p className="text-[8px] text-slate-500">Sexe</p><p className="text-[10px] font-700 text-slate-800">{s.sexe === 'F' ? 'F' : 'M'}</p></div>
+                          {cardFields.sexe && <div><p className="text-[8px] text-slate-500">Sexe</p><p className="text-[10px] font-700 text-slate-800">{s.sexe === 'F' ? 'F' : 'M'}</p></div>}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
-                      <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>
+                    {(cardFields.matricule || academicYear) && <div className="mt-1 flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
+                      {cardFields.matricule && <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>}
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
-                    </div>
+                    </div>}
+                    {cardFields.parentName && s.parentName && <p className="mt-1 truncate text-[8px] text-slate-600">Parent : {s.parentName}</p>}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
