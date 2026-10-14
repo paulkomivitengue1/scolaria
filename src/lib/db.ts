@@ -434,12 +434,16 @@ export type StudentCardFields = {
   matricule: boolean;
   sexe: boolean;
   parentName: boolean;
+  birthDate: boolean;
+  birthPlace: boolean;
 };
 
 export const DEFAULT_STUDENT_CARD_FIELDS: StudentCardFields = {
   matricule: true,
   sexe: true,
   parentName: false,
+  birthDate: false,
+  birthPlace: false,
 };
 
 export async function loadStudentCardFields(schoolId: string): Promise<StudentCardFields> {
