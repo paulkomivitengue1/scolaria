@@ -178,7 +178,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
                   </div>
                   <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
-                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setLocalSchoolLogo(data); void onSchoolLogoChange(data).catch(() => window.alert('Le logo n’a pas pu être enregistré. Gérez-le dans Paramètres.')); }); input.value = ''; }} />
+                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
                 </div>
               </div>
               <div>
