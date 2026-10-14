@@ -121,7 +121,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 22 / 29} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -213,7 +213,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     </div>
                     <div className="mt-2 flex min-h-0 flex-1 gap-2">
                       <div className="flex w-[26px] shrink-0 flex-col items-center">
-                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame h-[23px] w-[18px] rounded object-cover" /> : <div className="student-photo-frame grid h-[29px] w-[22px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
+                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame h-[23px] w-[18px] rounded object-cover" /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
                       </div>
                       <div className="min-w-0 flex-1 space-y-1">
@@ -237,7 +237,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     <button type="button" onClick={() => photoInputRefs.current['camera-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> Prendre une photo</button>
                   </div>
                   <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: s.id })); input.value = ''; }} />
-                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
+                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: s.id })); input.value = ''; }} />
                 </div>
               </div>
             ))}
