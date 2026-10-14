@@ -14,8 +14,7 @@ import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   updateStudentDB, deleteStudentDB,
   loadTeachers, addTeacherDB, updateTeacherDB, deleteTeacherDB,
   loadSalaryPayments, paySalaryDB, unpaySalaryDB,
-  loadStudentCardFields, saveStudentCardFields,
-} from './lib/db';
+  } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Sidebar } from './components/Sidebar';
