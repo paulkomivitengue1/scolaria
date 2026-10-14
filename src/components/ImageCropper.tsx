@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, RotateCcw, X } from 'lucide-react';
 
 type Props = { image: string; aspectRatio: number; title: string; onCancel: () => void; onApply: (image: string) => void };
@@ -47,7 +48,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
   const scale = Math.max(frameWidth / naturalSize.width, frameHeight / naturalSize.height) * zoom;
   const width = naturalSize.width * scale;
   const height = naturalSize.height * scale;
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
+  return createPortal(<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
     <div className="max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-800 text-slate-900">Recadrer {title.toLowerCase()}</h2><p className="text-sm text-slate-500">Ajustez le zoom et le cadrage avant d’enregistrer.</p></div><button type="button" onClick={onCancel} aria-label="Fermer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"><X className="h-5 w-5" /></button></div>
       <div className="mx-auto overflow-hidden rounded-xl bg-slate-100" style={{ width: 'min(100%, 320px)', aspectRatio: String(aspectRatio), position: 'relative' }}>
@@ -60,5 +61,5 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
       </div>
       <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between"><button type="button" onClick={() => { setZoom(1); setHorizontal(50); setVertical(50); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-700"><RotateCcw className="h-4 w-4" /> Réinitialiser</button><div className="flex gap-2"><button type="button" onClick={onCancel} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-700">Annuler</button><button type="button" disabled={busy} onClick={() => void apply()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-700 text-white disabled:opacity-50"><Check className="h-4 w-4" /> {busy ? 'Enregistrement…' : 'Valider le cadrage'}</button></div></div>
     </div>
-  </div>;
+  </div>, document.body);
 }
