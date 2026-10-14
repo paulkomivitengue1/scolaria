@@ -421,6 +421,41 @@ export async function loadPricing(schoolId: string): Promise<Record<string, Reco
   return pricing;
 }
 
+// ── Student card display preferences ────────────────────
+export type StudentCardFields = {
+  matricule: boolean;
+  sexe: boolean;
+  parentName: boolean;
+  birthDate: boolean;
+  birthPlace: boolean;
+};
+
+export const DEFAULT_STUDENT_CARD_FIELDS: StudentCardFields = {
+  matricule: true,
+  sexe: true,
+  parentName: false,
+  birthDate: false,
+  birthPlace: false,
+};
+
+export async function loadStudentCardFields(schoolId: string): Promise<StudentCardFields> {
+  const { data, error } = await getSupabase()
+    .from('schools')
+    .select('student_card_fields')
+    .eq('id', schoolId)
+    .single();
+  if (error) throw error;
+  return { ...DEFAULT_STUDENT_CARD_FIELDS, ...(data.student_card_fields || {}) };
+}
+
+export async function saveStudentCardFields(schoolId: string, fields: StudentCardFields): Promise<void> {
+  const { error } = await getSupabase()
+    .from('schools')
+    .update({ student_card_fields: fields })
+    .eq('id', schoolId);
+  if (error) throw error;
+}
+
 // ── School ──────────────────────────────────────────────
 
 export async function updateSchoolName(schoolId: string, name: string): Promise<void> {
