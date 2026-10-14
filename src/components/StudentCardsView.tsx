@@ -121,7 +121,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 68 / 86} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 48 / 62} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -212,8 +212,8 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                       </div>
                     </div>
                     <div className="mt-2 flex min-h-0 flex-1 gap-2">
-                      <div className="flex w-[72px] shrink-0 flex-col items-center">
-                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="h-[86px] w-[68px] rounded-md object-cover" /> : <div className="grid h-[86px] w-[68px] place-items-center rounded-md bg-slate-100 text-xl font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
+                      <div className="flex w-[52px] shrink-0 flex-col items-center">
+                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="h-[62px] w-[48px] rounded-md object-cover" /> : <div className="grid h-[62px] w-[48px] place-items-center rounded-md bg-slate-100 text-lg font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
                       </div>
                       <div className="min-w-0 flex-1 space-y-1">
