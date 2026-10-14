@@ -213,7 +213,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     </div>
                     <div className="mt-2 flex min-h-0 flex-1 gap-2">
                       <div className="flex w-[26px] shrink-0 flex-col items-center">
-                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame h-[23px] w-[18px] rounded object-cover" /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
+                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame rounded object-cover" style={{ width: 18, height: 23, minWidth: 18, minHeight: 23, maxWidth: 18, maxHeight: 23, flex: "0 0 18px", objectFit: "cover", display: "block" }} /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
                       </div>
                       <div className="min-w-0 flex-1 space-y-1">
