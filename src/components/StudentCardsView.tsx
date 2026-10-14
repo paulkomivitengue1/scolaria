@@ -203,8 +203,6 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                   ['matricule', 'Matricule'],
                   ['sexe', 'Sexe'],
                   ['parentName', 'Nom du parent'],
-                  ['birthDate', 'Date de naissance'],
-                  ['birthPlace', 'Lieu de naissance'],
                 ] as [keyof StudentCardFields, string][]).map(([key, label]) => (
                   <label key={key} className="flex min-h-9 items-center justify-between gap-3 border-t border-slate-100 py-1.5 text-xs text-slate-600">
                     <span>{label}</span>
