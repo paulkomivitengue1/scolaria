@@ -14,6 +14,7 @@ import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   updateStudentDB, deleteStudentDB,
   loadTeachers, addTeacherDB, updateTeacherDB, deleteTeacherDB,
   loadSalaryPayments, paySalaryDB, unpaySalaryDB,
+  loadStudentCardFields, saveStudentCardFields,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
@@ -572,7 +573,7 @@ export default function App() {
                 </div>
               </>)}
 
-              {view === 'cartes' && <StudentCardsView students={students} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
+              {view === 'cartes' && <StudentCardsView students={students} schoolId={profile.schoolId} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
 
               {view === 'classes' && (
                 <ClassView
