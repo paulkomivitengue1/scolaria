@@ -45,16 +45,18 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
       const angle = rotation * Math.PI / 180;
       ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(angle);
       const scale = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight) * zoom;
       const drawnWidth = img.naturalWidth * scale;
       const drawnHeight = img.naturalHeight * scale;
       const overflowX = Math.max(0, drawnWidth - canvas.width);
       const overflowY = Math.max(0, drawnHeight - canvas.height);
-      const offsetX = (horizontal - 50) / 50 * overflowX / 2;
-      const offsetY = (vertical - 50) / 50 * overflowY / 2;
-      ctx.drawImage(img, -drawnWidth / 2 + offsetX, -drawnHeight / 2 + offsetY, drawnWidth, drawnHeight);
+      // Match the preview: slider 0 pins the image to the left/top, 100 to right/bottom.
+      const offsetX = (50 - horizontal) / 50 * overflowX / 2;
+      const offsetY = (50 - vertical) / 50 * overflowY / 2;
+      // Rotate around the image's own centre, as the CSS preview does.
+      ctx.translate(canvas.width / 2 + offsetX, canvas.height / 2 + offsetY);
+      ctx.rotate(angle);
+      ctx.drawImage(img, -drawnWidth / 2, -drawnHeight / 2, drawnWidth, drawnHeight);
       ctx.restore();
       const result = await new Promise<string>((resolve, reject) => canvas.toBlob(blob => {
         if (!blob) return reject(new Error('Compression impossible'));
