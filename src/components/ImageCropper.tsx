@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, RotateCcw, X } from 'lucide-react';
 
@@ -9,8 +9,27 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
   const [horizontal, setHorizontal] = useState(50);
   const [vertical, setVertical] = useState(50);
   const [busy, setBusy] = useState(false);
-  const frameWidth = 320;
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [frameWidth, setFrameWidth] = useState(320);
   const frameHeight = frameWidth / aspectRatio;
+
+  // Keep the crop calculations aligned with the actual preview size on mobile.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const measure = () => {
+      const width = frame.getBoundingClientRect().width;
+      if (width > 0) setFrameWidth(previous => Math.abs(previous - width) > 0.5 ? width : previous);
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure);
+      return () => window.removeEventListener('resize', measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [aspectRatio]);
   const apply = async () => {
     setBusy(true);
     try {
@@ -51,7 +70,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
   return createPortal(<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
     <div className="max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-800 text-slate-900">Recadrer {title.toLowerCase()}</h2><p className="text-sm text-slate-500">Ajustez le zoom et le cadrage avant d’enregistrer.</p></div><button type="button" onClick={onCancel} aria-label="Fermer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"><X className="h-5 w-5" /></button></div>
-      <div className="mx-auto overflow-hidden rounded-xl bg-slate-100" style={{ width: 'min(100%, 320px)', aspectRatio: String(aspectRatio), position: 'relative' }}>
+      <div ref={frameRef} className="mx-auto overflow-hidden rounded-xl bg-slate-100" style={{ width: 'min(100%, 320px)', aspectRatio: String(aspectRatio), position: 'relative' }}>
         <img src={image} alt="Aperçu à recadrer" draggable={false} style={{ position: 'absolute', width, height, maxWidth: 'none', objectFit: 'fill', left: (frameWidth - width) * horizontal / 100, top: (frameHeight - height) * vertical / 100 }} />
       </div>
       <div className="mt-5 space-y-4">
