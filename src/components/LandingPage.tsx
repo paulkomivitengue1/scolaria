@@ -350,12 +350,12 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <div className="gl-container">
             <div className="gl-kicker">Un tarif simple</div>
             <h2 className="gl-h2">Un outil accessible pour votre école.</h2>
-            <p className="gl-sub">Découvrez la plateforme avant de décider si elle convient à votre établissement.</p>
+            <p className="gl-sub">Un abonnement simple pour commencer, avec une remise sur le paiement annuel.</p>
             <div className="gl-price">
               <div>
                 <span style={{ display:'inline-flex', borderRadius:999, padding:'6px 10px', background:'rgba(255,255,255,.12)', color:'#fde68a', fontSize:10, fontWeight:900, letterSpacing:'.08em', textTransform:'uppercase' }}>Pour démarrer</span>
-                <h3 style={{ marginTop:13 }}>2 500 FCFA <span style={{ fontSize:14, fontWeight:700, color:'#dbeafe' }}>/ mois</span></h3>
-                <p>Accédez aux outils de gestion scolaire de Gestilys pour un tarif clair.<br/><strong style={{ color:'#fde68a' }}>Essai gratuit de 14 jours</strong> pour découvrir la plateforme avant de vous abonner.</p>
+                <h3 style={{ marginTop:13 }}>10 000 FCFA <span style={{ fontSize:14, fontWeight:700, color:'#dbeafe' }}>/ mois</span></h3>
+                <p>Toutes les fonctionnalités actuellement disponibles, avec <strong style={{ color:'#fde68a' }}>14 jours d’essai gratuit</strong>.<br/>Option annuelle : <strong>100 000 FCFA / an</strong> (soit 2 mois offerts).</p>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginTop:17, fontSize:12, fontWeight:700, color:'#fff' }}><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accès depuis le navigateur</span><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accompagnement au démarrage</span></div>
               </div>
               <button className="gl-btn gl-btn-primary gl-price-action" onClick={onEnter}>Commencer l’essai gratuit <ArrowRight size={16}/></button>
