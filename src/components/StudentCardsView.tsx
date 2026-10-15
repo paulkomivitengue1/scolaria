@@ -260,9 +260,9 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       {cardFields.matricule && <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>}
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
                     </div>}
-                    {cardFields.parentName && s.parentName && <p className="mt-1 truncate text-[8px] text-slate-600">Parent : {s.parentName}</p>}
-                    {cardFields.birthDate && s.birthDate && <p className="mt-1 truncate text-[8px] text-slate-600">Né(e) le : {new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR')}</p>}
-                    {cardFields.birthPlace && s.birthPlace && <p className="mt-1 truncate text-[8px] text-slate-600">Lieu : {s.birthPlace}</p>}
+                    {cardFields.parentName && <p className="mt-1 truncate text-[8px] text-slate-600">Parent : {s.parentName || '—'}</p>}
+                    {cardFields.birthDate && <p className="mt-1 truncate text-[8px] text-slate-600">Né(e) le : {s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : '—'}</p>}
+                    {cardFields.birthPlace && <p className="mt-1 truncate text-[8px] text-slate-600">Lieu : {s.birthPlace || '—'}</p>}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
