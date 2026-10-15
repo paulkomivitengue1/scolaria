@@ -442,8 +442,9 @@ export const DEFAULT_STUDENT_CARD_FIELDS: StudentCardFields = {
   matricule: true,
   sexe: true,
   parentName: false,
-  birthDate: false,
-  birthPlace: false,
+  // Birth information is useful on school cards and is enabled by default.
+  birthDate: true,
+  birthPlace: true,
 };
 
 export async function loadStudentCardFields(schoolId: string): Promise<StudentCardFields> {
