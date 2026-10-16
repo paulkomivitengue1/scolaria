@@ -135,8 +135,12 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
           .student-id-card .student-card-main { margin-top: 1mm !important; gap: 1mm !important; }
-          .student-id-card .student-card-main p { line-height: 1.1 !important; }
-          .student-id-card .student-card-main .student-card-birth-value { font-size: 8px !important; line-height: 1.15 !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main { min-height: 0 !important; overflow: visible !important; }
+          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; overflow: visible !important; }
+          .student-id-card .student-card-main p { margin: 0 !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-main .student-card-details { row-gap: 0.5mm !important; }
+          .student-id-card .student-card-main .student-card-details > .grid { gap: 0.5mm 1.5mm !important; margin-top: 0.5mm !important; }
+          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 8px !important; line-height: 1.1 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
           .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
           .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
           .student-card-photo-upload { display: none !important; }
