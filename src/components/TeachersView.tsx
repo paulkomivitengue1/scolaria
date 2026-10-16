@@ -191,11 +191,11 @@ export function TeachersView({ teachers, salaryPayments, onAdd, onUpdate, onDele
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     {isPaid ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-700 text-emerald-700">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold" style={{ backgroundColor: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7" }}>
                         <Check className="h-3.5 w-3.5" strokeWidth={3} /> Payé en {monthLabel(selectedMonth).split(' ')[0]}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-gold-50 px-3 py-1.5 text-xs font-700 text-gold-600">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold" style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }}>
                         <Clock className="h-3.5 w-3.5" /> Non payé en {monthLabel(selectedMonth).split(' ')[0]}
                       </span>
                     )}
@@ -211,7 +211,7 @@ export function TeachersView({ teachers, salaryPayments, onAdd, onUpdate, onDele
                     <button
                       onClick={() => onPaySalary(t.id, selectedMonth, t.monthlySalary)}
                       disabled={t.monthlySalary <= 0}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 px-3.5 py-1.5 text-xs font-700 text-white shadow-sm transition hover:brightness-110 active:scale-95 disabled:opacity-40"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold shadow-sm transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: t.monthlySalary > 0 ? "#047857" : "#9ca3af", color: "#ffffff", border: "1px solid #065f46" }}
                     >
                       <Wallet className="h-3.5 w-3.5" /> Marquer payé
                     </button>
