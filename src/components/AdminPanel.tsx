@@ -469,10 +469,20 @@ export function AdminPanel({ onExit }: Props) {
                                 <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                               </td>
                               <td className="px-3 py-3 text-slate-600">{formatDate(s.created_at)}</td>
-                              <td className="px-5 py-3 text-right">
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
-                                  <StIcon className="h-3 w-3" /> {st.label}
-                                </span>
+                              <td className="px-5 py-3">
+                                <div className="flex min-w-[150px] flex-col items-end gap-2">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
+                                    <StIcon className="h-3 w-3" /> {st.label}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => void setSchoolAccess(s.id, s.subscription_status === 'suspended' ? 'active' : 'suspended')}
+                                    disabled={actionLoading === s.id}
+                                    className={`rounded-lg border px-3 py-1.5 text-xs font-700 transition disabled:opacity-50 ${s.subscription_status === 'suspended' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                                  >
+                                    {actionLoading === s.id ? 'Mise à jour…' : s.subscription_status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
