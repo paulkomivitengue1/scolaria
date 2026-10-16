@@ -135,6 +135,9 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
           .student-id-card .student-card-main { margin-top: 1mm !important; gap: 1mm !important; }
+          /* In print, the photo column must match the 18 mm photo width; otherwise the name column starts underneath it. */
+          .student-id-card .student-card-main > div:first-child { width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: 0 0 18mm !important; }
+          .student-id-card .student-card-main > div:nth-child(2) { min-width: 0 !important; flex: 1 1 0% !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-main { min-height: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main .student-card-details { min-height: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main p { margin: 0 !important; line-height: 1.05 !important; }
