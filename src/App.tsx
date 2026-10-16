@@ -63,7 +63,12 @@ export default function App() {
   const [schoolLogo, setSchoolLogo] = useState('');
 
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<AppView>(() => typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/cartes' ? 'cartes' : 'dashboard');
+  const [view, setView] = useState<AppView>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const route = window.location.hash.replace('#/', '');
+    const validViews: AppView[] = ['dashboard', 'cahier', 'classes', 'cartes', 'bulletins', 'stocks', 'impayes', 'depenses', 'enseignants', 'parametres'];
+    return validViews.includes(route as AppView) ? route as AppView : 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFeeType, setActiveFeeType] = useState<string>('scolarite');
   const [payOpen, setPayOpen] = useState(false);
@@ -446,11 +451,8 @@ export default function App() {
 
   const handleNavigate = (v: AppView) => {
     setView(v);
-    if (v === 'cartes') {
-      history.replaceState(null, '', window.location.pathname + window.location.search + '#/cartes');
-    } else if (window.location.hash === '#/cartes') {
-      history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
+    const nextUrl = window.location.pathname + window.location.search + (v === 'dashboard' ? '' : `#/${v}`);
+    history.replaceState(null, '', nextUrl);
     setSidebarOpen(false);
   };
 
