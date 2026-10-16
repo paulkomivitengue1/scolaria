@@ -131,11 +131,12 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card { width: 85.6mm !important; height: 54mm !important; min-height:54mm !important; max-width:none !important; margin: 0 !important; box-shadow: none !important; overflow:hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .student-id-card > div.relative { padding: 1.5mm !important; }
           .student-id-card .student-card-details { gap: 0 !important; }
-          .student-id-card .student-card-details p { margin-top: 0.35mm !important; font-size: 6.5px !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+          .student-id-card .student-card-details > p { margin-top: 0.35mm !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
           .student-id-card .student-card-main { margin-top: 1mm !important; gap: 1mm !important; }
           .student-id-card .student-card-main p { line-height: 1.1 !important; }
+          .student-id-card .student-card-main .student-card-birth-value { font-size: 8px !important; line-height: 1.15 !important; overflow-wrap: anywhere !important; }
           .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
           .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
           .student-card-photo-upload { display: none !important; }
@@ -259,9 +260,11 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       <div className="student-card-details min-w-0 flex-1 space-y-1">
                         <p className="break-words text-[9px] text-slate-500">Prénom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.firstName}</p>
                         <p className="break-words text-[9px] text-slate-500">Nom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.lastName}</p>
-                        <div className="mt-1 grid grid-cols-2 gap-1">
+                        <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
                           <div><p className="text-[8px] text-slate-500">Classe</p><p className="break-words text-[10px] font-700 text-slate-800">{s.className}</p></div>
                           {cardFields.sexe && <div><p className="text-[8px] text-slate-500">Sexe</p><p className="text-[10px] font-700 text-slate-800">{s.sexe === 'F' ? 'F' : 'M'}</p></div>}
+                          {cardFields.birthDate && <div><p className="text-[8px] text-slate-500">Date de naissance</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : 'Non renseignée'}</p></div>}
+                          {cardFields.birthPlace && <div><p className="text-[8px] text-slate-500">Lieu de naissance</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthPlace?.trim() || 'Non renseigné'}</p></div>}
                         </div>
                       </div>
                     </div>
@@ -270,8 +273,6 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
                     </div>}
                     {cardFields.parentName && <p className="mt-1 text-[8px] leading-tight text-slate-600">Parent : {s.parentName || '—'}</p>}
-                    {cardFields.birthDate && <p className="mt-1 text-[8px] leading-tight text-slate-600">Né(e) le : {s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : '—'}</p>}
-                    {cardFields.birthPlace && <p className="mt-1 text-[8px] leading-tight text-slate-600">Lieu : {s.birthPlace || '—'}</p>}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
