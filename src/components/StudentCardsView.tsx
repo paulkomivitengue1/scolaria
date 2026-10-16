@@ -128,7 +128,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           body * { visibility: hidden !important; }
           .student-cards-print, .student-cards-print * { visibility: visible !important; }
           .student-cards-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; display: grid !important; grid-template-columns: repeat(2, 85.6mm) !important; gap: 6mm !important; align-items:start !important; }
-          .student-id-card { width: 85.6mm !important; height: 54mm !important; min-height:54mm !important; max-width:none !important; margin: 0 !important; box-shadow: none !important; overflow:hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n          .student-id-card > div.relative { padding: 2.5mm !important; }\n          .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }\n          .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
+          .student-id-card { width: 85.6mm !important; height: 54mm !important; min-height:54mm !important; max-width:none !important; margin: 0 !important; box-shadow: none !important; overflow:hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n          .student-id-card > div.relative { padding: 1.5mm !important; }\n          .student-id-card .student-card-details { gap: 0 !important; }\n          .student-id-card .student-card-details p { margin-top: 0.35mm !important; font-size: 6.5px !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }\n          .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }\n          .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }\n          .student-id-card .student-card-main { margin-top: 1mm !important; gap: 1mm !important; }\n          .student-id-card .student-card-main p { line-height: 1.1 !important; }\n          .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }\n          .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
           .student-card-photo-upload { display: none !important; }
           .student-cards-print-empty { display: none !important; }
         }
@@ -142,7 +142,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Cartes scolaires</h1>
           <p className="mt-1 text-sm text-slate-500">Créez une carte individuelle ou les cartes d'une classe, puis imprimez ou enregistrez en PDF.</p>
         </div>
-        <button onClick={printCards} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 text-sm font-700 text-white shadow-card disabled:cursor-not-allowed disabled:opacity-40"><Printer className="h-4 w-4" /> Imprimer / PDF</button>
+        <button onClick={printCards} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 text-sm font-700 text-white shadow-card disabled:cursor-not-allowed disabled:opacity-40"><Printer className="h-4 w-4" /> Enregistrer en PDF / Imprimer</button>
       </div>
 
       {students.length === 0 ? (
@@ -237,12 +237,12 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                   <div className="relative flex min-w-0 flex-1 flex-col p-3">
                     <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                       {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
-                      <div className="min-w-0 flex-1">
+                      <div className="student-card-details min-w-0 flex-1">
                         <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: accent }}>{schoolName || 'Établissement scolaire'}</p>
                         <p className="text-[8px] font-700 uppercase tracking-widest text-slate-500">CARTE SCOLAIRE</p>
                       </div>
                     </div>
-                    <div className="mt-2 flex min-h-0 flex-1 gap-2">
+                    <div className="student-card-main mt-2 flex min-h-0 flex-1 gap-2">
                       <div className="flex w-[26px] shrink-0 flex-col items-center">
                         {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame rounded object-cover" style={{ width: 18, height: 23, minWidth: 18, minHeight: 23, maxWidth: 18, maxHeight: 23, flex: "0 0 18px", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
