@@ -134,11 +134,11 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-details > p { margin-top: 0.35mm !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
-          .student-id-card .student-card-main { margin-top: 1mm !important; gap: 1mm !important; }
-          /* In print, the photo column must match the 18 mm photo width; otherwise the name column starts underneath it. */
-          .student-id-card .student-card-main > div:first-child { width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: 0 0 18mm !important; }
-          .student-id-card .student-card-main > div:nth-child(2) { min-width: 0 !important; flex: 1 1 0% !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-main { min-height: 0 !important; overflow: visible !important; }
+          /* Use a real print grid instead of the screen flex layout to prevent text from sitting beneath the photo. */
+          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; overflow: visible !important; }
+          .student-id-card .student-card-main > div:first-child { display: flex !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; }
+          .student-id-card .student-card-main > div:nth-child(2) { display: block !important; width: auto !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: visible !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main .student-card-details { min-height: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main p { margin: 0 !important; line-height: 1.05 !important; }
           .student-id-card .student-card-main .student-card-details { row-gap: 0.5mm !important; }
