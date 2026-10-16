@@ -256,7 +256,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                         {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame rounded object-cover" style={{ width: 18, height: 23, minWidth: 18, minHeight: 23, maxWidth: 18, maxHeight: 23, flex: "0 0 18px", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
                       </div>
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="student-card-details min-w-0 flex-1 space-y-1">
                         <p className="break-words text-[9px] text-slate-500">Prénom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.firstName}</p>
                         <p className="break-words text-[9px] text-slate-500">Nom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.lastName}</p>
                         <div className="mt-1 grid grid-cols-2 gap-1">
@@ -269,9 +269,9 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       {cardFields.matricule && <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>}
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
                     </div>}
-                    {cardFields.parentName && <p className="mt-1 truncate text-[8px] text-slate-600">Parent : {s.parentName || '—'}</p>}
-                    {cardFields.birthDate && <p className="mt-1 truncate text-[8px] text-slate-600">Né(e) le : {s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : '—'}</p>}
-                    {cardFields.birthPlace && <p className="mt-1 truncate text-[8px] text-slate-600">Lieu : {s.birthPlace || '—'}</p>}
+                    {cardFields.parentName && <p className="mt-1 text-[8px] leading-tight text-slate-600">Parent : {s.parentName || '—'}</p>}
+                    {cardFields.birthDate && <p className="mt-1 text-[8px] leading-tight text-slate-600">Né(e) le : {s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : '—'}</p>}
+                    {cardFields.birthPlace && <p className="mt-1 text-[8px] leading-tight text-slate-600">Lieu : {s.birthPlace || '—'}</p>}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
