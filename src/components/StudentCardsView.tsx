@@ -135,15 +135,20 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
           /* Use a real print grid instead of the screen flex layout to prevent text from sitting beneath the photo. */
-          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; overflow: visible !important; }
-          .student-id-card .student-card-main > div:first-child { display: flex !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; }
-          .student-id-card .student-card-main > div:nth-child(2) { display: block !important; width: auto !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: visible !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; overflow: visible !important; }
-          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; overflow: visible !important; }
-          .student-id-card .student-card-main p { margin: 0 !important; line-height: 1.05 !important; }
-          .student-id-card .student-card-main .student-card-details { row-gap: 0.5mm !important; }
-          .student-id-card .student-card-main .student-card-details > .grid { gap: 0.5mm 1.5mm !important; margin-top: 0.5mm !important; }
-          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 8px !important; line-height: 1.1 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
+          /* The app uses a hand-written utility stylesheet; arbitrary Tailwind font-size utilities are not generated there. Set print typography explicitly. */
+          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; overflow: hidden !important; }
+          .student-id-card .student-card-main > div:first-child { display: flex !important; flex-direction: column !important; align-items: center !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; margin: 0 !important; }
+          .student-id-card .student-card-main > div:nth-child(2) { display: block !important; width: auto !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: hidden !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: hidden !important; }
+          .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-main .student-card-details > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-main .student-card-details > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
+          .student-id-card .student-card-main .student-card-details > .grid { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 0.6mm 1.5mm !important; margin-top: 0.8mm !important; }
+          .student-id-card .student-card-main .student-card-details > .grid > div { min-width: 0 !important; overflow: hidden !important; }
+          .student-id-card .student-card-main .student-card-details > .grid p:first-child { font-size: 6px !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-main .student-card-details > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7px !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
+          .student-id-card .student-card-main .student-photo-frame { margin: 0 !important; }
           .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
           .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
           .student-card-photo-upload { display: none !important; }
