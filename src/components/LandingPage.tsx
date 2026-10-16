@@ -217,7 +217,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <a className="gl-link" href="#tarifs">Tarif</a>
             <a className="gl-link" href="#questions">Questions</a>
           </nav>
-          <button className="gl-btn gl-btn-primary" style={{ padding:'11px 15px', fontSize:12 }} onClick={onEnter}>Découvrir Gestilys <ArrowRight size={15} /></button>
+          <button className="gl-btn gl-btn-primary" style={{ padding:'11px 15px', fontSize:12 }} onClick={onEnter}>Créer mon espace <ArrowRight size={15} /></button>
         </div>
       </header>
 
@@ -229,7 +229,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
               <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
               <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
-                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Découvrir la plateforme <ArrowRight size={17} /></button>
+                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Créer mon espace <ArrowRight size={17} /></button>
                 <a href="#demonstration" className="gl-btn" style={{ border:'1px solid #dbe3ef', color:'#172554', textDecoration:'none', background:'white' }}>Voir l’aperçu</a>
               </div>
               <div className="gl-trust">
@@ -350,15 +350,15 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <div className="gl-container">
             <div className="gl-kicker">Un tarif simple</div>
             <h2 className="gl-h2">Un outil accessible pour votre école.</h2>
-            <p className="gl-sub">Découvrez la plateforme avant de décider si elle convient à votre établissement.</p>
+            <p className="gl-sub">Un abonnement simple pour commencer, avec une remise sur le paiement annuel.</p>
             <div className="gl-price">
               <div>
                 <span style={{ display:'inline-flex', borderRadius:999, padding:'6px 10px', background:'rgba(255,255,255,.12)', color:'#fde68a', fontSize:10, fontWeight:900, letterSpacing:'.08em', textTransform:'uppercase' }}>Pour démarrer</span>
-                <h3 style={{ marginTop:13 }}>Gestilys</h3>
-                <p>Les outils de gestion scolaire réunis dans une interface simple.<br/>Contactez-nous pour confirmer le tarif adapté à votre établissement et les conditions de l’essai.</p>
+                <h3 style={{ marginTop:13 }}>10 000 FCFA <span style={{ fontSize:14, fontWeight:700, color:'#dbeafe' }}>/ mois</span></h3>
+                <p>Toutes les fonctionnalités actuellement disponibles, avec <strong style={{ color:'#fde68a' }}>14 jours d’essai gratuit</strong>.<br/>Option annuelle : <strong>100 000 FCFA / an</strong> (soit 2 mois offerts).</p>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginTop:17, fontSize:12, fontWeight:700, color:'#fff' }}><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accès depuis le navigateur</span><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accompagnement au démarrage</span></div>
               </div>
-              <button className="gl-btn gl-btn-primary gl-price-action" onClick={onEnter}>Demander une démonstration <ArrowRight size={16}/></button>
+              <button className="gl-btn gl-btn-primary gl-price-action" onClick={onEnter}>Commencer l’essai gratuit <ArrowRight size={16}/></button>
             </div>
           </div>
         </section>
@@ -379,7 +379,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <div style={{ display:'inline-grid', placeItems:'center', width:54, height:54, borderRadius:17, background:'#f9d56e', color:'#172554' }}><GraduationCap size={28}/></div>
             <h2 style={{ fontSize:'clamp(28px,4vw,42px)', letterSpacing:'-.04em', fontWeight:900, marginTop:18 }}>Prêt à découvrir une autre façon de gérer votre école ?</h2>
             <p style={{ color:'#dbeafe', fontSize:14, lineHeight:1.8, maxWidth:560, margin:'12px auto 0' }}>Découvrez Gestilys et voyez comment il peut s’intégrer au quotidien de votre établissement.</p>
-            <button className="gl-btn gl-btn-primary" style={{ marginTop:23 }} onClick={onEnter}>Découvrir Gestilys <ArrowRight size={17}/></button>
+            <button className="gl-btn gl-btn-primary" style={{ marginTop:23 }} onClick={onEnter}>Créer mon espace <ArrowRight size={17}/></button>
           </div>
         </section>
       </main>

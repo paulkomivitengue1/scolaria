@@ -30,7 +30,7 @@ export interface AdminManualPayment {
   received_at: string;
 }
 
-async function adminFetch(code: string, action: string, paymentId?: string) {
+async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'trial' | 'active' | 'suspended') {
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
@@ -38,7 +38,7 @@ async function adminFetch(code: string, action: string, paymentId?: string) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${key}`,
     },
-    body: JSON.stringify({ code, action, paymentId }),
+    body: JSON.stringify({ code, action, paymentId, schoolId, status }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
@@ -61,4 +61,8 @@ export async function adminValidatePayment(code: string, paymentId: string): Pro
 
 export async function adminRejectPayment(code: string, paymentId: string): Promise<void> {
   await adminFetch(code, 'reject_payment', paymentId);
+}
+
+export async function adminSetSchoolAccess(code: string, schoolId: string, status: 'trial' | 'active' | 'suspended'): Promise<void> {
+  await adminFetch(code, 'set_school_access', undefined, schoolId, status);
 }

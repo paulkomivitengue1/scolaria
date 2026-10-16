@@ -94,8 +94,8 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 p-3">
-      <div className="relative max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+    <div className="fixed inset-0 flex items-center justify-center bg-slate-950/70 p-3" style={{ zIndex: 1000 }}>
+      <div className="relative max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl" style={{ zIndex: 1001 }}>
         <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X size={20}/></button>
         <div className="mb-4 pr-8">
           <h2 className="text-lg font-bold text-slate-900">Photo du reçu → PDF</h2>

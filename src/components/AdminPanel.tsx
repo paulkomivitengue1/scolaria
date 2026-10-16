@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment,
+  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolAccess,
   type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
 
@@ -34,6 +34,7 @@ function statusBadge(status: string, trialEndsAt: string) {
   const now = new Date();
   const expired = new Date(trialEndsAt) < now;
   if (status === 'active') return { label: 'Payant', cls: 'bg-emerald-100 text-emerald-700', icon: BadgeCheck };
+  if (status === 'suspended') return { label: 'Suspendu', cls: 'bg-red-100 text-red-700', icon: Lock };
   if (status === 'trial' && !expired) return { label: 'Essai', cls: 'bg-gold-100 text-gold-700', icon: Clock };
   return { label: 'Expiré', cls: 'bg-red-100 text-red-700', icon: AlertCircle };
 }
@@ -118,6 +119,20 @@ export function AdminPanel({ onExit }: Props) {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const setSchoolAccess = async (schoolId: string, status: 'trial' | 'active' | 'suspended') => {
+    const school = schools.find((item) => item.id === schoolId);
+    if (!school) return;
+    const actionLabel = status === 'suspended' ? 'suspendre' : status === 'active' ? 'activer' : 'remettre en essai';
+    if (!window.confirm(`Confirmer : ${actionLabel} l’accès de « ${school.name} » ?`)) return;
+    setActionLoading(schoolId);
+    try {
+      await adminSetSchoolAccess(code, schoolId, status);
+      setSchools((prev) => prev.map((item) => item.id === schoolId ? { ...item, subscription_status: status } : item));
+      showToast(`Accès de ${school.name} mis à jour`);
+    } catch (err: any) { showToast(err.message || 'Erreur de mise à jour'); }
+    finally { setActionLoading(null); }
   };
 
   const rejectPayment = async (paymentId: string) => {
@@ -409,7 +424,7 @@ export function AdminPanel({ onExit }: Props) {
                           </div>
                           <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                             <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
-                            <span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span>
+                            <div className="flex items-center gap-2"><span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span><button type="button" disabled={actionLoading === s.id} onClick={() => void setSchoolAccess(s.id, s.subscription_status === 'suspended' ? 'active' : 'suspended')} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-700 text-slate-700 disabled:opacity-50">{actionLoading === s.id ? '…' : s.subscription_status === 'suspended' ? 'Réactiver' : 'Suspendre'}</button></div>
                           </div>
                         </div>
                       );
@@ -427,7 +442,7 @@ export function AdminPanel({ onExit }: Props) {
                           <th className="px-3 py-3">Élèves</th>
                           <th className="px-3 py-3">Plan</th>
                           <th className="px-3 py-3">Inscrit le</th>
-                          <th className="px-5 py-3 text-right">Statut</th>
+                          <th className="px-5 py-3 text-right">Statut / accès</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -454,10 +469,20 @@ export function AdminPanel({ onExit }: Props) {
                                 <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                               </td>
                               <td className="px-3 py-3 text-slate-600">{formatDate(s.created_at)}</td>
-                              <td className="px-5 py-3 text-right">
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
-                                  <StIcon className="h-3 w-3" /> {st.label}
-                                </span>
+                              <td className="px-5 py-3">
+                                <div className="flex min-w-[150px] flex-col items-end gap-2">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
+                                    <StIcon className="h-3 w-3" /> {st.label}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => void setSchoolAccess(s.id, s.subscription_status === 'suspended' ? 'active' : 'suspended')}
+                                    disabled={actionLoading === s.id}
+                                    className={`rounded-lg border px-3 py-1.5 text-xs font-700 transition disabled:opacity-50 ${s.subscription_status === 'suspended' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                                  >
+                                    {actionLoading === s.id ? 'Mise à jour…' : s.subscription_status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );

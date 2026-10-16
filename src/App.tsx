@@ -14,7 +14,7 @@ import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   updateStudentDB, deleteStudentDB,
   loadTeachers, addTeacherDB, updateTeacherDB, deleteTeacherDB,
   loadSalaryPayments, paySalaryDB, unpaySalaryDB,
-} from './lib/db';
+  } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
 import { Sidebar } from './components/Sidebar';
@@ -63,7 +63,12 @@ export default function App() {
   const [schoolLogo, setSchoolLogo] = useState('');
 
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<AppView>('dashboard');
+  const [view, setView] = useState<AppView>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const route = window.location.hash.replace('#/', '');
+    const validViews: AppView[] = ['dashboard', 'cahier', 'classes', 'cartes', 'bulletins', 'stocks', 'impayes', 'depenses', 'enseignants', 'parametres'];
+    return validViews.includes(route as AppView) ? route as AppView : 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFeeType, setActiveFeeType] = useState<string>('scolarite');
   const [payOpen, setPayOpen] = useState(false);
@@ -253,7 +258,7 @@ export default function App() {
     setEditOpen(true);
   };
 
-  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[]; matricule: string; sexe: 'M' | 'F' }) => {
+  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate?: string; birthPlace?: string; fees: FeeSubscription[]; matricule: string; sexe: 'M' | 'F' }) => {
     try {
       await updateStudentDB(id, updates);
       setStudents(prev => prev.map(s => s.id === id ? {
@@ -263,6 +268,8 @@ export default function App() {
         className: updates.className,
         parentName: updates.parentName,
         parentPhone: updates.parentPhone,
+        birthDate: updates.birthDate || '',
+        birthPlace: updates.birthPlace || '',
         matricule: updates.matricule,
         sexe: updates.sexe,
         fees: updates.fees,
@@ -308,7 +315,11 @@ export default function App() {
     if (profile?.schoolId) {
       syncUniformStock(profile.schoolId, uniforms, next).then(synced => {
         setUniforms(synced);
-      }).catch(err => console.error('Uniform sync failed:', err));
+      }).catch(err => {
+        console.error('Uniform sync failed:', err);
+        setUniforms(uniforms);
+        window.alert('Les modifications du stock de tenues n’ont pas été enregistrées. Vérifiez votre connexion puis réessayez.');
+      });
     }
   }, [profile?.schoolId, uniforms]);
 
@@ -317,7 +328,11 @@ export default function App() {
     if (profile?.schoolId) {
       syncBookStock(profile.schoolId, books, next).then(synced => {
         setBooks(synced);
-      }).catch(err => console.error('Book sync failed:', err));
+      }).catch(err => {
+        console.error('Book sync failed:', err);
+        setBooks(books);
+        window.alert('Les modifications du stock de livres n’ont pas été enregistrées. Vérifiez votre connexion puis réessayez.');
+      });
     }
   }, [profile?.schoolId, books]);
 
@@ -436,6 +451,8 @@ export default function App() {
 
   const handleNavigate = (v: AppView) => {
     setView(v);
+    const nextUrl = window.location.pathname + window.location.search + (v === 'dashboard' ? '' : `#/${v}`);
+    history.replaceState(null, '', nextUrl);
     setSidebarOpen(false);
   };
 
@@ -564,7 +581,7 @@ export default function App() {
                 </div>
               </>)}
 
-              {view === 'cartes' && <StudentCardsView students={students} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
+              {view === 'cartes' && <StudentCardsView students={students} schoolId={profile.schoolId} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
 
               {view === 'classes' && (
                 <ClassView

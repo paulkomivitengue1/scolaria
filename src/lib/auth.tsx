@@ -87,9 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isTrialExpired =
     !!profile &&
-    profile.subscriptionStatus === 'trial' &&
+    (profile.subscriptionStatus === 'suspended' || (profile.subscriptionStatus === 'trial' &&
     !!profile.trialEndsAt &&
-    new Date(profile.trialEndsAt) < new Date();
+    new Date(profile.trialEndsAt) < new Date()));
 
   async function signUp(
     email: string,
