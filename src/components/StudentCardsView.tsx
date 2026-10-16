@@ -135,16 +135,16 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
           /* Explicit print columns avoid depending on DOM child-order selectors. */
-          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; width: 100% !important; overflow: visible !important; }
+          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; height: 31mm !important; flex: 0 0 31mm !important; width: 100% !important; overflow: hidden !important; }
           .student-id-card .student-card-photo-column { display: flex !important; flex-direction: column !important; align-items: center !important; grid-column: 1 !important; grid-row: 1 !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; margin: 0 !important; }
-          .student-id-card .student-card-info-column { display: block !important; grid-column: 2 !important; grid-row: 1 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: visible !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-info-column { display: block !important; grid-column: 2 !important; grid-row: 1 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: hidden !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
           .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
-          .student-id-card .student-card-info-column > .grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.6mm 1.5mm !important; margin-top: 0.8mm !important; }
+          .student-id-card .student-card-info-column > .grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.35mm 1.5mm !important; margin-top: 0.6mm !important; }
           .student-id-card .student-card-info-column > .grid > div { min-width: 0 !important; overflow: visible !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6px !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6px !important; line-height: 1 !important; white-space: nowrap !important; }
           .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7px !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
           .student-id-card .student-card-main .student-photo-frame { margin: 0 !important; }
@@ -256,8 +256,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                 <article className="student-id-card relative flex h-[205px] w-full max-w-[325px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card" style={{ borderTop: `5px solid ${accent}` }}>
                   <div className="absolute inset-x-0 top-0 h-16 opacity-10" style={{ background: accent }} />
                   <div className="relative flex min-w-0 flex-1 flex-col p-3">
-                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
+                    <div className="student-card-header flex items-center gap-2 border-b border-slate-100 pb-2">
+                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
                       <div className="student-card-details min-w-0 flex-1">
                         <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: accent }}>{schoolName || 'Établissement scolaire'}</p>
                         <p className="text-[8px] font-700 uppercase tracking-widest text-slate-500">CARTE SCOLAIRE</p>
@@ -274,8 +274,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                         <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
                           <div><p className="text-[8px] text-slate-500">Classe</p><p className="break-words text-[10px] font-700 text-slate-800">{s.className}</p></div>
                           {cardFields.sexe && <div><p className="text-[8px] text-slate-500">Sexe</p><p className="text-[10px] font-700 text-slate-800">{s.sexe === 'F' ? 'F' : 'M'}</p></div>}
-                          {cardFields.birthDate && <div><p className="text-[8px] text-slate-500">Date de naissance</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : 'Non renseignée'}</p></div>}
-                          {cardFields.birthPlace && <div><p className="text-[8px] text-slate-500">Lieu de naissance</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthPlace?.trim() || 'Non renseigné'}</p></div>}
+                          {cardFields.birthDate && <div><p className="text-[8px] text-slate-500">Né(e) le</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : 'Non renseignée'}</p></div>}
+                          {cardFields.birthPlace && <div><p className="text-[8px] text-slate-500">À</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthPlace?.trim() || 'Non renseigné'}</p></div>}
                         </div>
                       </div>
                     </div>
