@@ -253,7 +253,7 @@ export default function App() {
     setEditOpen(true);
   };
 
-  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; fees: FeeSubscription[]; matricule: string; sexe: 'M' | 'F' }) => {
+  const handleEditSave = async (id: string, updates: { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate?: string; birthPlace?: string; fees: FeeSubscription[]; matricule: string; sexe: 'M' | 'F' }) => {
     try {
       await updateStudentDB(id, updates);
       setStudents(prev => prev.map(s => s.id === id ? {
@@ -263,6 +263,8 @@ export default function App() {
         className: updates.className,
         parentName: updates.parentName,
         parentPhone: updates.parentPhone,
+        birthDate: updates.birthDate || '',
+        birthPlace: updates.birthPlace || '',
         matricule: updates.matricule,
         sexe: updates.sexe,
         fees: updates.fees,
