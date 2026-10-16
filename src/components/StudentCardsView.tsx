@@ -134,19 +134,18 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-details > p { margin-top: 0.35mm !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
           .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
           .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
-          /* Use a real print grid instead of the screen flex layout to prevent text from sitting beneath the photo. */
-          /* The app uses a hand-written utility stylesheet; arbitrary Tailwind font-size utilities are not generated there. Set print typography explicitly. */
-          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; overflow: hidden !important; }
-          .student-id-card .student-card-main > div:first-child { display: flex !important; flex-direction: column !important; align-items: center !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; margin: 0 !important; }
-          .student-id-card .student-card-main > div:nth-child(2) { display: block !important; width: auto !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: hidden !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: hidden !important; }
-          .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; }
-          .student-id-card .student-card-main .student-card-details > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
-          .student-id-card .student-card-main .student-card-details > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
-          .student-id-card .student-card-main .student-card-details > .grid { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 0.6mm 1.5mm !important; margin-top: 0.8mm !important; }
-          .student-id-card .student-card-main .student-card-details > .grid > div { min-width: 0 !important; overflow: hidden !important; }
-          .student-id-card .student-card-main .student-card-details > .grid p:first-child { font-size: 6px !important; line-height: 1.05 !important; }
-          .student-id-card .student-card-main .student-card-details > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
+          /* Explicit print columns avoid depending on DOM child-order selectors. */
+          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; width: 100% !important; overflow: visible !important; }
+          .student-id-card .student-card-photo-column { display: flex !important; flex-direction: column !important; align-items: center !important; grid-column: 1 !important; grid-row: 1 !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; margin: 0 !important; }
+          .student-id-card .student-card-info-column { display: block !important; grid-column: 2 !important; grid-row: 1 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: visible !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: visible !important; }
+          .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
+          .student-id-card .student-card-info-column > .grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.6mm 1.5mm !important; margin-top: 0.8mm !important; }
+          .student-id-card .student-card-info-column > .grid > div { min-width: 0 !important; overflow: visible !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6px !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7px !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
           .student-id-card .student-card-main .student-photo-frame { margin: 0 !important; }
           .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
@@ -265,11 +264,11 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       </div>
                     </div>
                     <div className="student-card-main mt-2 flex min-h-0 flex-1 gap-2">
-                      <div className="flex w-[26px] shrink-0 flex-col items-center">
+                      <div className="student-card-photo-column flex w-[26px] shrink-0 flex-col items-center">
                         {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame rounded object-cover" style={{ width: 18, height: 23, minWidth: 18, minHeight: 23, maxWidth: 18, maxHeight: 23, flex: "0 0 18px", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
                       </div>
-                      <div className="student-card-details min-w-0 flex-1 space-y-1">
+                      <div className="student-card-details student-card-info-column min-w-0 flex-1 space-y-1">
                         <p className="break-words text-[9px] text-slate-500">Prénom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.firstName}</p>
                         <p className="break-words text-[9px] text-slate-500">Nom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.lastName}</p>
                         <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
