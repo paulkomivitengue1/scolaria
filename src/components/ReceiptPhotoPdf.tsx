@@ -90,11 +90,11 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     const safeStudent = studentName.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
     w.document.open();
     w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reçu - ${safeStudent}</title><style>
-      @page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;margin:0}
+      @page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;margin:0;display:flex;flex-direction:column}
       header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #667eea;padding:0 0 14px;margin-bottom:18px}
       header img{width:90px;height:75px;object-fit:contain}h1{font-size:20px;margin:0 0 6px}p{margin:4px 0;font-size:12px;color:#555}
       .note{font-size:12px;background:#f4f6ff;border:1px solid #dce2ff;border-radius:8px;padding:10px;margin-bottom:14px}
-      .receipt{display:block;width:100%;max-height:235mm;object-fit:contain}
+      .receipt{display:block;width:100%;max-height:205mm;object-fit:contain;margin:0 auto 10px;object-position:top center;order:-1}
       @media print{.toolbar{display:none}}
       .toolbar{padding:10px 0;margin-bottom:12px}button{padding:10px 14px;border:0;border-radius:8px;background:#4f46e5;color:white;font-weight:bold}
     </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / Enregistrer en PDF</button><p>Dans la fenêtre d’impression, choisis « Enregistrer au format PDF ».</p></div>
@@ -117,12 +117,12 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><ImagePlus size={17}/> Logo de l’école (facultatif)</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={e => { void handleImage('logo', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('logo', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {logo && <img src={logo} alt="Aperçu du logo" className="mt-3 h-20 w-full object-contain"/>}
           </label>
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (obligatoire)</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={e => { void handleImage('receipt', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('receipt', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {receipt && <img src={receipt} alt="Aperçu du reçu" className="mt-3 h-28 w-full rounded-lg border object-contain"/>}
           </label>
         </div>
@@ -141,6 +141,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       {cropDraft && <ImageCropper
         image={cropDraft.image}
         aspectRatio={cropDraft.kind === 'logo' ? 1 : 0.72}
+        allowFreeform={cropDraft.kind === 'receipt'}
         title={cropDraft.kind === 'logo' ? 'le logo' : 'le reçu'}
         onCancel={() => setCropDraft(null)}
         onApply={image => {
