@@ -270,7 +270,7 @@ function TenuesPanel({
               <div className="mt-3 grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Ancien stock</div>
-                  <div className="font-display text-xl font-800 text-slate-700">{item.oldStock}</div>
+                  <NumberInput value={item.oldStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
                 </div>
                 <div className="rounded-xl bg-royal-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
