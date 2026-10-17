@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
 import { ImageCropper } from './ImageCropper';
-import { DEFAULT_STUDENT_CARD_FIELDS, loadStudentCardFields, saveStudentCardFields, type StudentCardFields } from '../lib/db';
+import { DEFAULT_STUDENT_CARD_FIELDS, loadStudentCardFields, saveStudentCardFields, loadStudentCardPhotos, saveStudentCardPhoto, type StudentCardFields } from '../lib/db';
 
 type Mode = 'individual' | 'class';
 
@@ -14,6 +14,13 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   const [localSchoolLogo, setLocalSchoolLogo] = useState(schoolLogo);
   useEffect(() => { setLocalSchoolLogo(schoolLogo); }, [schoolLogo]);
   const [photos, setPhotos] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    loadStudentCardPhotos(schoolId)
+      .then(savedPhotos => { if (alive) setPhotos(savedPhotos); })
+      .catch(() => { if (alive) window.alert('Impossible de charger les photos enregistrées. Vérifiez la connexion puis rechargez la page.'); });
+    return () => { alive = false; };
+  }, [schoolId]);
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
   const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
@@ -157,7 +164,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -240,7 +247,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                 <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 px-3"><input aria-label="Couleur de la carte" type="color" value={accent} onChange={e => setAccent(e.target.value)} className="h-7 w-10 cursor-pointer border-0 bg-transparent" /><span className="text-sm text-slate-600">{accent.toUpperCase()}</span></div>
               </div>
             </div>
-            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">Le logo est enregistré automatiquement pour votre école. Les photos des élèves restent pour le moment temporaires pendant la session.</p>
+            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">Le logo est enregistré automatiquement pour votre école. Les photos des élèves sont enregistrées dans le compte de l’école et restent disponibles après reconnexion.</p>
           </section>
 
           <div className="mb-3 flex items-center justify-between gap-3">
