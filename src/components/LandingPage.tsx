@@ -358,9 +358,9 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:18,alignItems:'stretch'}}>
               {[
-                {name:'Petite école',desc:'Pour démarrer et gérer les opérations essentielles.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#eff6ff',accent:'#1d4ed8'},
+                {name:'Petite école',desc:'Pour démarrer et gérer les opérations essentielles.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#eff6ff',accent:'#1d4ed8',popular:false},
                 {name:'École moyenne',desc:'Pour un établissement avec un suivi quotidien plus complet.',monthly:20000,students:'De 151 à 500 élèves',tone:'#eef2ff',accent:'#4338ca',popular:true},
-                {name:'Grande école',desc:'Pour les établissements avec un effectif important.',monthly:30000,students:'Plus de 500 élèves',tone:'#fff7df',accent:'#a16207'},
+                {name:'Grande école',desc:'Pour les établissements avec un effectif important.',monthly:30000,students:'Plus de 500 élèves',tone:'#fff7df',accent:'#a16207',popular:false},
               ].map(plan=><article key={plan.name} style={{position:'relative',display:'flex',flexDirection:'column',border:plan.popular?'2px solid #1d4ed8':'1px solid #dbe3ef',borderRadius:22,background:'white',padding:24,boxShadow:plan.popular?'0 16px 38px rgba(29,78,216,.12)':'0 8px 22px rgba(15,23,42,.04)'}}>
                 {plan.popular&&<span style={{position:'absolute',right:16,top:16,borderRadius:999,background:'#dbeafe',color:'#1d4ed8',fontSize:10,fontWeight:900,padding:'6px 9px'}}>RECOMMANDÉ</span>}
                 <span style={{alignSelf:'flex-start',borderRadius:10,background:plan.tone,color:plan.accent,padding:'7px 10px',fontSize:11,fontWeight:900}}>{plan.students}</span>
