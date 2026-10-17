@@ -10,10 +10,10 @@ const supabase = createClient(
 
 interface ActionBody {
   code?: string;
-  action: "list_schools" | "list_payments" | "validate_payment" | "reject_payment" | "set_school_status";
+  action: "list_schools" | "list_payments" | "validate_payment" | "reject_payment" | "set_school_status" | "set_school_paid_status";
   paymentId?: string;
   schoolId?: string;
-  status?: "suspend" | "restore";
+  status?: "suspend" | "restore";\n  paid?: boolean;
 }
 
 Deno.serve(async (req: Request) => {
@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body: ActionBody = await req.json();
-    const { code, action, paymentId, schoolId, status } = body;
+    const { code, action, paymentId, schoolId, status, paid } = body;
 
     if (code !== DEV_CODE) {
       return new Response(
@@ -85,6 +85,15 @@ Deno.serve(async (req: Request) => {
           p_school_id: schoolId,
           p_status: status,
         });
+        if (error) throw error;
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "set_school_paid_status": {
+        if (!schoolId || typeof paid !== "boolean") throw new Error("École et statut de paiement requis");
+        const { error } = await supabase.from("schools").update({ subscription_status: paid ? "active" : "expired" }).eq("id", schoolId);
         if (error) throw error;
         return new Response(JSON.stringify({ ok: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
