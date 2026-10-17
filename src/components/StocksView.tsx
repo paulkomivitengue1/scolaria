@@ -122,6 +122,7 @@ function TenuesPanel({
   const [activeCycle, setActiveCycle] = useState<UniformCycle>('maternelle');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [customSubject, setCustomSubject] = useState('');
 
   const getQty = (id: string) => qtys[id] ?? 1;
   const setQty = (id: string, v: number) => setQtys(prev => ({ ...prev, [id]: v }));
@@ -462,8 +463,10 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
   };
 
   const ensureSubject = (subject: BookSubject) => {
-    if (!classItems.some((i) => i.subject === subject)) {
-      onChange([...books, newBookItem(activeClass, subject)]);
+    const clean = subject.trim();
+    if (clean && !classItems.some((i) => i.subject.toLowerCase() === clean.toLowerCase())) {
+      onChange([...books, newBookItem(activeClass, clean)]);
+      setCustomSubject('');
     }
   };
 
@@ -694,6 +697,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <Plus className="h-3 w-3" /> {subject}
           </button>
         ))}
+        <form onSubmit={e => { e.preventDefault(); ensureSubject(customSubject); }} className="flex w-full flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row"><input value={customSubject} onChange={e => setCustomSubject(e.target.value)} placeholder="Autre matière ou titre de livre" className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-300 px-3 text-base text-slate-900"/><button type="submit" className="min-h-11 rounded-xl bg-royal-700 px-4 text-sm font-bold text-white">Ajouter</button></form>
       </div>
     </div>
   );
