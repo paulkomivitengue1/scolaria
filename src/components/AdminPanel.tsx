@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, CreditCard, Check, X, Search, BadgeCheck,
   Clock, AlertCircle, Smartphone, ArrowLeft, Sparkles, School, Lock,
   Loader2, LogOut, Users, Phone, TrendingUp, CalendarDays, CalendarRange,
-  Calendar, User,
+  Calendar, User, Download, RefreshCw, LayoutDashboard, Filter, Activity,
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
@@ -51,6 +51,7 @@ export function AdminPanel({ onExit }: Props) {
   const [schools, setSchools] = useState<AdminSchool[]>([]);
   const [payments, setPayments] = useState<AdminManualPayment[]>([]);
   const [filter, setFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -135,13 +136,33 @@ export function AdminPanel({ onExit }: Props) {
 
   const filteredSchools = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return schools;
-    return schools.filter((s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.city.toLowerCase().includes(q) ||
-      s.director_name.toLowerCase().includes(q)
-    );
-  }, [schools, filter]);
+    return schools.filter((s) => {
+      const matchesText = !q || [s.name, s.city, s.director_name, s.phone].some(v => (v || '').toLowerCase().includes(q));
+      const expired = s.subscription_status !== 'active' && (s.subscription_status !== 'trial' || new Date(s.trial_ends_at) <= new Date());
+      const matchesStatus = statusFilter === 'all' ||
+        (statusFilter === 'active' && s.subscription_status === 'active') ||
+        (statusFilter === 'trial' && s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()) ||
+        (statusFilter === 'expired' && expired);
+      return matchesText && matchesStatus;
+    });
+  }, [schools, filter, statusFilter]);
+
+  const exportSchoolsCsv = () => {
+    const columns = ['École', 'Ville', 'Directeur', 'Téléphone', 'Plan', 'Statut', 'Élèves', 'Inscription', 'Fin essai'];
+    const rows = filteredSchools.map(s => [
+      s.name, s.city, s.director_name, s.phone, s.plan, statusBadge(s.subscription_status, s.trial_ends_at).label,
+      String(s.student_count), s.created_at, s.trial_ends_at,
+    ]);
+    const csv = [columns, ...rows].map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(';')).join('\\r\\n');
+    const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'gestilys-ecoles.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast('Export CSV préparé');
+  };
 
   // ── Login screen ──────────────────────────────────────
   if (!authed) {
@@ -248,6 +269,32 @@ export function AdminPanel({ onExit }: Props) {
           </div>
         ) : (
           <>
+            <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-cardLg">
+              <div className="flex flex-col gap-4 bg-gradient-to-r from-royal-950 via-royal-900 to-royal-800 p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-700 uppercase tracking-[0.18em] text-royal-200"><Activity className="h-4 w-4" /> Centre de contrôle</div>
+                  <h2 className="mt-1 font-display text-xl font-800 sm:text-2xl">Pilotage de Gestilys</h2>
+                  <p className="mt-1 text-sm text-royal-100">Vue opérationnelle des écoles, abonnements et paiements.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => loadData(code)} disabled={dataLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm font-700 text-white transition hover:bg-white/20 disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${dataLoading ? 'animate-spin' : ''}`} /> Actualiser</button>
+                  <button onClick={exportSchoolsCsv} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2.5 text-sm font-800 text-royal-900 transition hover:bg-royal-50"><Download className="h-4 w-4" /> Exporter CSV</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-px bg-slate-200 sm:grid-cols-4">
+                {[
+                  { label: 'Écoles suivies', value: schools.length, detail: 'Comptes enregistrés' },
+                  { label: 'Paiements à traiter', value: pendingPayments.length, detail: 'Validation manuelle', alert: pendingPayments.length > 0 },
+                  { label: 'Paiements validés', value: payments.filter(p => p.status === 'valide').length, detail: 'Historique disponible' },
+                  { label: 'Élèves recensés', value: schools.reduce((sum, s) => sum + (s.student_count || 0), 0).toLocaleString('fr-FR'), detail: 'Total communiqué par les écoles' },
+                ].map((item) => <div key={item.label} className="bg-white p-4 sm:p-5">
+                  <div className="text-xs font-700 text-slate-500">{item.label}</div>
+                  <div className={`mt-1 font-display text-2xl font-800 ${item.alert ? 'text-amber-600' : 'text-ink'}`}>{item.value}</div>
+                  <div className="mt-1 text-[11px] text-slate-400">{item.detail}</div>
+                </div>)}
+              </div>
+            </section>
+
             {/* ── Overview: total + status breakdown ── */}
             <section className="mb-6">
               <div className="mb-4">
@@ -354,15 +401,17 @@ export function AdminPanel({ onExit }: Props) {
                   <h2 className="font-display text-xl font-800 tracking-tight text-ink sm:text-2xl">Liste des clients</h2>
                   <p className="mt-0.5 text-sm text-slate-500">Nom, contact, téléphone, statut et nombre d'élèves.</p>
                 </div>
-                <div className="relative max-w-xs">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Rechercher…"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-4"
-                  />
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <div className="relative min-w-0 sm:w-64">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="École, ville, directeur, téléphone…" className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-2 focus:ring-royal-100" />
+                  </div>
+                  <div className="relative">
+                    <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)} className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-600 text-slate-700 outline-none focus:border-royal-400 sm:w-44">
+                      <option value="all">Tous les statuts</option><option value="active">Abonnés payants</option><option value="trial">En essai</option><option value="expired">Expirés</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
