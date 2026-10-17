@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard,
+  LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
   Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
 } from 'lucide-react';
 import type { AppView } from '../types';
@@ -29,7 +29,7 @@ const SECTIONS: NavSection[] = [
     title: 'Pilotage',
     items: [
       { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-      { view: 'cahier', label: 'Statistiques', icon: BarChart3 },
+      { view: 'dashboard', label: 'Statistiques', icon: BarChart3 },
     ],
   },
   {
@@ -37,8 +37,9 @@ const SECTIONS: NavSection[] = [
     items: [
       { view: 'classes', label: 'Classes', icon: GraduationCap },
       { view: 'cartes', label: 'Cartes scolaires', icon: CreditCard },
+      { view: 'bulletins', label: 'Bulletins', icon: ClipboardList },
       { view: 'cahier', label: 'Élèves', icon: Users },
-      { view: 'cahier', label: 'Inscriptions', icon: UserPlus },
+      { view: 'cahier', label: 'Inscriptions / élèves', icon: UserPlus },
     ],
   },
   {
