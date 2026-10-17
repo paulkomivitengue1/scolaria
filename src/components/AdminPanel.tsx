@@ -219,6 +219,14 @@ export function AdminPanel({ onExit }: Props) {
   // ── Main admin panel ──────────────────────────────────
   const pendingPayments = payments.filter((p) => p.status === 'en_attente');
   const resolvedPayments = payments.filter((p) => p.status !== 'en_attente');
+  const validatedPayments = payments.filter((p) => p.status === 'valide');
+  const rejectedPayments = payments.filter((p) => p.status === 'rejete');
+  const confirmedManualRevenue = validatedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const paymentProviderStats = (['Orange Money', 'Wave', 'Moov Money'] as const).map(provider => ({
+    provider,
+    count: payments.filter(p => p.provider === provider).length,
+    confirmed: payments.filter(p => p.provider === provider && p.status === 'valide').reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
+  }));
 
   // Overview stats
   const trialCount = schools.filter((s) => s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()).length;
@@ -295,6 +303,47 @@ export function AdminPanel({ onExit }: Props) {
                   <div className={`mt-1 font-display text-2xl font-800 ${item.alert ? 'text-amber-600' : 'text-ink'}`}>{item.value}</div>
                   <div className="mt-1 text-[11px] text-slate-400">{item.detail}</div>
                 </div>)}
+              </div>
+            </section>
+
+            {/* ── Payment and revenue reporting ── */}
+            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+              <div className="mb-4">
+                <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-emerald-700">
+                  <CreditCard className="h-3 w-3" /> Suivi financier
+                </div>
+                <h2 className="font-display text-lg font-800 tracking-tight text-ink sm:text-xl">Paiements et recettes confirmées</h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">Calcul basé uniquement sur les paiements manuels enregistrés dans Gestilys. Ce montant n’inclut pas d’éventuels paiements reçus hors de cet historique.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-xs font-700 text-emerald-800">Recettes confirmées</p>
+                  <p className="mt-1 text-xl font-800 text-emerald-900">{formatFCFA(confirmedManualRevenue)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-700 text-slate-600">Paiements reçus</p>
+                  <p className="mt-1 text-xl font-800 text-ink">{payments.length}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">{validatedPayments.length} validés · {pendingPayments.length} en attente · {rejectedPayments.length} rejetés</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-700 text-slate-600">Montant en attente</p>
+                  <p className="mt-1 text-xl font-800 text-amber-700">{formatFCFA(pendingPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0))}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-700 text-slate-600">Montants rejetés</p>
+                  <p className="mt-1 text-xl font-800 text-slate-700">{formatFCFA(rejectedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0))}</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {paymentProviderStats.map(item => (
+                  <div key={item.provider} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-3 py-3">
+                    <div>
+                      <p className="text-sm font-700 text-slate-800">{item.provider}</p>
+                      <p className="text-xs text-slate-500">{item.count} paiement{item.count === 1 ? '' : 's'} enregistr{item.count === 1 ? 'é' : 'és'}</p>
+                    </div>
+                    <p className="text-sm font-800 text-royal-700">{formatFCFA(item.confirmed)}</p>
+                  </div>
+                ))}
               </div>
             </section>
 
