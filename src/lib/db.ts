@@ -8,6 +8,7 @@ import type {
   SchoolFeeConfig,
   UniformStockItem,
   BookStockItem,
+  SupplyStockItem,
   UniformCycle,
   UniformSize,
   BookClass,
@@ -386,6 +387,57 @@ export async function syncBookStock(
 
   for (const old of prev) {
     if (!nextMap.has(old.id)) await getSupabase().from('stock_items').delete().eq('id', old.id);
+  }
+  return result;
+}
+
+export async function loadSupplyStock(schoolId: string): Promise<SupplyStockItem[]> {
+  const { data, error } = await getSupabase()
+    .from('stock_items')
+    .select('id, name, subject, unit, in_stock, min_stock, price')
+    .eq('school_id', schoolId)
+    .eq('category', 'fourniture')
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(r => ({
+    id: r.id, name: r.name || r.subject || '', category: r.subject || 'Fourniture',
+    unit: r.unit || 'unité', quantity: r.in_stock || 0,
+    minStock: r.min_stock ?? 3, price: r.price || 0,
+  }));
+}
+
+export async function syncSupplyStock(
+  schoolId: string, prev: SupplyStockItem[], next: SupplyStockItem[],
+): Promise<SupplyStockItem[]> {
+  const prevMap = new Map(prev.map(i => [i.id, i]));
+  const nextMap = new Map(next.map(i => [i.id, i]));
+  const result = [...next];
+  for (let i = 0; i < next.length; i++) {
+    const item = next[i];
+    const values = { name: item.name, subject: item.category, unit: item.unit,
+      in_stock: item.quantity, min_stock: item.minStock, price: item.price };
+    if (!prevMap.has(item.id)) {
+      const { data, error } = await getSupabase().from('stock_items')
+        .insert({ school_id: schoolId, category: 'fourniture', ...values })
+        .select('id').single();
+      if (error) throw error;
+      if (data) result[i] = { ...item, id: data.id };
+    } else {
+      const old = prevMap.get(item.id)!;
+      if (old.name !== item.name || old.category !== item.category || old.unit !== item.unit ||
+          old.quantity !== item.quantity || old.minStock !== item.minStock || old.price !== item.price) {
+        const { error } = await getSupabase().from('stock_items').update(values)
+          .eq('id', item.id).eq('school_id', schoolId);
+        if (error) throw error;
+      }
+    }
+  }
+  for (const old of prev) {
+    if (!nextMap.has(old.id)) {
+      const { error } = await getSupabase().from('stock_items').delete()
+        .eq('id', old.id).eq('school_id', schoolId);
+      if (error) throw error;
+    }
   }
   return result;
 }
