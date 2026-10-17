@@ -153,8 +153,8 @@ export function AdminPanel({ onExit }: Props) {
       s.name, s.city, s.director_name, s.phone, s.plan, statusBadge(s.subscription_status, s.trial_ends_at).label,
       String(s.student_count), s.created_at, s.trial_ends_at,
     ]);
-    const csv = [columns, ...rows].map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(';')).join('\\r\\n');
-    const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = [columns, ...rows].map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
