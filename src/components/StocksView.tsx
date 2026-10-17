@@ -739,6 +739,24 @@ function NumberInput({ value, onChange }: { value: number; onChange: (v: number)
 
 
 function SuppliesPanel({ supplies, onChange }: { supplies: SupplyStockItem[]; onChange: (items: SupplyStockItem[]) => void }) {
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    if (!seeded && supplies.length === 0) {
+      setSeeded(true);
+      onChange([
+        { id: 'default-cahier-100', name: 'Cahier de 100 pages', category: 'Cahiers', unit: 'unité', quantity: 0, minStock: 10, price: 0 },
+        { id: 'default-cahier-dessin', name: 'Cahier de dessin', category: 'Cahiers', unit: 'unité', quantity: 0, minStock: 5, price: 0 },
+        { id: 'default-cahier-200', name: 'Cahier de 200 pages', category: 'Cahiers', unit: 'unité', quantity: 0, minStock: 10, price: 0 },
+        { id: 'default-bic-bleu', name: 'Bic bleu', category: 'Écriture', unit: 'pièce', quantity: 0, minStock: 20, price: 0 },
+        { id: 'default-bic-rouge', name: 'Bic rouge', category: 'Écriture', unit: 'pièce', quantity: 0, minStock: 10, price: 0 },
+        { id: 'default-crayon', name: 'Crayon à papier', category: 'Écriture', unit: 'pièce', quantity: 0, minStock: 10, price: 0 },
+        { id: 'default-gomme', name: 'Gomme', category: 'Écriture', unit: 'pièce', quantity: 0, minStock: 10, price: 0 },
+        { id: 'default-couverture', name: 'Couverture de cahier', category: 'Protection', unit: 'pièce', quantity: 0, minStock: 10, price: 0 },
+        { id: 'default-regle', name: 'Règle', category: 'Matériel', unit: 'pièce', quantity: 0, minStock: 5, price: 0 },
+        { id: 'default-taille-crayon', name: 'Taille-crayon', category: 'Matériel', unit: 'pièce', quantity: 0, minStock: 5, price: 0 },
+      ]);
+    }
+  }, [seeded, supplies.length, onChange]);
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Fourniture scolaire');
   const [unit, setUnit] = useState('unité');
