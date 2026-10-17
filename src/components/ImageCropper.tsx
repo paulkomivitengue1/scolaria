@@ -47,7 +47,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply }: P
   const scale = Math.max(frameWidth / naturalSize.width, frameHeight / naturalSize.height) * zoom;
   const width = naturalSize.width * scale;
   const height = naturalSize.height * scale;
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
+  return <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/85 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
     <div className="max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-800 text-slate-900">Recadrer {title.toLowerCase()}</h2><p className="text-sm text-slate-500">Ajustez le zoom et le cadrage avant d’enregistrer.</p></div><button type="button" onClick={onCancel} aria-label="Fermer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"><X className="h-5 w-5" /></button></div>
       <div className="mx-auto overflow-hidden rounded-xl bg-slate-100" style={{ width: 'min(100%, 320px)', aspectRatio: String(aspectRatio), position: 'relative' }}>
