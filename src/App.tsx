@@ -476,6 +476,10 @@ export default function App() {
     return <LandingOrAuth onEnterAuth={() => {}} />;
   }
 
+  if (profile.subscriptionStatus === 'suspended') {
+    return <SchoolSuspended schoolName={profile.schoolName} onLogout={handleLogout} />;
+  }
+
   if (isTrialExpired) {
     return <TrialExpired schoolName={profile.schoolName} onLogout={handleLogout} />;
   }
@@ -706,6 +710,26 @@ function LandingOrAuth(_: { onEnterAuth: () => void }) {
   const [showAuth, setShowAuth] = useState(false);
   if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
   return <LandingPage onEnter={() => setShowAuth(true)} />;
+}
+
+function SchoolSuspended({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-royal-900 to-royal-800 px-4">
+      <div className="w-full max-w-md text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-red-500/20 text-red-200 shadow-lg">
+          <Lock className="h-8 w-8" />
+        </div>
+        <h1 className="mt-6 font-display text-2xl font-800 text-white">Accès suspendu</h1>
+        <p className="mt-2 text-sm leading-relaxed text-royal-100">
+          L’accès à Gestilys pour <strong className="text-white">{schoolName}</strong> a été suspendu par l’administration.
+          Vos données restent conservées. Contactez l’équipe Gestilys pour rétablir l’accès.
+        </p>
+        <button onClick={onLogout} className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-700 text-white transition hover:bg-white/10 active:scale-95">
+          <LogOut className="h-4 w-4" /> Se déconnecter
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function TrialExpired({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
