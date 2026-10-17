@@ -10,8 +10,10 @@ const supabase = createClient(
 
 interface ActionBody {
   code?: string;
-  action: "list_schools" | "list_payments" | "validate_payment" | "reject_payment";
+  action: "list_schools" | "list_payments" | "validate_payment" | "reject_payment" | "set_school_status";
   paymentId?: string;
+  schoolId?: string;
+  status?: "suspend" | "restore";
 }
 
 Deno.serve(async (req: Request) => {
@@ -28,7 +30,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body: ActionBody = await req.json();
-    const { code, action, paymentId } = body;
+    const { code, action, paymentId, schoolId, status } = body;
 
     if (code !== DEV_CODE) {
       return new Response(
@@ -69,6 +71,19 @@ Deno.serve(async (req: Request) => {
         if (!paymentId) throw new Error("paymentId requis");
         const { error } = await supabase.rpc("admin_reject_payment", {
           p_payment_id: paymentId,
+        });
+        if (error) throw error;
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "set_school_status": {
+        if (!schoolId) throw new Error("schoolId requis");
+        if (status !== "suspend" && status !== "restore") throw new Error("Statut requis invalide");
+        const { error } = await supabase.rpc("admin_set_school_status", {
+          p_school_id: schoolId,
+          p_status: status,
         });
         if (error) throw error;
         return new Response(JSON.stringify({ ok: true }), {
