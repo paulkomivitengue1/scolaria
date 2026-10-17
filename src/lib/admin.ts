@@ -66,4 +66,7 @@ export async function adminRejectPayment(code: string, paymentId: string): Promi
 export async function adminSetSchoolStatus(code: string, schoolId: string, status: 'suspend' | 'restore'): Promise<void> {
   await adminFetch(code, 'set_school_status', undefined, schoolId, status);
 }
-\nexport async function adminSetSchoolPaidStatus(code: string, schoolId: string, paid: boolean): Promise<void> {\n  await adminFetch(code, 'set_school_paid_status', undefined, schoolId, undefined, paid);\n}\n
+
+export async function adminSetSchoolPaidStatus(code: string, schoolId: string, paid: boolean): Promise<void> {
+  await adminFetch(code, 'set_school_paid_status', undefined, schoolId, undefined, paid);
+}
