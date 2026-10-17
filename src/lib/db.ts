@@ -453,7 +453,7 @@ export async function syncBookStock(
 export async function loadSupplyStock(schoolId: string): Promise<SupplyStockItem[]> {
   const { data, error } = await getSupabase()
     .from('stock_items')
-    .select('id, name, subject, unit, in_stock, old_stock, new_stock, min_stock, price')
+    .select('id, name, subject, unit, in_stock, old_stock, new_stock, sold, min_stock, price')
     .eq('school_id', schoolId)
     .eq('category', 'fourniture')
     .order('name', { ascending: true });
