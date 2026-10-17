@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ImageCropper } from './ImageCropper';
 import { Camera, FileText, Printer, X, ImagePlus, MessageCircle } from 'lucide-react';
 
@@ -150,8 +151,8 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     w.document.close();
   };
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-3">
+  return createPortal(
+    <div className="fixed inset-0 z-[2147482000] flex items-center justify-center bg-slate-950/85 p-3">
       <div className="relative max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
         <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X size={20}/></button>
         <div className="mb-4 pr-8">
@@ -209,6 +210,5 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
           setCropDraft(null);
         }}
       />}
-    </div>
-  );
+    </div>, document.body);
 }
