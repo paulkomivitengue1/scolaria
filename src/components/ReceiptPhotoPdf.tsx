@@ -94,8 +94,8 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 p-3">
-      <div className="relative max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 p-3">
+      <div className="relative max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
         <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X size={20}/></button>
         <div className="mb-4 pr-8">
           <h2 className="text-lg font-bold text-slate-900">Photo du reçu → PDF</h2>
@@ -104,12 +104,12 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><ImagePlus size={17}/> Logo de l’école (facultatif)</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={e => handleImage('logo', e.target.files?.[0])}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => handleImage('logo', e.target.files?.[0])}/>
             {logo && <img src={logo} alt="Aperçu du logo" className="mt-3 h-20 w-full object-contain"/>}
           </label>
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (obligatoire)</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={e => handleImage('receipt', e.target.files?.[0])}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => handleImage('receipt', e.target.files?.[0])}/>
             {receipt && <img src={receipt} alt="Aperçu du reçu" className="mt-3 h-28 w-full rounded-lg border object-contain"/>}
           </label>
         </div>
