@@ -106,7 +106,7 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
         </div>
       </div>
     </div>
-    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} />
+    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} defaultAmount={isTrancheMode ? paidAmount! : totalPaid} feeLabel={ft.label} />
     </>
   );
 }
