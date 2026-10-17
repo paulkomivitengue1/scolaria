@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { generateMatricule, loadStudents, addStudentDB, recordPayment,
-  loadUniformStock, loadBookStock, syncUniformStock, syncBookStock,
+  loadUniformStock, loadBookStock, syncUniformStock, syncBookStock, loadSupplyStock, syncSupplyStock,
   loadSchoolFeeConfig, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
   loadExpenses, addExpenseDB, deleteExpenseDB,
@@ -35,7 +35,7 @@ import { StudentCardsView } from './components/StudentCardsView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
 import { TeachersView } from './components/TeachersView';
-import type { Student, UniformStockItem, BookStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription, Teacher, SalaryPayment } from './types';
+import type { Student, UniformStockItem, BookStockItem, SupplyStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription, Teacher, SalaryPayment } from './types';
 import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
@@ -54,6 +54,7 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>([]);
   const [uniforms, setUniforms] = useState<UniformStockItem[]>([]);
   const [books, setBooks] = useState<BookStockItem[]>([]);
+  const [supplies, setSupplies] = useState<SupplyStockItem[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [salaryPayments, setSalaryPayments] = useState<SalaryPayment[]>([]);
@@ -100,6 +101,7 @@ export default function App() {
         loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
         loadUniformStock(schoolId),
         loadBookStock(schoolId),
+        loadSupplyStock(schoolId),
         loadGradePeriods(schoolId),
         loadExpenses(schoolId),
         loadTeachers(schoolId),
@@ -115,17 +117,20 @@ export default function App() {
       if (results[2].status === 'fulfilled') setBooks(results[2].value);
       else console.error('Failed to load books:', results[2].reason);
 
-      if (results[3].status === 'fulfilled' && results[3].value.length > 0) setGradePeriods(results[3].value);
-      else if (results[3].status === 'rejected') console.error('Failed to load grade periods:', results[3].reason);
+      if (results[3].status === 'fulfilled') setSupplies(results[3].value);
+      else console.error('Failed to load supplies:', results[3].reason);
 
-      if (results[4].status === 'fulfilled') setExpenses(results[4].value);
-      else console.error('Failed to load expenses:', results[4].reason);
+      if (results[4].status === 'fulfilled' && results[4].value.length > 0) setGradePeriods(results[4].value);
+      else if (results[4].status === 'rejected') console.error('Failed to load grade periods:', results[4].reason);
 
-      if (results[5].status === 'fulfilled') setTeachers(results[5].value);
-      else console.error('Failed to load teachers:', results[5].reason);
+      if (results[5].status === 'fulfilled') setExpenses(results[5].value);
+      else console.error('Failed to load expenses:', results[5].reason);
 
-      if (results[6].status === 'fulfilled') setSalaryPayments(results[6].value);
-      else console.error('Failed to load salary payments:', results[6].reason);
+      if (results[6].status === 'fulfilled') setTeachers(results[6].value);
+      else console.error('Failed to load teachers:', results[6].reason);
+
+      if (results[7].status === 'fulfilled') setSalaryPayments(results[7].value);
+      else console.error('Failed to load salary payments:', results[7].reason);
     } catch (err) {
       console.error('Failed to load school data:', err);
     } finally {
@@ -140,6 +145,7 @@ export default function App() {
       setStudents([]);
       setUniforms([]);
       setBooks([]);
+      setSupplies([]);
       setExpenses([]);
       setTeachers([]);
       setSalaryPayments([]);
@@ -320,6 +326,16 @@ export default function App() {
       }).catch(err => console.error('Book sync failed:', err));
     }
   }, [profile?.schoolId, books]);
+
+  const handleSuppliesChange = useCallback((next: SupplyStockItem[]) => {
+    const previous = supplies;
+    setSupplies(next);
+    if (profile?.schoolId) {
+      syncSupplyStock(profile.schoolId, previous, next)
+        .then(setSupplies)
+        .catch(err => { console.error('Supply stock sync failed:', err); loadSupplyStock(profile.schoolId!).then(setSupplies).catch(console.error); });
+    }
+  }, [profile?.schoolId, supplies]);
 
   // ── Expense handlers ──────────────────────────────────
   const handleAddExpense = async (expense: Omit<Expense, 'id'>) => {
@@ -600,7 +616,7 @@ export default function App() {
 
               {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
 
-              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} />}
+              {view === 'stocks' && <StocksView uniforms={uniforms} books={books} supplies={supplies} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onSuppliesChange={handleSuppliesChange} />}
 
               {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}
