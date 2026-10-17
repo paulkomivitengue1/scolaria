@@ -34,7 +34,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [cardStatus, setCardStatus] = useState<'draft' | 'finalized'>('draft');
   const [saveTimer, setSaveTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [saveIndicator, setSaveIndicator] = useState(false);
-  const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
+  const [historyStudent, setHistoryStudent] = useState<Student | null>(null);\n  const [bulletinFormat, setBulletinFormat] = useState('classique');\n  const [customBulletinColor, setCustomBulletinColor] = useState('#1d4ed8');\n  const [formatSaved, setFormatSaved] = useState(false);\n\n  useEffect(() => {\n    try { const saved = localStorage.getItem('gestilys-bulletin-format-' + schoolId); if (saved) { const cfg = JSON.parse(saved); setBulletinFormat(cfg.format || 'classique'); setCustomBulletinColor(cfg.color || '#1d4ed8'); } } catch { /* configuration facultative */ }\n  }, [schoolId]);
 
   // ── Load report cards for a student ─────────────────
   const loadCards = useCallback(async (studentId: string) => {
@@ -373,6 +373,18 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     const periodLabel = gradePeriods.find(p => p.index === selectedPeriod)?.label ?? `Période ${selectedPeriod}`;
     return (
       <div className="space-y-4">
+        <div className="print:hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-white p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="flex-1 text-sm font-700 text-slate-700">Format du bulletin
+              <select value={bulletinFormat} onChange={e=>{setBulletinFormat(e.target.value);setFormatSaved(false);}} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base">
+                <option value="classique">1. Classique — scolaire</option><option value="moderne">2. Moderne — bandeau coloré</option><option value="compact">3. Compact — tableau resserré</option><option value="officiel">4. Officiel — cadre renforcé</option><option value="minimal">5. Minimaliste — impression économique</option><option value="personnalise">Personnaliser mon format</option>
+              </select>
+            </label>
+            {bulletinFormat==='personnalise'&&<label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label>}
+            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Le bulletin et les notes sont déjà enregistrés dans Gestilys. Ce choix de mise en page est conservé sur cet appareil.</p>
+        </div>
         <div className="flex items-center gap-3 print:hidden">
           <button onClick={() => setMode('edit')} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 active:scale-95"><ArrowLeft className="h-4 w-4" /></button>
           <div className="flex-1">
@@ -383,10 +395,10 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         </div>
 
         {/* Printable bulletin */}
-        <div id="bulletin-print" className="mx-auto max-w-2xl rounded-2.5xl border border-slate-200 bg-white p-6 shadow-card sm:p-8 print:border-0 print:shadow-none print:p-0">
+        <div id="bulletin-print" className={`mx-auto max-w-2xl rounded-2.5xl bg-white p-6 shadow-card sm:p-8 print:shadow-none print:p-0 ${bulletinFormat==='compact'?'border border-slate-200 p-4 sm:p-5':bulletinFormat==='officiel'?'border-4':'border-2'}`} style={{borderColor:bulletinFormat==='personnalise'?customBulletinColor:bulletinFormat==='moderne'?'#0f766e':bulletinFormat==='officiel'?'#334155':bulletinFormat==='minimal'?'#cbd5e1':'#1d4ed8'}}>
           {/* Header */}
-          <div className="border-b-2 border-indigo-700 pb-4 text-center">
-            <h2 className="font-display text-xl font-800 text-indigo-900 sm:text-2xl">{schoolName || 'École'}</h2>
+          <div className="pb-4 text-center" style={{borderBottom:'3px solid '+(bulletinFormat==='personnalise'?customBulletinColor:bulletinFormat==='moderne'?'#0f766e':bulletinFormat==='officiel'?'#334155':bulletinFormat==='minimal'?'#64748b':'#1d4ed8'),background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':'transparent',paddingTop:bulletinFormat==='moderne'?12:0}}>
+            <h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:bulletinFormat==='personnalise'?customBulletinColor:bulletinFormat==='moderne'?'#115e59':bulletinFormat==='officiel'?'#1e293b':bulletinFormat==='minimal'?'#334155':'#312e81'}}>{schoolName || 'École'}</h2>
             <p className="mt-1 text-sm text-slate-500">Bulletin de notes · Année scolaire {academicYear}</p>
             <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p>
           </div>
