@@ -91,7 +91,7 @@ BEGIN
   IF auth.role() <> 'service_role' AND p_school_id IS DISTINCT FROM public.current_school_id() THEN
     RAISE EXCEPTION 'Accès refusé pour cette école';
   END IF;
-  IF p_new_year IS NULL OR p_new_year !~ '^\\d{4}-\\d{4}$' THEN
+  IF p_new_year IS NULL OR p_new_year !~ '^\d{4}-\d{4}$' THEN
     RAISE EXCEPTION 'Saisis une année scolaire au format AAAA-AAAA, par exemple 2027-2028';
   END IF;
 
