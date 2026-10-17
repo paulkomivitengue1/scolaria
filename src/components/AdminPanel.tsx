@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus,
+  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus,
   type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
 
@@ -134,6 +134,20 @@ export function AdminPanel({ onExit }: Props) {
       showToast(status === 'suspend' ? 'École suspendue' : 'Accès de l’école rétabli');
     } catch (err: any) {
       showToast(err.message || 'Impossible de modifier le statut de l’école');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const setSchoolPaidStatus = async (schoolId: string, paid: boolean) => {
+    setActionLoading(schoolId);
+    try {
+      await adminSetSchoolPaidStatus(code, schoolId, paid);
+      const refreshedSchools = await adminListSchools(code);
+      setSchools(refreshedSchools);
+      showToast(paid ? 'Paiement confirmé : école marquée payante' : 'Paiement non reçu : école marquée impayée');
+    } catch (err: any) {
+      showToast(err.message || 'Impossible de modifier le statut de paiement');
     } finally {
       setActionLoading(null);
     }
@@ -528,9 +542,10 @@ export function AdminPanel({ onExit }: Props) {
                             <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                             <span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span>
                           </div>
+                          {s.subscription_status !== 'suspended' && <button type="button" onClick={() => setSchoolPaidStatus(s.id, s.subscription_status !== 'active')} disabled={actionLoading===s.id} className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-700 ${s.subscription_status==='active'?'border-amber-200 bg-amber-50 text-amber-800':'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{s.subscription_status==='active'?'Marquer comme impayée':'Confirmer le paiement'}</button>}
                           <button
                             type="button"
-                            onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')}
+                            onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')
                             disabled={actionLoading === s.id}
                             className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-700 disabled:opacity-50 ${s.subscription_status === 'suspended' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
                           >
@@ -585,9 +600,10 @@ export function AdminPanel({ onExit }: Props) {
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
                                     <StIcon className="h-3 w-3" /> {st.label}
                                   </span>
+                                  {s.subscription_status !== 'suspended' && <button type="button" onClick={() => setSchoolPaidStatus(s.id, s.subscription_status !== 'active')} disabled={actionLoading===s.id} className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-700 ${s.subscription_status==='active'?'border-amber-200 bg-amber-50 text-amber-800':'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{s.subscription_status==='active'?'Marquer impayée':'Confirmer payé'}</button>}
                                   <button
                                     type="button"
-                                    onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')}
+                                    onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')
                                     disabled={actionLoading === s.id}
                                     className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-700 disabled:opacity-50 ${s.subscription_status === 'suspended' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
                                   >
