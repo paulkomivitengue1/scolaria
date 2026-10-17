@@ -68,7 +68,10 @@ export function AdminPanel({ onExit }: Props) {
       setSchools(s);
       setPayments(p);
     } catch (err: any) {
-      setAuthError(err.message || 'Erreur de chargement');
+      const message = err?.message || 'Erreur de chargement';
+      setAuthError(message);
+      setAuthed(false);
+      sessionStorage.removeItem(DEV_CODE_STORAGE);
     } finally {
       setDataLoading(false);
     }
