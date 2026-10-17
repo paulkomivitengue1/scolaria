@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, School, UserCircle,
+  Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, School, UserCircle, Phone,
   Sparkles, ShieldCheck, AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -12,12 +12,13 @@ interface AuthPageProps {
 type Mode = 'login' | 'signup';
 
 export function AuthPage({ onBack }: AuthPageProps) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [directorName, setDirectorName] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
 
   const canSubmit = mode === 'login'
     ? email.trim().length > 0 && password.length > 0
-    : schoolName.trim() && directorName.trim() && email.trim() && password.length >= 6;
+    : schoolName.trim() && directorName.trim() && phone.trim().length >= 8 && email.trim() && password.length >= 6;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +38,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
 
     try {
       if (mode === 'signup') {
-        const { error: err } = await signUp(email.trim(), password, schoolName.trim(), directorName.trim());
+        const { error: err } = await signUp(email.trim(), password, schoolName.trim(), directorName.trim(), phone.trim());
         if (err) setError(err);
       } else {
         const { error: err } = await signIn(email.trim(), password);
@@ -50,7 +51,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
     }
   };
 
-  const switchMode = (m: Mode) => {
+  const handleForgotPassword = async () => {\n    if (!email.trim()) { setError('Saisissez votre adresse e-mail pour recevoir le lien de réinitialisation.'); return; }\n    setLoading(true); setError(null);\n    try { const result = await resetPassword(email.trim()); if (result.error) setError(result.error); else setError('Si cette adresse correspond à un compte, un lien de réinitialisation vient d’être envoyé. Vérifiez votre boîte de réception et les courriers indésirables.'); } catch (err: any) { setError(err.message || 'Impossible d’envoyer le lien.'); } finally { setLoading(false); }\n  };\n\n  const switchMode = (m: Mode) => {
     setMode(m);
     setPassword('');
     setShowPass(false);
@@ -117,7 +118,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
                 </Field>
               )}
 
-              <Field icon={<Mail className="h-4.5 w-4.5 text-slate-400" />} label="Adresse e-mail">
+              {mode === 'signup' && <Field icon={<Phone className="h-4.5 w-4.5 text-slate-400" />} label="Téléphone du directeur / WhatsApp"><input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+223 70 00 00 00" className={inputBase} autoComplete="tel" /></Field>}\n\n              <Field icon={<Mail className="h-4.5 w-4.5 text-slate-400" />} label="Adresse e-mail">
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="directeur@ecole.sn" className={inputBase} autoComplete="email" />
               </Field>
 
