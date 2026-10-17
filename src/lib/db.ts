@@ -482,7 +482,7 @@ export async function syncSupplyStock(
   for (let i = 0; i < next.length; i++) {
     const item = next[i];
     const values = { name: item.name, subject: item.category, unit: item.unit,
-      in_stock: item.quantity, old_stock: item.oldQuantity ?? item.quantity, new_stock: item.newQuantity ?? 0, min_stock: item.minStock, price: item.price };
+      in_stock: item.quantity, old_stock: item.oldQuantity ?? item.quantity, new_stock: item.newQuantity ?? 0, sold: item.sold ?? 0, min_stock: item.minStock, price: item.price };
     if (!prevMap.has(item.id)) {
       const { data, error } = await getSupabase().from('stock_items')
         .insert({ school_id: schoolId, category: 'fourniture', ...values })
