@@ -335,19 +335,29 @@ export async function loadUniformStock(schoolId: string): Promise<UniformStockIt
 export async function loadBookStock(schoolId: string): Promise<BookStockItem[]> {
   const { data, error } = await getSupabase()
     .from('stock_items')
-    .select('id, class_level, subject, in_stock, sold, price')
+    .select('id, class_level, subject, in_stock, old_stock, new_stock, sold, price')
     .eq('school_id', schoolId)
     .eq('category', 'livre')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data || []).map(r => ({
-    id: r.id,
-    className: r.class_level as BookClass,
-    subject: r.subject as BookSubject,
-    inStock: r.in_stock,
-    sold: r.sold,
-    price: r.price ?? 0,
-  }));
+  return (data || []).map(r => {
+    const storedOld = Number(r.old_stock) || 0;
+    const storedNew = Number(r.new_stock) || 0;
+    const legacyTotal = Number(r.in_stock) || 0;
+    const hasSplit = storedOld + storedNew > 0 || legacyTotal === 0;
+    const oldStock = hasSplit ? storedOld : legacyTotal;
+    const newStock = hasSplit ? storedNew : 0;
+    return {
+      id: r.id,
+      className: r.class_level as BookClass,
+      subject: r.subject as BookSubject,
+      inStock: oldStock + newStock,
+      oldStock,
+      newStock,
+      sold: r.sold,
+      price: r.price ?? 0,
+    };
+  });
 }
 
 export async function syncUniformStock(
@@ -413,7 +423,7 @@ export async function syncBookStock(
         .insert({
           school_id: schoolId, category: 'livre', name: '',
           class_level: item.className, subject: item.subject,
-          in_stock: item.inStock, sold: item.sold, price: item.price,
+          in_stock: (item.oldStock ?? item.inStock) + (item.newStock ?? 0), old_stock: item.oldStock ?? item.inStock, new_stock: item.newStock ?? 0, sold: item.sold, price: item.price,
         })
         .select('id')
         .single();
@@ -421,10 +431,10 @@ export async function syncBookStock(
       if (data) result[i] = { ...item, id: data.id };
     } else {
       const old = prevMap.get(item.id)!;
-      if (old.inStock !== item.inStock || old.sold !== item.sold || old.price !== item.price) {
+      if (old.inStock !== item.inStock || old.oldStock !== item.oldStock || old.newStock !== item.newStock || old.sold !== item.sold || old.price !== item.price) {
         const { error } = await getSupabase()
           .from('stock_items')
-          .update({ in_stock: item.inStock, sold: item.sold, price: item.price })
+          .update({ in_stock: (item.oldStock ?? item.inStock) + (item.newStock ?? 0), old_stock: item.oldStock ?? item.inStock, new_stock: item.newStock ?? 0, sold: item.sold, price: item.price })
           .eq('id', item.id).eq('school_id', schoolId);
         if (error) throw error;
       }
@@ -443,16 +453,24 @@ export async function syncBookStock(
 export async function loadSupplyStock(schoolId: string): Promise<SupplyStockItem[]> {
   const { data, error } = await getSupabase()
     .from('stock_items')
-    .select('id, name, subject, unit, in_stock, min_stock, price')
+    .select('id, name, subject, unit, in_stock, old_stock, new_stock, min_stock, price')
     .eq('school_id', schoolId)
     .eq('category', 'fourniture')
     .order('name', { ascending: true });
   if (error) throw error;
-  return (data || []).map(r => ({
-    id: r.id, name: r.name || r.subject || '', category: r.subject || 'Fourniture',
-    unit: r.unit || 'unité', quantity: r.in_stock || 0,
-    minStock: r.min_stock ?? 3, price: r.price || 0,
-  }));
+  return (data || []).map(r => {
+    const storedOld = Number(r.old_stock) || 0;
+    const storedNew = Number(r.new_stock) || 0;
+    const legacyTotal = Number(r.in_stock) || 0;
+    const hasSplit = storedOld + storedNew > 0 || legacyTotal === 0;
+    const oldQuantity = hasSplit ? storedOld : legacyTotal;
+    const newQuantity = hasSplit ? storedNew : 0;
+    return {
+      id: r.id, name: r.name || r.subject || '', category: r.subject || 'Fourniture',
+      unit: r.unit || 'unité', quantity: oldQuantity + newQuantity,
+      oldQuantity, newQuantity, minStock: r.min_stock ?? 3, price: r.price || 0,
+    };
+  });
 }
 
 export async function syncSupplyStock(
@@ -464,7 +482,7 @@ export async function syncSupplyStock(
   for (let i = 0; i < next.length; i++) {
     const item = next[i];
     const values = { name: item.name, subject: item.category, unit: item.unit,
-      in_stock: item.quantity, min_stock: item.minStock, price: item.price };
+      in_stock: item.quantity, old_stock: item.oldQuantity ?? item.quantity, new_stock: item.newQuantity ?? 0, min_stock: item.minStock, price: item.price };
     if (!prevMap.has(item.id)) {
       const { data, error } = await getSupabase().from('stock_items')
         .insert({ school_id: schoolId, category: 'fourniture', ...values })
@@ -474,7 +492,7 @@ export async function syncSupplyStock(
     } else {
       const old = prevMap.get(item.id)!;
       if (old.name !== item.name || old.category !== item.category || old.unit !== item.unit ||
-          old.quantity !== item.quantity || old.minStock !== item.minStock || old.price !== item.price) {
+          old.quantity !== item.quantity || old.oldQuantity !== item.oldQuantity || old.newQuantity !== item.newQuantity || old.minStock !== item.minStock || old.price !== item.price) {
         const { error } = await getSupabase().from('stock_items').update(values)
           .eq('id', item.id).eq('school_id', schoolId);
         if (error) throw error;
