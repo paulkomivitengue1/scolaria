@@ -499,6 +499,27 @@ export async function saveStudentCardFields(schoolId: string, fields: StudentCar
   if (error) throw error;
 }
 
+export async function loadStudentCardPhotos(schoolId: string): Promise<Record<string, string>> {
+  const { data, error } = await getSupabase()
+    .from('student_card_photos')
+    .select('student_id, photo_data')
+    .eq('school_id', schoolId);
+  if (error) throw error;
+  return Object.fromEntries((data || []).map(row => [row.student_id, row.photo_data]));
+}
+
+export async function saveStudentCardPhoto(schoolId: string, studentId: string, photoData: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('student_card_photos')
+    .upsert({
+      school_id: schoolId,
+      student_id: studentId,
+      photo_data: photoData,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'school_id,student_id' });
+  if (error) throw error;
+}
+
 // ── School ──────────────────────────────────────────────
 
 // ── School ──────────────────────────────────────────────
