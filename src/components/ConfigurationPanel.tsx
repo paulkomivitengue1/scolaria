@@ -574,7 +574,7 @@ function YearEndSection({ uniforms, books, supplies, currentAcademicYear, onYear
   const totalSupplies = supplies.reduce((s, i) => s + i.quantity, 0);
 
   const handleConfirm = async () => {
-    if (!/^\\d{4}-\\d{4}$/.test(nextYear) || nextYear === currentAcademicYear) {
+    if (!/^\d{4}-\d{4}$/.test(nextYear) || nextYear === currentAcademicYear) {
       setError('Saisis une nouvelle année au format AAAA-AAAA, différente de l’année actuelle.');
       return;
     }
