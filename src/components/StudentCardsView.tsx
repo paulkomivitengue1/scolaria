@@ -256,8 +256,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
                 <article className="student-id-card relative flex h-[205px] w-full max-w-[325px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card" style={{ borderTop: `5px solid ${accent}` }}>
-                  <div className="absolute inset-x-0 top-0 h-16 opacity-10" style={{ background: accent }} />
-                  <div className="relative flex min-w-0 flex-1 flex-col p-3">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16 opacity-10" style={{ background: accent }} />
+                  <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
                     <div className="student-card-header flex items-center gap-2 border-b border-slate-100 pb-2">
                       {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
                       <div className="student-card-details min-w-0 flex-1">
@@ -266,8 +266,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       </div>
                     </div>
                     <div className="student-card-main mt-2 flex min-h-0 flex-1 gap-2">
-                      <div className="student-card-photo-column flex w-[26px] shrink-0 flex-col items-center">
-                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame rounded object-cover" style={{ width: 18, height: 23, minWidth: 18, minHeight: 23, maxWidth: 18, maxHeight: 23, flex: "0 0 18px", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
+                      <div className="student-card-photo-column relative z-10 flex w-[52px] shrink-0 flex-col items-center">
+                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame block h-[62px] w-[48px] shrink-0 rounded-md object-cover" style={{ width: 48, height: 62, minWidth: 48, minHeight: 62, maxWidth: 48, maxHeight: 62, flex: "0 0 48px", objectFit: "cover", objectPosition: "center 20%", display: "block", position: "relative", zIndex: 20 }} /> : <div className="student-photo-frame grid h-[62px] w-[48px] shrink-0 place-items-center rounded-md bg-slate-100 text-lg font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
                         
                       </div>
                       <div className="student-card-details student-card-info-column min-w-0 flex-1 space-y-1">
