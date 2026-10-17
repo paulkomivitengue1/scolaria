@@ -74,6 +74,7 @@ const DEMO_VIEWS = [
 
 export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [billingPeriod, setBillingPeriod] = useState<'mensuel'|'annuel'>('mensuel');
   const [demoView, setDemoView] = useState<(typeof DEMO_VIEWS)[number]['id']>('overview');
   return (
     <div className="gestilys-landing min-h-screen bg-white text-ink">
@@ -348,18 +349,30 @@ export function LandingPage({ onEnter }: LandingPageProps) {
 
         <section id="tarifs" className="gl-section gl-section-soft">
           <div className="gl-container">
-            <div className="gl-kicker">Un tarif simple</div>
-            <h2 className="gl-h2">Un outil accessible pour votre école.</h2>
-            <p className="gl-sub">Découvrez la plateforme avant de décider si elle convient à votre établissement.</p>
-            <div className="gl-price">
-              <div>
-                <span style={{ display:'inline-flex', borderRadius:999, padding:'6px 10px', background:'rgba(255,255,255,.12)', color:'#fde68a', fontSize:10, fontWeight:900, letterSpacing:'.08em', textTransform:'uppercase' }}>Pour démarrer</span>
-                <h3 style={{ marginTop:13 }}>Gestilys</h3>
-                <p>Les outils de gestion scolaire réunis dans une interface simple.<br/>Contactez-nous pour confirmer le tarif adapté à votre établissement et les conditions de l’essai.</p>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginTop:17, fontSize:12, fontWeight:700, color:'#fff' }}><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accès depuis le navigateur</span><span style={{ display:'flex', alignItems:'center', gap:6 }}><Check size={15} color="#f9d56e"/> Accompagnement au démarrage</span></div>
-              </div>
-              <button className="gl-btn gl-btn-primary gl-price-action" onClick={onEnter}>Demander une démonstration <ArrowRight size={16}/></button>
+            <div className="gl-kicker">Des tarifs transparents</div>
+            <h2 className="gl-h2">Un forfait adapté à la taille de votre école.</h2>
+            <p className="gl-sub">Choisissez une formule. Les forfaits annuels reviennent à deux mois offerts par rapport au paiement mensuel.</p>
+            <div style={{display:'flex',justifyContent:'center',gap:5,margin:'24px auto 30px',padding:5,borderRadius:14,background:'#e2e8f0',width:'fit-content'}}>
+              <button onClick={()=>setBillingPeriod('mensuel')} style={{padding:'10px 18px',borderRadius:10,background:billingPeriod==='mensuel'?'white':'transparent',color:'#172554',fontSize:13,fontWeight:800,boxShadow:billingPeriod==='mensuel'?'0 1px 4px #cbd5e1':'none'}}>Mensuel</button>
+              <button onClick={()=>setBillingPeriod('annuel')} style={{padding:'10px 18px',borderRadius:10,background:billingPeriod==='annuel'?'white':'transparent',color:'#172554',fontSize:13,fontWeight:800,boxShadow:billingPeriod==='annuel'?'0 1px 4px #cbd5e1':'none'}}>Annuel · 2 mois offerts</button>
             </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:18,alignItems:'stretch'}}>
+              {[
+                {name:'Petite école',desc:'Pour démarrer et gérer les opérations essentielles.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#eff6ff',accent:'#1d4ed8'},
+                {name:'École moyenne',desc:'Pour un établissement avec un suivi quotidien plus complet.',monthly:20000,students:'De 151 à 500 élèves',tone:'#eef2ff',accent:'#4338ca',popular:true},
+                {name:'Grande école',desc:'Pour les établissements avec un effectif important.',monthly:30000,students:'Plus de 500 élèves',tone:'#fff7df',accent:'#a16207'},
+              ].map(plan=><article key={plan.name} style={{position:'relative',display:'flex',flexDirection:'column',border:plan.popular?'2px solid #1d4ed8':'1px solid #dbe3ef',borderRadius:22,background:'white',padding:24,boxShadow:plan.popular?'0 16px 38px rgba(29,78,216,.12)':'0 8px 22px rgba(15,23,42,.04)'}}>
+                {plan.popular&&<span style={{position:'absolute',right:16,top:16,borderRadius:999,background:'#dbeafe',color:'#1d4ed8',fontSize:10,fontWeight:900,padding:'6px 9px'}}>RECOMMANDÉ</span>}
+                <span style={{alignSelf:'flex-start',borderRadius:10,background:plan.tone,color:plan.accent,padding:'7px 10px',fontSize:11,fontWeight:900}}>{plan.students}</span>
+                <h3 style={{fontSize:21,fontWeight:900,color:'#172554',marginTop:18}}>{plan.name}</h3>
+                <p style={{fontSize:13,lineHeight:1.7,color:'#64748b',minHeight:44,marginTop:7}}>{plan.desc}</p>
+                <div style={{marginTop:20,color:'#172554'}}><strong style={{fontSize:32,letterSpacing:'-.04em'}}>{(billingPeriod==='mensuel'?plan.monthly:plan.monthly*10).toLocaleString('fr-FR')}</strong><span style={{fontSize:12,color:'#64748b'}}> FCFA / {billingPeriod==='mensuel'?'mois':'an'}</span></div>
+                {billingPeriod==='annuel'&&<p style={{marginTop:4,color:'#15803d',fontSize:12,fontWeight:800}}>Économie : {(plan.monthly*2).toLocaleString('fr-FR')} FCFA / an</p>}
+                <ul style={{display:'grid',gap:10,margin:'22px 0 24px',fontSize:13,color:'#334155',flex:1}}><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Gestion des élèves et des classes</li><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Suivi des paiements et reçus</li><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Accès sur téléphone et ordinateur</li><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Assistance au démarrage</li></ul>
+                <button className="gl-btn gl-btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={onEnter}>Demander une démonstration <ArrowRight size={16}/></button>
+              </article>)}
+            </div>
+            <p style={{textAlign:'center',fontSize:12,color:'#64748b',marginTop:20}}>Le forfait exact et les conditions d’accompagnement sont confirmés avant toute souscription.</p>
           </div>
         </section>
 
