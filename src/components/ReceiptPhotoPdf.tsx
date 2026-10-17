@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ImageCropper } from './ImageCropper';
 import { Camera, FileText, Printer, X, ImagePlus, MessageCircle } from 'lucide-react';
 
 interface Props {
@@ -25,6 +26,7 @@ function readImage(file: File): Promise<string> {
 export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studentName }: Props) {
   const [logo, setLogo] = useState('');
   const [receipt, setReceipt] = useState('');
+  const [cropDraft, setCropDraft] = useState<{ image: string; kind: 'logo' | 'receipt' } | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -32,6 +34,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     if (!open) {
       setLogo('');
       setReceipt('');
+      setCropDraft(null);
       setError('');
       setBusy(false);
     }
@@ -44,8 +47,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     setError('');
     try {
       const image = await readImage(file);
-      if (kind === 'logo') setLogo(image);
-      else setReceipt(image);
+      setCropDraft({ image, kind });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de lecture.');
     }
@@ -94,7 +96,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 p-3">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-3">
       <div className="relative max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
         <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X size={20}/></button>
         <div className="mb-4 pr-8">
@@ -104,12 +106,12 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><ImagePlus size={17}/> Logo de l’école (facultatif)</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => handleImage('logo', e.target.files?.[0])}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={e => { void handleImage('logo', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {logo && <img src={logo} alt="Aperçu du logo" className="mt-3 h-20 w-full object-contain"/>}
           </label>
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (obligatoire)</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => handleImage('receipt', e.target.files?.[0])}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={e => { void handleImage('receipt', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {receipt && <img src={receipt} alt="Aperçu du reçu" className="mt-3 h-28 w-full rounded-lg border object-contain"/>}
           </label>
         </div>
@@ -120,6 +122,17 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
         </button>
         {parentPhone && <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MessageCircle size={14}/> Parent : {parentPhone}. Après l’enregistrement du PDF, WhatsApp s’ouvrira pour faciliter l’envoi.</p>}
       </div>
+      {cropDraft && <ImageCropper
+        image={cropDraft.image}
+        aspectRatio={cropDraft.kind === 'logo' ? 1 : 0.72}
+        title={cropDraft.kind === 'logo' ? 'le logo' : 'le reçu'}
+        onCancel={() => setCropDraft(null)}
+        onApply={image => {
+          if (cropDraft.kind === 'logo') setLogo(image);
+          else setReceipt(image);
+          setCropDraft(null);
+        }}
+      />}
     </div>
   );
 }
