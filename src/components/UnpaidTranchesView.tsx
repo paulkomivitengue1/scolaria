@@ -54,7 +54,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
 
   const trancheLabel = tranches.find(t => t.index === selectedTranche)?.label ?? `Tranche ${selectedTranche}`;
   const openReminder = (student: Student, remaining: number) => {
-    const phone = (student.parentPhone || '').replace(/\\D/g, '');
+    const phone = (student.parentPhone || '').replace(/\D/g, '');
     if (!phone) { window.alert('Aucun numéro de téléphone du parent n’est enregistré pour cet élève.'); return; }
     const normalizedPhone = phone.length === 8 ? `223${phone}` : phone;
     const message = `Bonjour, nous vous informons qu’un solde de ${formatFCFA(remaining)} reste à régler pour ${student.firstName} ${student.lastName}, au titre de ${trancheLabel}. Merci de contacter l’établissement pour toute précision. Cordialement.`;
