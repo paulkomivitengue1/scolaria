@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, Layers, ShieldCheck,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
