@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, CreditCard, Check, X, Search, BadgeCheck,
   Clock, AlertCircle, Smartphone, ArrowLeft, Sparkles, School, Lock,
   Loader2, LogOut, Users, Phone, TrendingUp, CalendarDays, CalendarRange,
-  Calendar, User, Download, RefreshCw, LayoutDashboard, Filter, Activity,
+  Calendar, User, Download, RefreshCw, Filter, Activity,
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
