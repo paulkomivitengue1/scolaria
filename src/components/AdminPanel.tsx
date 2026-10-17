@@ -247,7 +247,7 @@ export function AdminPanel({ onExit }: Props) {
   // Overview stats
   const trialCount = schools.filter((s) => s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()).length;
   const paidCount = schools.filter((s) => s.subscription_status === 'active').length;
-  const expiredCount = schools.length - trialCount - paidCount;
+  const expiredCount = schools.filter(s => s.subscription_status === 'expired' || (s.subscription_status === 'trial' && new Date(s.trial_ends_at) <= new Date())).length;
 
   // Per-period new client stats
   const now = new Date();
