@@ -253,6 +253,7 @@ export interface SupplyStockItem {
   price: number;
   oldQuantity?: number;
   newQuantity?: number;
+  sold?: number;
 }
 
 
