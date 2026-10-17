@@ -4,7 +4,7 @@ import {
   TrendingDown, Layers, BookMarked, CheckCircle2, XCircle,
 } from 'lucide-react';
 import type {
-  UniformStockItem, BookStockItem, UniformCycle, UniformSize, BookClass, BookSubject,
+  UniformStockItem, BookStockItem, SupplyStockItem, UniformCycle, UniformSize, BookClass, BookSubject,
 } from '../types';
 import {
   UNIFORM_CYCLES, UNIFORM_SIZES, BOOK_CLASSES, BOOK_SUBJECTS,
@@ -12,16 +12,18 @@ import {
 } from '../types';
 import { newUniformItem, newBookItem } from '../data';
 
-type SubTab = 'tenues' | 'livres';
+type SubTab = 'tenues' | 'livres' | 'fournitures';
 
 interface Props {
   uniforms: UniformStockItem[];
   books: BookStockItem[];
   onUniformsChange: (u: UniformStockItem[]) => void;
   onBooksChange: (b: BookStockItem[]) => void;
+  supplies: SupplyStockItem[];
+  onSuppliesChange: (items: SupplyStockItem[]) => void;
 }
 
-export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }: Props) {
+export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, supplies, onSuppliesChange }: Props) {
   const [sub, setSub] = useState<SubTab>('tenues');
 
   return (
@@ -32,7 +34,7 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }:
             <Boxes className="h-3 w-3" /> Inventaire
           </div>
           <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Gestion des Stocks</h1>
-          <p className="mt-1 text-sm text-slate-500">Suivez les tenues et les livres de votre établissement en temps réel.</p>
+          <p className="mt-1 text-sm text-slate-500">Suivez les tenues, livres et fournitures de votre établissement.</p>
         </div>
       </div>
 
@@ -53,12 +55,18 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }:
         >
           <BookOpen className="h-4 w-4" /> Stocks des Livres
         </button>
+        <button onClick={() => setSub('fournitures')}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-700 transition ${sub === 'fournitures' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <Package className="h-4 w-4" /> Fournitures
+        </button>
       </div>
 
       {sub === 'tenues' ? (
         <TenuesPanel uniforms={uniforms} onChange={onUniformsChange} />
-      ) : (
+      ) : sub === 'livres' ? (
         <LivresPanel books={books} onChange={onBooksChange} />
+      ) : (
+        <SuppliesPanel supplies={supplies} onChange={onSuppliesChange} />
       )}
     </div>
   );
@@ -752,4 +760,55 @@ function NumberInput({ value, onChange }: { value: number; onChange: (v: number)
       className="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-right text-sm font-700 text-ink outline-none transition focus:border-royal-400 focus:ring-4"
     />
   );
+}
+
+
+function SuppliesPanel({ supplies, onChange }: { supplies: SupplyStockItem[]; onChange: (items: SupplyStockItem[]) => void }) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('Fourniture scolaire');
+  const [unit, setUnit] = useState('unité');
+  const [quantity, setQuantity] = useState('0');
+  const [minStock, setMinStock] = useState('3');
+  const [price, setPrice] = useState('0');
+  const [query, setQuery] = useState('');
+  const low = supplies.filter(i => i.quantity <= i.minStock);
+  const totalValue = supplies.reduce((sum, i) => sum + i.quantity * i.price, 0);
+  const filtered = supplies.filter(i => (i.name + ' ' + i.category).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  const add = () => {
+    if (!name.trim()) return;
+    onChange([...supplies, { id: `new-${Date.now()}`, name: name.trim(), category, unit,
+      quantity: Math.max(0, Number(quantity) || 0), minStock: Math.max(0, Number(minStock) || 0),
+      price: Math.max(0, Number(price) || 0) }]);
+    setName(''); setQuantity('0'); setPrice('0');
+  };
+  return <div className="space-y-5">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold text-slate-500">Articles suivis</p><p className="mt-1 text-2xl font-bold text-ink">{supplies.length}</p></div>
+      <div className={`rounded-2xl border p-4 ${low.length ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}><p className="text-xs font-semibold text-slate-600">Stocks faibles</p><p className="mt-1 text-2xl font-bold text-amber-700">{low.length}</p></div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-xs font-semibold text-slate-500">Valeur estimée du stock</p><p className="mt-1 text-2xl font-bold text-ink">{formatFCFA(totalValue)}</p></div>
+    </div>
+    <form onSubmit={e => { e.preventDefault(); add(); }} className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6">
+      <label className="text-xs font-semibold text-slate-600 lg:col-span-2">Nom de l’article<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Ex. Cahiers 200 pages" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600 focus:ring-2 focus:ring-royal-100"/></label>
+      <label className="text-xs font-semibold text-slate-600">Catégorie<input value={category} onChange={e=>setCategory(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600"/></label>
+      <label className="text-xs font-semibold text-slate-600">Unité<input value={unit} onChange={e=>setUnit(e.target.value)} placeholder="paquet, boîte…" className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600"/></label>
+      <label className="text-xs font-semibold text-slate-600">Quantité<input type="number" min="0" value={quantity} onChange={e=>setQuantity(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600"/></label>
+      <label className="text-xs font-semibold text-slate-600">Seuil d’alerte<input type="number" min="0" value={minStock} onChange={e=>setMinStock(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600"/></label>
+      <label className="text-xs font-semibold text-slate-600">Prix unitaire (FCFA)<input type="number" min="0" value={price} onChange={e=>setPrice(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600"/></label>
+      <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-royal-800 focus:outline-none focus:ring-2 focus:ring-royal-300 lg:col-span-2"><Plus className="h-4 w-4"/> Ajouter l’article</button>
+    </form>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher une fourniture…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600 sm:max-w-sm"/>
+      {filtered.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">Aucun article. Ajoutez votre première fourniture ci-dessus.</p> :
+      <div className="space-y-3">{filtered.map(item=><div key={item.id} className="flex flex-col gap-3 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0"><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.category} · {item.unit} · {formatFCFA(item.price)} / unité</p>
+        {item.quantity <= item.minStock && <p className="mt-1 text-xs font-bold text-amber-700">Stock faible — seuil : {item.minStock}</p>}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" aria-label={`Diminuer ${item.name}`} onClick={()=>onChange(supplies.map(i=>i.id===item.id?{...i,quantity:Math.max(0,i.quantity-1)}:i))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"><Minus className="h-4 w-4"/></button>
+          <span className="min-w-12 text-center text-sm font-bold text-slate-900">{item.quantity}</span>
+          <button type="button" aria-label={`Augmenter ${item.name}`} onClick={()=>onChange(supplies.map(i=>i.id===item.id?{...i,quantity:i.quantity+1}:i))} className="grid h-9 w-9 place-items-center rounded-lg bg-royal-700 text-white hover:bg-royal-800"><Plus className="h-4 w-4"/></button>
+          <button type="button" onClick={()=>onChange(supplies.filter(i=>i.id!==item.id))} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Supprimer</button>
+        </div>
+      </div>)}</div>}
+    </div>
+  </div>;
 }
