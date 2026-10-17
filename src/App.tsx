@@ -36,7 +36,7 @@ import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
 import { TeachersView } from './components/TeachersView';
 import type { Student, UniformStockItem, BookStockItem, SupplyStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription, Teacher, SalaryPayment } from './types';
-import { studentExpected, studentCollected, DEFAULT_FEE_TYPES } from './types';
+import { studentExpected, studentCollected, DEFAULT_FEE_TYPES, formatFCFA } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
   tranches: [{ index: 1, label: 'Tranche 1' }, { index: 2, label: 'Tranche 2' }, { index: 3, label: 'Tranche 3' }],
@@ -552,6 +552,61 @@ export default function App() {
                   totalExpenses={totalExpenses}
                   onNavigate={handleNavigate}
                 />
+              )}
+
+              {view === 'statistiques' && (
+                <section className="animate-fadeIn space-y-6">
+                  <div>
+                    <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700"><BarChart3 className="h-3 w-3" /> Pilotage</div>
+                    <h1 className="font-display text-2xl font-800 tracking-tight text-ink sm:text-3xl">Statistiques de l’établissement</h1>
+                    <p className="mt-1 text-sm text-slate-500">Une vue synthétique des élèves, recettes, impayés et dépenses.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    <div className="rounded-2xl border border-royal-100 bg-gradient-to-br from-royal-50 to-white p-4 shadow-card"><p className="text-xs font-700 uppercase tracking-wide text-royal-700">Élèves inscrits</p><p className="mt-2 font-display text-2xl font-800 text-ink">{students.length}</p></div>
+                    <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-card"><p className="text-xs font-700 uppercase tracking-wide text-emerald-700">Recettes enregistrées</p><p className="mt-2 font-display text-xl font-800 text-emerald-800">{formatFCFA(totalCollected)}</p></div>
+                    <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4 shadow-card"><p className="text-xs font-700 uppercase tracking-wide text-amber-700">Impayés estimés</p><p className="mt-2 font-display text-xl font-800 text-amber-800">{formatFCFA(outstanding)}</p></div>
+                    <div className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-4 shadow-card"><p className="text-xs font-700 uppercase tracking-wide text-red-700">Dépenses</p><p className="mt-2 font-display text-xl font-800 text-red-800">{formatFCFA(totalExpenses + totalSalaryPaid)}</p></div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
+                    <h2 className="font-display text-lg font-800 text-ink">Répartition des élèves par classe</h2>
+                    <p className="mt-1 text-xs text-slate-500">Nombre d’élèves actuellement enregistrés dans chaque classe.</p>
+                    <div className="mt-4 space-y-3">
+                      {Array.from(new Set(students.map(st => st.className).filter(Boolean))).sort((a,b) => a.localeCompare(b,'fr')).map(cls => {
+                        const count = students.filter(st => st.className === cls).length;
+                        const percent = students.length ? Math.round(count / students.length * 100) : 0;
+                        return <div key={cls}><div className="mb-1 flex items-center justify-between gap-3 text-sm"><span className="font-700 text-slate-700">{cls}</span><span className="text-xs font-700 text-royal-700">{count} élève{count !== 1 ? 's' : ''} · {percent}%</span></div><div className="h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-royal-600 to-royal-800" style={{width: percent + '%'}} /></div></div>;
+                      })}
+                      {students.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Les statistiques apparaîtront après les premières inscriptions.</p>}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2"><button onClick={() => handleNavigate('paiements')} className="rounded-xl bg-royal-700 px-4 py-2.5 text-sm font-700 text-white">Voir les paiements</button><button onClick={() => handleNavigate('impayes')} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-700 text-amber-800">Consulter les impayés</button></div>
+                </section>
+              )}
+
+              {view === 'inscriptions' && (
+                <section className="animate-fadeIn space-y-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div><div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-teal-700"><UserPlus className="h-3 w-3" /> Scolarité</div><h1 className="font-display text-2xl font-800 tracking-tight text-ink sm:text-3xl">Inscriptions et élèves</h1><p className="mt-1 text-sm text-slate-500">Retrouvez les dossiers des élèves et ajoutez rapidement une inscription.</p></div>
+                    <button onClick={() => setAddOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-3 text-sm font-700 text-white shadow-cardLg"><UserPlus className="h-4 w-4" /> Inscrire un élève</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-teal-700">Total inscrits</p><p className="mt-1 font-display text-2xl font-800 text-ink">{students.length}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-slate-500">Résultats filtrés</p><p className="mt-1 font-display text-2xl font-800 text-ink">{filtered.length}</p></div></div>
+                  <div className="space-y-3">
+                    {filtered.map(st => <div key={st.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-royal-50 text-royal-700"><Users className="h-5 w-5"/></span><div className="min-w-0"><p className="truncate font-display font-800 text-ink">{st.firstName} {st.lastName}</p><p className="mt-0.5 text-xs font-600 text-royal-700">{st.className} · Matricule {st.matricule || '—'}</p><p className="mt-1 text-xs text-slate-500">Parent : {st.parentName || '—'} · {st.parentPhone || 'Téléphone non renseigné'}</p></div></div><div className="flex gap-2"><button onClick={() => openEdit(st)} className="rounded-lg border border-royal-200 bg-royal-50 px-3 py-2 text-xs font-700 text-royal-700">Modifier</button><button onClick={() => openDelete(st)} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-700 text-red-700">Supprimer</button></div></div>)}
+                    {filtered.length === 0 && <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Aucun élève trouvé. Utilisez « Inscrire un élève » pour commencer.</div>}
+                  </div>
+                </section>
+              )}
+
+              {view === 'paiements' && (
+                <section className="animate-fadeIn space-y-5">
+                  <div><div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-emerald-700"><CreditCard className="h-3 w-3" /> Finance</div><h1 className="font-display text-2xl font-800 tracking-tight text-ink sm:text-3xl">Suivi des paiements</h1><p className="mt-1 text-sm text-slate-500">Consultez les montants attendus, encaissés et restant à payer par élève.</p></div>
+                  <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-emerald-700">Encaissé</p><p className="mt-1 font-display text-xl font-800 text-emerald-800">{formatFCFA(students.reduce((sum,st) => sum + studentCollected(st),0))}</p></div><div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-amber-700">Reste à payer</p><p className="mt-1 font-display text-xl font-800 text-amber-800">{formatFCFA(students.reduce((sum,st) => sum + Math.max(0, studentExpected(st)-studentCollected(st)),0))}</p></div></div>
+                  <div className="space-y-3">
+                    {filtered.map(st => <div key={st.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-display font-800 text-ink">{st.firstName} {st.lastName}</p><p className="text-xs text-slate-500">{st.className} · {st.matricule}</p></div><button onClick={() => openReceipt(st, st.fees[0]?.feeType || 'scolarite')} className="self-start rounded-lg bg-royal-700 px-3 py-2 text-xs font-700 text-white">Préparer un reçu WhatsApp</button></div><div className="space-y-2">{st.fees.map(fee => {const paid = Object.values(fee.payments).reduce((sum,p) => sum + p.paid,0); const remaining = Math.max(0,fee.totalExpected-paid); return <div key={fee.feeType} className="flex flex-col gap-1 rounded-xl bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"><span className="text-sm font-700 text-slate-700">{feeConfig.feeTypes.find(ft => ft.feeType === fee.feeType)?.label || fee.feeType}</span><span className="text-xs font-600 text-slate-600">Payé : <strong className="text-emerald-700">{formatFCFA(paid)}</strong> · Reste : <strong className={remaining > 0 ? 'text-amber-700' : 'text-emerald-700'}>{formatFCFA(remaining)}</strong></span></div>;})}</div></div>)}
+                    {filtered.length === 0 && <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Aucun élève trouvé.</div>}
+                  </div>
+                  <button onClick={() => handleNavigate('cahier')} className="rounded-xl border border-royal-200 bg-royal-50 px-4 py-2.5 text-sm font-700 text-royal-700">Ouvrir le cahier de caisse détaillé</button>
+                </section>
               )}
 
               {view === 'cahier' && (<>
