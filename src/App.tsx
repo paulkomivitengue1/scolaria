@@ -480,7 +480,7 @@ export default function App() {
     return <SchoolSuspended schoolName={profile.schoolName} onLogout={handleLogout} />;
   }
 
-  if (isTrialExpired) {
+  if (isTrialExpired || profile.subscriptionStatus === 'expired') {
     return <TrialExpired schoolName={profile.schoolName} onLogout={handleLogout} />;
   }
 
