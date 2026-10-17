@@ -98,7 +98,7 @@ BEGIN
   SELECT current_academic_year INTO v_old_year
   FROM public.schools WHERE id = p_school_id FOR UPDATE;
   IF v_old_year IS NULL THEN RAISE EXCEPTION 'École introuvable'; END IF;
-  IF p_new_year = v_old_year THEN RAISE EXCEPTION 'La nouvelle année doit être différente de l’année actuelle'; END IF;
+  IF split_part(p_new_year, '-', 1)::integer <= split_part(v_old_year, '-', 1)::integer THEN RAISE EXCEPTION 'La nouvelle année doit suivre l’année actuelle'; END IF;
 
   INSERT INTO public.school_year_stock_history (school_id, academic_year, stock_item_id, category, item_snapshot)
   SELECT p_school_id, v_old_year, si.id, si.category, to_jsonb(si)
@@ -159,7 +159,7 @@ BEGIN
   -- Supplies: preserve the on-hand quantity as old stock; new stock starts at zero.
   UPDATE public.stock_items
   SET old_stock = greatest(coalesce(in_stock,0), 0),
-      new_stock = 0
+      new_stock = 0, sold = 0
   WHERE school_id = p_school_id AND category = 'fourniture';
 
   UPDATE public.schools SET current_academic_year = p_new_year WHERE id = p_school_id;
