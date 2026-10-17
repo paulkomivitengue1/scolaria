@@ -140,6 +140,8 @@ export function AuthPage({ onBack }: AuthPageProps) {
                 </div>
               </Field>
 
+              {mode === 'login' && <div className="-mt-1 text-right"><button type="button" onClick={handleForgotPassword} disabled={loading} className="text-sm font-700 text-royal-700 hover:text-royal-900 hover:underline">Mot de passe oublié ?</button></div>}
+
               {mode === 'signup' && (
                 <p className="text-xs leading-relaxed text-slate-400">
                   Le mot de passe doit contenir au moins 6 caractères. Votre école bénéficie d'un essai gratuit de 14 jours.
