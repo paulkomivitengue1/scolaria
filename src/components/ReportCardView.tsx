@@ -34,7 +34,14 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [cardStatus, setCardStatus] = useState<'draft' | 'finalized'>('draft');
   const [saveTimer, setSaveTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [saveIndicator, setSaveIndicator] = useState(false);
-  const [historyStudent, setHistoryStudent] = useState<Student | null>(null);\n  const [bulletinFormat, setBulletinFormat] = useState('classique');\n  const [customBulletinColor, setCustomBulletinColor] = useState('#1d4ed8');\n  const [formatSaved, setFormatSaved] = useState(false);\n\n  useEffect(() => {\n    try { const saved = localStorage.getItem('gestilys-bulletin-format-' + schoolId); if (saved) { const cfg = JSON.parse(saved); setBulletinFormat(cfg.format || 'classique'); setCustomBulletinColor(cfg.color || '#1d4ed8'); } } catch { /* configuration facultative */ }\n  }, [schoolId]);
+  const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
+  const [bulletinFormat, setBulletinFormat] = useState('classique');
+  const [customBulletinColor, setCustomBulletinColor] = useState('#1d4ed8');
+  const [formatSaved, setFormatSaved] = useState(false);
+
+  useEffect(() => {
+    try { const saved = localStorage.getItem('gestilys-bulletin-format-' + schoolId); if (saved) { const cfg = JSON.parse(saved); setBulletinFormat(cfg.format || 'classique'); setCustomBulletinColor(cfg.color || '#1d4ed8'); } } catch { /* configuration facultative */ }
+  }, [schoolId]);
 
   // ── Load report cards for a student ─────────────────
   const loadCards = useCallback(async (studentId: string) => {
