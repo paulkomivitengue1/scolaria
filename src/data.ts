@@ -69,7 +69,7 @@ const initialBooks: { className: BookClass; subject: BookSubject; inStock: numbe
 ];
 
 export const DEFAULT_BOOK_STOCK: BookStockItem[] = initialBooks.map((b) => ({
-  id: uid('b'), ...b,
+  id: uid('b'), ...b, oldStock: b.inStock, newStock: 0,
 }));
 
 export const newUniformItem = (cycle: UniformCycle, size: UniformSize): UniformStockItem => ({
@@ -77,7 +77,7 @@ export const newUniformItem = (cycle: UniformCycle, size: UniformSize): UniformS
 });
 
 export const newBookItem = (className: BookClass, subject: BookSubject): BookStockItem => ({
-  id: uid('b'), className, subject, inStock: 0, sold: 0, price: 3000,
+  id: uid('b'), className, subject, inStock: 0, oldStock: 0, newStock: 0, sold: 0, price: 3000,
 });
 
 export { UNIFORM_CYCLES, UNIFORM_SIZES, BOOK_CLASSES, BOOK_SUBJECTS };
