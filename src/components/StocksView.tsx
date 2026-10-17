@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Shirt, BookOpen, Boxes, Plus, Minus, Zap, AlertTriangle, Package,
   TrendingDown, Layers, BookMarked, CheckCircle2, XCircle,
@@ -75,48 +75,23 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, s
 /* ---------- Quantity input (mobile-friendly) ---------- */
 
 function QtyInput({ value, onChange, max }: { value: number; onChange: (v: number) => void; max?: number }) {
-  const clamp = (v: number) => {
-    const n = Math.max(1, Math.floor(v));
-    return max !== undefined ? Math.min(n, max) : n;
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => { setDraft(String(value)); }, [value]);
+  const clamp = (v: number) => Math.max(1, max !== undefined ? Math.min(Math.floor(v), max) : Math.floor(v));
+  const commit = () => {
+    const parsed = Number.parseInt(draft, 10);
+    const next = clamp(Number.isFinite(parsed) ? parsed : 1);
+    setDraft(String(next));
+    onChange(next);
   };
   return (
-    <div className="inline-flex shrink-0 items-center gap-0.5 rounded-xl border-2 border-slate-200 bg-white p-0.5">
-      <button
-        type="button"
-        onClick={() => onChange(clamp(value - 1))}
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition active:scale-90 hover:bg-slate-200"
-        aria-label="Diminuer la quantité"
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </button>
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={value}
-        onChange={(e) => {
-          const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
-          onChange(clamp(isNaN(parsed) ? 1 : parsed));
-        }}
-        onBlur={(e) => {
-          const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
-          onChange(clamp(isNaN(parsed) ? 1 : parsed));
-        }}
-        className="w-8 bg-transparent text-center font-800 text-sm text-ink outline-none"
-        aria-label="Quantité"
-      />
-      <button
-        type="button"
-        onClick={() => onChange(clamp(value + 1))}
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition active:scale-90 hover:bg-slate-200"
-        aria-label="Augmenter la quantité"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
+    <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border-2 border-slate-300 bg-white p-1">
+      <button type="button" onClick={() => { const next = clamp(value - 1); setDraft(String(next)); onChange(next); }} className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-700" aria-label="Diminuer la quantité"><Minus className="h-4 w-4" /></button>
+      <input type="number" min="1" inputMode="numeric" value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }} className="w-16 bg-transparent text-center text-base font-800 text-slate-900 outline-none" aria-label="Quantité à ajouter ou distribuer" />
+      <button type="button" onClick={() => { const next = clamp(value + 1); setDraft(String(next)); onChange(next); }} className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-700" aria-label="Augmenter la quantité"><Plus className="h-4 w-4" /></button>
     </div>
   );
 }
-
 /* ---------- Toast (success + error) ---------- */
 
 function Toast({ message, type }: { message: string; type: 'success' | 'error' }) {
