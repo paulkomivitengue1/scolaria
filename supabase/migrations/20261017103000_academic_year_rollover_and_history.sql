@@ -28,7 +28,7 @@ ALTER TABLE public.schools
   ),
   ALTER COLUMN current_academic_year SET NOT NULL;
 ALTER TABLE public.payments
-  ALTER COLUMN academic_year SET DEFAULT '2026-2027',
+  ALTER COLUMN academic_year SET DEFAULT (CASE WHEN EXTRACT(MONTH FROM CURRENT_DATE)::int >= 8 THEN EXTRACT(YEAR FROM CURRENT_DATE)::int::text || '-' || (EXTRACT(YEAR FROM CURRENT_DATE)::int + 1)::text ELSE (EXTRACT(YEAR FROM CURRENT_DATE)::int - 1)::text || '-' || EXTRACT(YEAR FROM CURRENT_DATE)::int::text END),
   ALTER COLUMN academic_year SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.student_year_history (
@@ -113,18 +113,24 @@ BEGIN
   SELECT s.school_id, s.id, v_old_year,
     trim(coalesce(s.first_name,'') || ' ' || coalesce(s.last_name,'')),
     coalesce(s.class_name,''),
-    coalesce(s.fees_json, '[]'::jsonb),
+    coalesce((SELECT jsonb_agg(f || jsonb_build_object(
+      'paid', coalesce((SELECT sum(p.amount) FROM public.payments p
+        WHERE p.school_id = p_school_id AND p.student_id = s.id AND p.academic_year = v_old_year
+          AND p.fee_type = f->>'feeType'), 0),
+      'unpaid', greatest(coalesce(nullif(f->>'totalExpected','')::numeric,0)
+        - coalesce((SELECT sum(p.amount) FROM public.payments p
+          WHERE p.school_id = p_school_id AND p.student_id = s.id AND p.academic_year = v_old_year
+            AND p.fee_type = f->>'feeType'), 0), 0)
+    )) FROM jsonb_array_elements(coalesce(s.fees_json, '[]'::jsonb)) f), '[]'::jsonb),
     coalesce((SELECT sum(nullif(f->>'totalExpected','')::numeric)
       FROM jsonb_array_elements(coalesce(s.fees_json, '[]'::jsonb)) f), 0),
     coalesce((SELECT sum(p.amount) FROM public.payments p
       WHERE p.school_id = p_school_id AND p.student_id = s.id AND p.academic_year = v_old_year), 0),
-    greatest(
-      coalesce((SELECT sum(nullif(f->>'totalExpected','')::numeric)
-        FROM jsonb_array_elements(coalesce(s.fees_json, '[]'::jsonb)) f), 0)
+    coalesce((SELECT sum(greatest(coalesce(nullif(f->>'totalExpected','')::numeric,0)
       - coalesce((SELECT sum(p.amount) FROM public.payments p
-        WHERE p.school_id = p_school_id AND p.student_id = s.id AND p.academic_year = v_old_year), 0),
-      0
-    )
+        WHERE p.school_id = p_school_id AND p.student_id = s.id AND p.academic_year = v_old_year
+          AND p.fee_type = f->>'feeType'), 0), 0))
+      FROM jsonb_array_elements(coalesce(s.fees_json, '[]'::jsonb)) f), 0)
   FROM public.students s WHERE s.school_id = p_school_id
   ON CONFLICT (school_id, student_id, academic_year) DO UPDATE SET
     student_name = EXCLUDED.student_name,
