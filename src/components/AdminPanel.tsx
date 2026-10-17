@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment,
+  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus,
   type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
 
@@ -33,6 +33,7 @@ function planBadge(plan: string) {
 function statusBadge(status: string, trialEndsAt: string) {
   const now = new Date();
   const expired = new Date(trialEndsAt) < now;
+  if (status === 'suspended') return { label: 'Suspendu', cls: 'bg-red-100 text-red-700', icon: Lock };
   if (status === 'active') return { label: 'Payant', cls: 'bg-emerald-100 text-emerald-700', icon: BadgeCheck };
   if (status === 'trial' && !expired) return { label: 'Essai', cls: 'bg-gold-100 text-gold-700', icon: Clock };
   return { label: 'Expiré', cls: 'bg-red-100 text-red-700', icon: AlertCircle };
@@ -51,7 +52,7 @@ export function AdminPanel({ onExit }: Props) {
   const [schools, setSchools] = useState<AdminSchool[]>([]);
   const [payments, setPayments] = useState<AdminManualPayment[]>([]);
   const [filter, setFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -124,6 +125,20 @@ export function AdminPanel({ onExit }: Props) {
     }
   };
 
+  const setSchoolStatus = async (schoolId: string, status: 'suspend' | 'restore') => {
+    setActionLoading(schoolId);
+    try {
+      await adminSetSchoolStatus(code, schoolId, status);
+      const refreshedSchools = await adminListSchools(code);
+      setSchools(refreshedSchools);
+      showToast(status === 'suspend' ? 'École suspendue' : 'Accès de l’école rétabli');
+    } catch (err: any) {
+      showToast(err.message || 'Impossible de modifier le statut de l’école');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const rejectPayment = async (paymentId: string) => {
     setActionLoading(paymentId);
     try {
@@ -141,11 +156,12 @@ export function AdminPanel({ onExit }: Props) {
     const q = filter.trim().toLowerCase();
     return schools.filter((s) => {
       const matchesText = !q || [s.name, s.city, s.director_name, s.phone].some(v => (v || '').toLowerCase().includes(q));
-      const expired = s.subscription_status !== 'active' && (s.subscription_status !== 'trial' || new Date(s.trial_ends_at) <= new Date());
+      const expired = s.subscription_status !== 'active' && s.subscription_status !== 'suspended' && (s.subscription_status !== 'trial' || new Date(s.trial_ends_at) <= new Date());
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'active' && s.subscription_status === 'active') ||
         (statusFilter === 'trial' && s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()) ||
-        (statusFilter === 'expired' && expired);
+        (statusFilter === 'expired' && expired) ||
+        (statusFilter === 'suspended' && s.subscription_status === 'suspended');
       return matchesText && matchesStatus;
     });
   }, [schools, filter, statusFilter]);
@@ -461,7 +477,7 @@ export function AdminPanel({ onExit }: Props) {
                   <div className="relative">
                     <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)} className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-8 text-sm font-600 text-slate-700 outline-none focus:border-royal-400 sm:w-44">
-                      <option value="all">Tous les statuts</option><option value="active">Abonnés payants</option><option value="trial">En essai</option><option value="expired">Expirés</option>
+                      <option value="all">Tous les statuts</option><option value="active">Abonnés payants</option><option value="trial">En essai</option><option value="expired">Expirés</option><option value="suspended">Suspendus</option>
                     </select>
                   </div>
                 </div>
@@ -512,6 +528,15 @@ export function AdminPanel({ onExit }: Props) {
                             <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                             <span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')}
+                            disabled={actionLoading === s.id}
+                            className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-700 disabled:opacity-50 ${s.subscription_status === 'suspended' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                          >
+                            {actionLoading === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : s.subscription_status === 'suspended' ? <RefreshCw className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                            {s.subscription_status === 'suspended' ? 'Rétablir l’accès' : 'Suspendre l’école'}
+                          </button>
                         </div>
                       );
                     })}
@@ -556,9 +581,20 @@ export function AdminPanel({ onExit }: Props) {
                               </td>
                               <td className="px-3 py-3 text-slate-600">{formatDate(s.created_at)}</td>
                               <td className="px-5 py-3 text-right">
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
-                                  <StIcon className="h-3 w-3" /> {st.label}
-                                </span>
+                                <div className="flex flex-col items-end gap-2">
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
+                                    <StIcon className="h-3 w-3" /> {st.label}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')}
+                                    disabled={actionLoading === s.id}
+                                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-700 disabled:opacity-50 ${s.subscription_status === 'suspended' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}
+                                  >
+                                    {actionLoading === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : s.subscription_status === 'suspended' ? <RefreshCw className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                                    {s.subscription_status === 'suspended' ? 'Rétablir' : 'Suspendre'}
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
