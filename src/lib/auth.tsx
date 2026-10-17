@@ -21,7 +21,8 @@ interface AuthContextValue {
   profile: SchoolProfile | null;
   loading: boolean;
   isTrialExpired: boolean;
-  signUp: (email: string, password: string, schoolName: string, directorName: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, schoolName: string, directorName: string, phone: string) => Promise<{ error?: string }>;
+  resetPassword: (email: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -96,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     schoolName: string,
     directorName: string,
+    phone: string,
   ): Promise<{ error?: string }> {
-    const { data, error } = await getSupabase().auth.signUp({ email, password });
+    const { data, error } = await getSupabase().auth.signUp({ email, password, options: { data: { director_phone: phone } } });
     if (error) return { error: error.message };
     if (!data.user) return { error: "Erreur inattendue lors de l'inscription." };
 
@@ -119,6 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {};
   }
 
+  async function resetPassword(email: string): Promise<{ error?: string }> {
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    return error ? { error: error.message } : {};
+  }
+
   async function signOut(): Promise<void> {
     await getSupabase().auth.signOut();
     setUser(null);
@@ -131,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, isTrialExpired, signUp, signIn, signOut, refreshProfile }}
+      value={{ user, profile, loading, isTrialExpired, signUp, signIn, resetPassword, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>
