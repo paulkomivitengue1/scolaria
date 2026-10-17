@@ -8,6 +8,8 @@ interface Props {
   schoolName: string;
   parentPhone: string;
   studentName: string;
+  defaultAmount?: number;
+  feeLabel?: string;
 }
 
 function readImage(file: File): Promise<string> {
@@ -23,7 +25,7 @@ function readImage(file: File): Promise<string> {
   });
 }
 
-export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studentName }: Props) {
+export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studentName, defaultAmount = 0, feeLabel = 'Scolarité' }: Props) {
   const [logo, setLogo] = useState('');
   const [receipt, setReceipt] = useState('');
   const [cropDraft, setCropDraft] = useState<{ image: string; kind: 'logo' | 'receipt' } | null>(null);
@@ -49,8 +51,8 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       setError('');
       setBusy(false);
       setMode('photo');
-      setAmount('');
-      setPurpose('Scolarité');
+      setAmount(defaultAmount > 0 ? String(defaultAmount) : '');
+      setPurpose(feeLabel || 'Scolarité');
       setMethod('Espèces');
       setReference('');
       setNote('');
@@ -150,8 +152,12 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       <div className="relative max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
         <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X size={20}/></button>
         <div className="mb-4 pr-8">
-          <h2 className="text-lg font-bold text-slate-900">Photo du reçu → PDF</h2>
-          <p className="mt-1 text-sm text-slate-500">Élève : {studentName}. Prends les photos avec l’appareil ou choisis-les dans ta galerie.</p>
+          <h2 className="text-lg font-bold text-slate-900">Reçus personnalisables</h2>
+          <p className="mt-1 text-sm text-slate-500">Élève : {studentName}. Convertis une photo ou crée un reçu adapté au format souhaité.</p>
+        </div>
+        <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+          <button type="button" onClick={() => { setMode('photo'); setError(''); setPdfPrepared(false); }} className={`min-h-10 rounded-lg px-3 py-2 text-sm font-700 ${mode === 'photo' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Photo → PDF</button>
+          <button type="button" onClick={() => { setMode('custom'); setError(''); setPdfPrepared(false); }} className={`min-h-10 rounded-lg px-3 py-2 text-sm font-700 ${mode === 'custom' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>Créer un reçu</button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
@@ -159,16 +165,27 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
             <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('logo', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {logo && <img src={logo} alt="Aperçu du logo" className="mt-3 h-20 w-full object-contain"/>}
           </label>
-          <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
-            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (obligatoire)</span>
+          {mode === 'photo' && <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (galerie ou appareil)</span>
             <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('receipt', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {receipt && <img src={receipt} alt="Aperçu du reçu" className="mt-3 h-28 w-full rounded-lg border object-contain"/>}
-          </label>
+          </label>}
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-slate-500">Le document PDF reprend la photo du reçu avec l’en-tête de l’école. Cette version ne reconnaît pas automatiquement l’écriture et ne modifie pas le reçu original.</p>
+        {mode === 'custom' && <div className="mt-3 space-y-3 rounded-xl border border-slate-200 p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block text-xs font-700 text-slate-700">Montant (FCFA)<input type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Ex. 15000" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm font-600"/></label>
+            <label className="block text-xs font-700 text-slate-700">Motif du paiement<input value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="Scolarité, cantine…" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm font-600"/></label>
+            <label className="block text-xs font-700 text-slate-700">Mode de paiement<select value={method} onChange={e => setMethod(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"><option>Espèces</option><option>Orange Money</option><option>Moov Money</option><option>Wave</option><option>Virement</option><option>Chèque</option><option>Autre</option></select></label>
+            <label className="block text-xs font-700 text-slate-700">Référence du reçu<input value={reference} onChange={e => setReference(e.target.value)} placeholder="Numéro facultatif" className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"/></label>
+          </div>
+          <label className="block text-xs font-700 text-slate-700">Format du papier<select value={paperFormat} onChange={e => setPaperFormat(e.target.value as 'A4' | 'A5' | '80x150' | 'custom')} className="mt-1 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="A4">A4 — feuille classique</option><option value="A5">A5 — demi-feuille</option><option value="80x150">Ticket 80 × 150 mm</option><option value="custom">Format personnalisé</option></select></label>
+          {paperFormat === 'custom' && <div className="grid grid-cols-2 gap-3"><label className="text-xs font-700 text-slate-700">Largeur (mm)<input type="number" min="40" max="300" value={paperWidth} onChange={e => setPaperWidth(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"/></label><label className="text-xs font-700 text-slate-700">Hauteur (mm)<input type="number" min="40" max="500" value={paperHeight} onChange={e => setPaperHeight(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm"/></label></div>}
+          <label className="block text-xs font-700 text-slate-700">Note facultative<textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Précision à afficher sur le reçu…" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"/></label>
+        </div>}
+        {mode === 'photo' && <p className="mt-3 text-xs leading-relaxed text-slate-500">La photo sera placée en premier dans le PDF. Tu peux choisir la forme du cadrage avant de créer le document.</p>}
         {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-        <button disabled={!receipt || busy} onClick={createPdf} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
-          <FileText size={18}/><Printer size={17}/>{busy ? 'Préparation…' : 'Créer le PDF'}
+        <button disabled={(mode === 'photo' && !receipt) || (mode === 'custom' && !amount.trim()) || busy} onClick={createPdf} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+          <FileText size={18}/><Printer size={17}/>{busy ? 'Préparation…' : mode === 'photo' ? 'Créer le PDF depuis la photo' : 'Créer le reçu personnalisé'}
         </button>
         {pdfPrepared && <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-800">Le PDF est ouvert dans la fenêtre d’impression. Choisis « Enregistrer en PDF », puis reviens ici pour préparer l’envoi.</p>}
         {parentPhone && <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
