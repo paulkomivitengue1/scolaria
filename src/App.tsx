@@ -623,7 +623,7 @@ export default function App() {
                 />
               )}
 
-              {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear="2025-2026" />}
+              {view === 'bulletins' && <ReportCardView students={students} gradePeriods={gradePeriods} schoolId={profile.schoolId} schoolName={profile.schoolName} academicYear={currentAcademicYear} />}
 
               {view === 'stocks' && <StocksView uniforms={uniforms} books={books} supplies={supplies} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onSuppliesChange={handleSuppliesChange} />}
 
