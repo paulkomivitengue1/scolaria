@@ -122,7 +122,6 @@ function TenuesPanel({
   const [activeCycle, setActiveCycle] = useState<UniformCycle>('maternelle');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [qtys, setQtys] = useState<Record<string, number>>({});
-  const [customSubject, setCustomSubject] = useState('');
 
   const getQty = (id: string) => qtys[id] ?? 1;
   const setQty = (id: string, v: number) => setQtys(prev => ({ ...prev, [id]: v }));
@@ -418,6 +417,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
   const [activeClass, setActiveClass] = useState<BookClass>('Jardin');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [customSubject, setCustomSubject] = useState('');
 
   const getQty = (id: string) => qtys[id] ?? 1;
   const setQty = (id: string, v: number) => setQtys(prev => ({ ...prev, [id]: v }));
