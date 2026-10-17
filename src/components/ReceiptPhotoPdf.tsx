@@ -42,6 +42,23 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     }
   }, [open]);
 
+  useEffect(() => {
+    const onPdfMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || !event.data || typeof event.data !== 'object') return;
+      if (event.data.type === 'gestilys-receipt-pdf-ready') {
+        setBusy(false);
+        setPdfPrepared(true);
+        setError('');
+      } else if (event.data.type === 'gestilys-receipt-pdf-error') {
+        setBusy(false);
+        setPdfPrepared(false);
+        setError("La photo du reçu n’a pas pu être chargée dans le document. Réessaie.");
+      }
+    };
+    window.addEventListener('message', onPdfMessage);
+    return () => window.removeEventListener('message', onPdfMessage);
+  }, []);
+
   if (!open) return null;
 
   const handleImage = async (kind: 'logo' | 'receipt', file?: File) => {
@@ -84,11 +101,9 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     <header>${logo ? '<img src="' + logo + '" alt="Logo de l’école">' : ''}<div><h1>${safeSchool}</h1><p>Copie numérique du reçu</p><p>Élève : <strong>${safeStudent}</strong></p><p>Préparé le ${new Date().toLocaleDateString('fr-FR')}</p></div></header>
     <div class="note">Cette page contient la photo du reçu fournie. Vérifie que la photo est nette et que toutes les informations sont lisibles avant de transmettre le PDF.</div>
     <img class="receipt" src="${receipt}" alt="Photo du reçu à convertir">
-    <script>window.addEventListener('load',()=>{const imgs=[...document.images];Promise.all(imgs.map(i=>i.decode().catch(()=>{}))).then(()=>setTimeout(()=>window.print(),350));});</script>
+    <script>window.addEventListener('load',()=>{const imgs=[...document.images];Promise.all(imgs.map(i=>i.decode())).then(()=>{if(window.opener)window.opener.postMessage({type:'gestilys-receipt-pdf-ready'},window.location.origin);setTimeout(()=>window.print(),350)}).catch(()=>{if(window.opener)window.opener.postMessage({type:'gestilys-receipt-pdf-error'},window.location.origin)});});</script>
     </body></html>`);
     w.document.close();
-    setBusy(false);
-    setPdfPrepared(true);
   };
 
   return (
