@@ -38,7 +38,7 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, s
         </div>
       </div>
 
-      <div className="mb-6 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+      <div className="mb-6 flex w-full gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto">
         <button
           onClick={() => setSub('tenues')}
           className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-700 transition ${
