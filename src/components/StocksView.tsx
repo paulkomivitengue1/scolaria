@@ -274,7 +274,7 @@ function TenuesPanel({
                 </div>
                 <div className="rounded-xl bg-royal-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
-                  <div className="font-display text-xl font-800 text-royal-700">{item.newStock}</div>
+                  <NumberInput value={item.newStock} onChange={(v) => updateItem(item.id, { newStock: v })} />
                 </div>
                 <div className="rounded-xl bg-gold-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-gold-700">Prix unitaire</div>
@@ -560,7 +560,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
               <div className="mt-3 grid grid-cols-3 gap-2.5">
                 <div className="rounded-xl bg-royal-50 px-2.5 py-2.5 text-center">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Qté Initiale</div>
-                  <div className="font-display text-xl font-800 text-royal-700">{item.inStock}</div>
+                  <NumberInput value={item.inStock} onChange={(v) => updateItem(item.id, { inStock: v })} />
                 </div>
                 <div className="rounded-xl bg-slate-50 px-2.5 py-2.5 text-center">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Distribuée</div>
