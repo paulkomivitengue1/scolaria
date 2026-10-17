@@ -435,17 +435,31 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
 
   const totals = useMemo(() => {
     const inStock = classItems.reduce((s, i) => s + i.inStock, 0);
+    const oldStock = classItems.reduce((s, i) => s + (i.oldStock ?? i.inStock), 0);
+    const newStock = classItems.reduce((s, i) => s + (i.newStock ?? 0), 0);
     const sold = classItems.reduce((s, i) => s + i.sold, 0);
-    return { inStock, sold, remaining: Math.max(0, inStock - sold) };
+    return { inStock, oldStock, newStock, sold, remaining: Math.max(0, inStock - sold) };
   }, [classItems]);
 
   const updateItem = (id: string, patch: Partial<BookStockItem>) => {
-    onChange(books.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    onChange(books.map((b) => {
+      if (b.id !== id) return b;
+      const next = { ...b, ...patch };
+      if ('oldStock' in patch || 'newStock' in patch) {
+        next.oldStock = Math.max(0, next.oldStock ?? 0);
+        next.newStock = Math.max(0, next.newStock ?? 0);
+        next.inStock = next.oldStock + next.newStock;
+      } else if ('inStock' in patch) {
+        next.oldStock = Math.max(0, next.inStock);
+        next.newStock = 0;
+      }
+      return next;
+    }));
   };
 
   const buyQty = (item: BookStockItem) => {
     const qty = getQty(item.id);
-    updateItem(item.id, { inStock: item.inStock + qty });
+    updateItem(item.id, { newStock: (item.newStock ?? 0) + qty });
     resetQty(item.id);
     showToast(`Réapprovisionnement — ${qty} livre(s) ${item.subject} ajouté(s)`);
   };
@@ -492,8 +506,9 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
       </div>
 
       {/* summary cards */}
-      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
-        <SummaryCard icon={Package} label="Qté Initiale" value={totals.inStock} accent="royal" />
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        <SummaryCard icon={Package} label="Ancien stock" value={totals.oldStock} accent="slate" />
+        <SummaryCard icon={Plus} label="Nouveaux achats" value={totals.newStock} accent="royal" />
         <SummaryCard icon={TrendingDown} label="Distribuée" value={totals.sold} accent="gold" />
         <SummaryCard icon={Boxes} label="Reste" value={totals.remaining} accent="emerald" />
       </div>
@@ -535,10 +550,14 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 ) : null}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2.5">
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl bg-slate-50 px-2.5 py-2.5 text-center">
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-slate-600">Ancien stock</div>
+                  <NumberInput value={item.oldStock ?? item.inStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
+                </div>
                 <div className="rounded-xl bg-royal-50 px-2.5 py-2.5 text-center">
-                  <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Qté Initiale</div>
-                  <NumberInput value={item.inStock} onChange={(v) => updateItem(item.id, { inStock: v })} />
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
+                  <NumberInput value={item.newStock ?? 0} onChange={(v) => updateItem(item.id, { newStock: v })} />
                 </div>
                 <div className="rounded-xl bg-slate-50 px-2.5 py-2.5 text-center">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Distribuée</div>
@@ -610,7 +629,8 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] font-700 uppercase tracking-wider text-slate-400">
                 <th className="px-5 py-3">Matière</th>
-                <th className="px-3 py-3 text-right">Qté Initiale</th>
+                <th className="px-3 py-3 text-right">Ancien stock</th>
+                <th className="px-3 py-3 text-right">Nouveaux achats</th>
                 <th className="px-3 py-3 text-right">Distribuée</th>
                 <th className="px-3 py-3 text-right">Prix unitaire</th>
                 <th className="px-3 py-3 text-right">Reste Armoire</th>
@@ -620,7 +640,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <tbody>
               {classItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-slate-400">
                     Aucun livre enregistré pour cette classe. Ajoutez une matière ci-dessous.
                   </td>
                 </tr>
@@ -645,7 +665,10 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                       </div>
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <NumberInput value={item.inStock} onChange={(v) => updateItem(item.id, { inStock: v })} />
+                      <NumberInput value={item.oldStock ?? item.inStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <NumberInput value={item.newStock ?? 0} onChange={(v) => updateItem(item.id, { newStock: v })} />
                     </td>
                     <td className="px-3 py-3 text-right font-700 text-slate-600">{item.sold}</td>
                     <td className="px-3 py-3 text-right">
