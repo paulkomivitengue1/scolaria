@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, Layers,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -134,6 +134,15 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
           >
             <Settings2 className="h-4.5 w-4.5 shrink-0" />
             <span>Paramètres</span>
+          </button>
+          <button
+            onClick={() => onNavigate('definitions')}
+            className={`mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
+              current === 'definitions' ? 'bg-royal-50 text-royal-700' : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <Layers className="h-4.5 w-4.5 shrink-0" />
+            <span>Définitions</span>
           </button>
           <button
             onClick={onLogout}
