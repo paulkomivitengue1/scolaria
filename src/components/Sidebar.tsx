@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, Layers,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, Layers, ShieldCheck,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -124,8 +124,15 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
           ))}
         </nav>
 
-        {/* Bottom: settings + logout */}
+        {/* Bottom: administration + settings + logout */}
         <div className="shrink-0 border-t border-slate-200 px-3 py-3">
+          <button
+            onClick={() => { window.location.hash = '/scolaria-admin'; }}
+            className="mb-2 flex w-full items-center gap-3 rounded-xl border border-royal-100 bg-royal-50 px-3 py-2.5 text-sm font-700 text-royal-700 transition hover:bg-royal-100"
+          >
+            <ShieldCheck className="h-4.5 w-4.5 shrink-0" />
+            <span>Panneau administrateur</span>
+          </button>
           <button
             onClick={() => onNavigate('parametres')}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
