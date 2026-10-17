@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  BookOpenText, Sparkles, Filter, UserPlus,
+  BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
   LogOut, CheckCircle2, Lock, AlertTriangle,
   Search,
 } from 'lucide-react';
@@ -617,7 +617,7 @@ export default function App() {
                     <p className="mt-1 text-sm text-slate-500">Suivez et encaissez les frais de scolarité et autres.</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><Filter className="h-4 w-4" /><span>{students.length} élève{students.length !== 1 ? 's' : ''} · 2025 — 2026</span></div>
+                    <div className="hidden items-center gap-2 text-xs text-slate-400 sm:flex"><Filter className="h-4 w-4" /><span>{students.length} élève{students.length !== 1 ? 's' : ''} · {currentAcademicYear || 'Année non définie'}</span></div>
                     <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-4 py-2.5 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95"><UserPlus className="h-4.5 w-4.5" />Ajouter un élève</button>
                   </div>
                 </div>
