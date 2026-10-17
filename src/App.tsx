@@ -441,7 +441,18 @@ export default function App() {
   const handleYearEnd = async (nextYear: string) => {
     if (!profile?.schoolId) throw new Error('École non identifiée. Reconnecte-toi puis réessaie.');
     await yearEndStockReset(profile.schoolId, nextYear);
-    await loadAllData(profile.schoolId);
+    const [academicYear, refreshedStudents, refreshedUniforms, refreshedBooks, refreshedSupplies] = await Promise.all([
+      loadCurrentAcademicYear(profile.schoolId),
+      loadStudents(profile.schoolId, feeConfig.feeConfig, feeConfig.tranches),
+      loadUniformStock(profile.schoolId),
+      loadBookStock(profile.schoolId),
+      loadSupplyStock(profile.schoolId),
+    ]);
+    setCurrentAcademicYear(academicYear);
+    setStudents(refreshedStudents);
+    setUniforms(refreshedUniforms);
+    setBooks(refreshedBooks);
+    setSupplies(refreshedSupplies);
   };
 
   const handleNavigate = (v: AppView) => {
