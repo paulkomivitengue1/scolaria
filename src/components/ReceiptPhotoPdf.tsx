@@ -43,22 +43,25 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   const [paperHeight, setPaperHeight] = useState('150');
 
   useEffect(() => {
-    if (!open) {
-      setLogo('');
-      setReceipt('');
-      setPdfPrepared(false);
-      setCropDraft(null);
-      setError('');
-      setBusy(false);
-      setMode('photo');
+    if (open) {
       setAmount(defaultAmount > 0 ? String(defaultAmount) : '');
       setPurpose(feeLabel || 'Scolarité');
-      setMethod('Espèces');
-      setReference('');
-      setNote('');
-      setPaperFormat('A5');
+      return;
     }
-  }, [open]);
+    setLogo('');
+    setReceipt('');
+    setPdfPrepared(false);
+    setCropDraft(null);
+    setError('');
+    setBusy(false);
+    setMode('photo');
+    setAmount('');
+    setPurpose('Scolarité');
+    setMethod('Espèces');
+    setReference('');
+    setNote('');
+    setPaperFormat('A5');
+  }, [open, defaultAmount, feeLabel]);
 
   useEffect(() => {
     const onPdfMessage = (event: MessageEvent) => {
@@ -70,7 +73,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       } else if (event.data.type === 'gestilys-receipt-pdf-error') {
         setBusy(false);
         setPdfPrepared(false);
-        setError("La photo du reçu n’a pas pu être chargée dans le document. Réessaie.");
+        setError("Le document n’a pas pu charger ses images. Réessaie.");
       }
     };
     window.addEventListener('message', onPdfMessage);
