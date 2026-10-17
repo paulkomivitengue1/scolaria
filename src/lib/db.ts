@@ -467,8 +467,8 @@ export async function loadSupplyStock(schoolId: string): Promise<SupplyStockItem
     const newQuantity = hasSplit ? storedNew : 0;
     return {
       id: r.id, name: r.name || r.subject || '', category: r.subject || 'Fourniture',
-      unit: r.unit || 'unité', quantity: oldQuantity + newQuantity,
-      oldQuantity, newQuantity, minStock: r.min_stock ?? 3, price: r.price || 0,
+      unit: r.unit || 'unité', quantity: Math.max(0, oldQuantity + newQuantity - (Number(r.sold) || 0)),
+      oldQuantity, newQuantity, sold: Number(r.sold) || 0, minStock: r.min_stock ?? 3, price: r.price || 0,
     };
   });
 }
