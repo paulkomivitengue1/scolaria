@@ -580,7 +580,7 @@ export default function App() {
                 </div>
               </>)}
 
-              {view === 'cartes' && <StudentCardsView students={students} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
+              {view === 'cartes' && <StudentCardsView students={students} schoolId={profile.schoolId} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
 
               {view === 'classes' && (
                 <ClassView
