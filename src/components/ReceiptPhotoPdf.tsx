@@ -30,6 +30,15 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pdfPrepared, setPdfPrepared] = useState(false);
+  const [mode, setMode] = useState<'photo' | 'custom'>('photo');
+  const [amount, setAmount] = useState('');
+  const [purpose, setPurpose] = useState('Scolarité');
+  const [method, setMethod] = useState('Espèces');
+  const [reference, setReference] = useState('');
+  const [note, setNote] = useState('');
+  const [paperFormat, setPaperFormat] = useState<'A4' | 'A5' | '80x150' | 'custom'>('A5');
+  const [paperWidth, setPaperWidth] = useState('80');
+  const [paperHeight, setPaperHeight] = useState('150');
 
   useEffect(() => {
     if (!open) {
@@ -39,6 +48,13 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       setCropDraft(null);
       setError('');
       setBusy(false);
+      setMode('photo');
+      setAmount('');
+      setPurpose('Scolarité');
+      setMethod('Espèces');
+      setReference('');
+      setNote('');
+      setPaperFormat('A5');
     }
   }, [open]);
 
@@ -73,10 +89,35 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   };
 
   const createPdf = () => {
-    if (!receipt) {
-      setError('Ajoute d’abord la photo du reçu à convertir.');
+    if (mode === 'photo' && !receipt) {
+      setError('Choisis une photo du reçu dans la galerie ou prends-en une.');
       return;
     }
+    if (mode === 'custom' && (!amount.trim() || !Number.isFinite(Number(amount)) || Number(amount) <= 0)) {
+      setError('Saisis un montant valide pour le reçu.');
+      return;
+    }
+    const width = Math.min(300, Math.max(40, Number(paperWidth) || 80));
+    const height = Math.min(500, Math.max(40, Number(paperHeight) || 150));
+    const pageSize = paperFormat === 'A4' ? 'A4 portrait' : paperFormat === 'A5' ? 'A5 portrait' : paperFormat === '80x150' ? '80mm 150mm' : `${width}mm ${height}mm`;
+    const escapeHtml = (value: string) => value.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch] || ch));
+    const safeSchool = escapeHtml(schoolName);
+    const safeStudent = escapeHtml(studentName);
+    const safePurpose = escapeHtml(purpose);
+    const safeMethod = escapeHtml(method);
+    const safeAmount = Number(amount || 0).toLocaleString('fr-FR');
+    const safeReference = escapeHtml(reference || '—');
+    const safeNote = escapeHtml(note || '');
+    const logoMarkup = logo ? '<img src="' + logo + '" alt="Logo de l’école">' : '';
+    const bodyContent = mode === 'photo'
+      ? `<img class="receipt" src="${receipt}" alt="Photo du reçu à convertir">
+         <header>${logoMarkup}<div><h1>${safeSchool}</h1><p>Copie numérique du reçu</p><p>Élève : <strong>${safeStudent}</strong></p><p>Préparé le ${new Date().toLocaleDateString('fr-FR')}</p></div></header>
+         <div class="note">Vérifie que toutes les informations du reçu sont lisibles avant de transmettre le PDF.</div>`
+      : `<header>${logoMarkup}<div><h1>${safeSchool}</h1><p>REÇU DE PAIEMENT</p><p>Élève : <strong>${safeStudent}</strong></p><p>Émis le ${new Date().toLocaleDateString('fr-FR')}</p></div></header>
+         <section class="custom-receipt"><div class="receipt-title">REÇU DE PAIEMENT</div><div class="amount">${safeAmount} FCFA</div>
+         <div class="line"><span>Motif</span><strong>${safePurpose}</strong></div><div class="line"><span>Mode de paiement</span><strong>${safeMethod}</strong></div>
+         <div class="line"><span>Référence</span><strong>${safeReference}</strong></div><div class="line"><span>Parent / responsable</span><strong>${escapeHtml(parentPhone || '—')}</strong></div>
+         ${safeNote ? '<p class="custom-note">' + safeNote + '</p>' : ''}<p class="signature">Signature / cachet de l’établissement</p></section>`;
     setBusy(true);
     setPdfPrepared(false);
     setError('');
@@ -86,21 +127,19 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       setError('Autorise les fenêtres pop-up dans ton navigateur, puis réessaie.');
       return;
     }
-    const safeSchool = schoolName.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
-    const safeStudent = studentName.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
     w.document.open();
     w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reçu - ${safeStudent}</title><style>
-      @page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;margin:0;display:flex;flex-direction:column}
-      header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #667eea;padding:0 0 14px;margin-bottom:18px}
-      header img{width:90px;height:75px;object-fit:contain}h1{font-size:20px;margin:0 0 6px}p{margin:4px 0;font-size:12px;color:#555}
-      .note{font-size:12px;background:#f4f6ff;border:1px solid #dce2ff;border-radius:8px;padding:10px;margin-bottom:14px}
+      @page{size:${pageSize};margin:8mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;margin:0;display:flex;flex-direction:column}
+      header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #667eea;padding:0 0 10px;margin-bottom:14px}
+      header img{width:64px;height:55px;object-fit:contain}h1{font-size:18px;margin:0 0 5px}p{margin:4px 0;font-size:11px;color:#555}
+      .note{font-size:10px;background:#f4f6ff;border:1px solid #dce2ff;border-radius:6px;padding:7px;margin-bottom:8px}
       .receipt{display:block;width:100%;max-height:205mm;object-fit:contain;margin:0 auto 10px;object-position:top center;order:-1}
+      .custom-receipt{border:1.5px solid #cbd5e1;border-radius:8px;padding:14px;margin-top:10px}.receipt-title{text-align:center;font-size:15px;font-weight:800;letter-spacing:1px}.amount{text-align:center;font-size:25px;font-weight:800;margin:16px 0;color:#3730a3}
+      .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:9px 0;font-size:11px}.line span{color:#64748b}.line strong{text-align:right;overflow-wrap:anywhere}.custom-note{margin-top:14px;padding:8px;background:#f8fafc}.signature{margin-top:35px;text-align:right;font-size:10px;color:#475569}
       @media print{.toolbar{display:none}}
       .toolbar{padding:10px 0;margin-bottom:12px}button{padding:10px 14px;border:0;border-radius:8px;background:#4f46e5;color:white;font-weight:bold}
-    </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / Enregistrer en PDF</button><p>Dans la fenêtre d’impression, choisis « Enregistrer au format PDF ».</p></div>
-    <header>${logo ? '<img src="' + logo + '" alt="Logo de l’école">' : ''}<div><h1>${safeSchool}</h1><p>Copie numérique du reçu</p><p>Élève : <strong>${safeStudent}</strong></p><p>Préparé le ${new Date().toLocaleDateString('fr-FR')}</p></div></header>
-    <div class="note">Cette page contient la photo du reçu fournie. Vérifie que la photo est nette et que toutes les informations sont lisibles avant de transmettre le PDF.</div>
-    <img class="receipt" src="${receipt}" alt="Photo du reçu à convertir">
+    </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / Enregistrer en PDF</button><p>Choisis « Enregistrer au format PDF » ou imprime directement.</p></div>
+    ${bodyContent}
     <script>window.addEventListener('load',()=>{const imgs=[...document.images];Promise.all(imgs.map(i=>i.decode())).then(()=>{if(window.opener)window.opener.postMessage({type:'gestilys-receipt-pdf-ready'},window.location.origin);setTimeout(()=>window.print(),350)}).catch(()=>{if(window.opener)window.opener.postMessage({type:'gestilys-receipt-pdf-error'},window.location.origin)});});</script>
     </body></html>`);
     w.document.close();
