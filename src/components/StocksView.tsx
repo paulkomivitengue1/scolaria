@@ -797,7 +797,7 @@ function SuppliesPanel({ supplies, onChange }: { supplies: SupplyStockItem[]; on
   const add = () => {
     if (!name.trim()) return;
     onChange([...supplies, { id: `new-${Date.now()}`, name: name.trim(), category, unit,
-      quantity: Math.max(0, Number(quantity) || 0), minStock: Math.max(0, Number(minStock) || 0),
+      quantity: Math.max(0, Number(quantity) || 0), oldQuantity: 0, newQuantity: Math.max(0, Number(quantity) || 0), minStock: Math.max(0, Number(minStock) || 0),
       price: Math.max(0, Number(price) || 0) }]);
     setName(''); setQuantity('0'); setPrice('0');
   };
@@ -820,13 +820,13 @@ function SuppliesPanel({ supplies, onChange }: { supplies: SupplyStockItem[]; on
       <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher une fourniture…" className="mb-4 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-royal-600 sm:max-w-sm"/>
       {filtered.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">Aucun article. Ajoutez votre première fourniture ci-dessus.</p> :
       <div className="space-y-3">{filtered.map(item=><div key={item.id} className="flex flex-col gap-3 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0"><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.category} · {item.unit} · {formatFCFA(item.price)} / unité</p>
+        <div className="min-w-0"><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.category} · {item.unit} · {formatFCFA(item.price)} / unité</p><p className="mt-1 text-xs text-slate-500">Ancien stock : {item.oldQuantity ?? item.quantity} · Nouveaux achats : {item.newQuantity ?? 0}</p>
         {item.quantity <= item.minStock && <p className="mt-1 text-xs font-bold text-amber-700">Stock faible — seuil : {item.minStock}</p>}
         {item.quantity <= item.minStock && <p className="mt-1 text-xs font-semibold text-slate-600">À acheter pour atteindre le seuil : {Math.max(0, item.minStock - item.quantity)} {item.unit || 'unité'}{Math.max(0, item.minStock - item.quantity) > 1 ? 's' : ''}</p>}</div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" aria-label={`Diminuer ${item.name}`} onClick={()=>onChange(supplies.map(i=>i.id===item.id?{...i,quantity:Math.max(0,i.quantity-1)}:i))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"><Minus className="h-4 w-4"/></button>
+          <button type="button" aria-label={`Diminuer ${item.name}`} onClick={()=>onChange(supplies.map(i=>{if(i.id!==item.id)return i;const oldQuantity=i.oldQuantity??i.quantity;const newQuantity=i.newQuantity??0;const nextOld=newQuantity>0?oldQuantity:Math.max(0,oldQuantity-1);const nextNew=Math.max(0,newQuantity-1);return {...i,oldQuantity:nextOld,newQuantity:nextNew,quantity:nextOld+nextNew};}))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"><Minus className="h-4 w-4"/></button>
           <span className="min-w-12 text-center text-sm font-bold text-slate-900">{item.quantity}</span>
-          <button type="button" aria-label={`Augmenter ${item.name}`} onClick={()=>onChange(supplies.map(i=>i.id===item.id?{...i,quantity:i.quantity+1}:i))} className="grid h-9 w-9 place-items-center rounded-lg bg-royal-700 text-white hover:bg-royal-800"><Plus className="h-4 w-4"/></button>
+          <button type="button" aria-label={`Augmenter ${item.name}`} onClick={()=>onChange(supplies.map(i=>i.id===item.id?{...i,newQuantity:(i.newQuantity??0)+1,quantity:i.quantity+1}:i))} className="grid h-9 w-9 place-items-center rounded-lg bg-royal-700 text-white hover:bg-royal-800"><Plus className="h-4 w-4"/></button>
           <button type="button" onClick={()=>onChange(supplies.filter(i=>i.id!==item.id))} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Supprimer</button>
         </div>
       </div>)}</div>}
