@@ -682,7 +682,7 @@ export default function App() {
 
               {view === 'stocks' && <StocksView uniforms={uniforms} books={books} supplies={supplies} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onSuppliesChange={handleSuppliesChange} />}
 
-              {(view === 'parametres' || view === 'definitions') && <ConfigurationPanel
+              {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}
                 onSaveFeeConfig={handleFeeConfigSave}
                 onReset={handleResetFeeConfig}
