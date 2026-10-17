@@ -202,13 +202,13 @@ export const SERVICE_MAP: Record<ServiceType,ServiceDef> = SERVICES.reduce((a,s)
 
 /* ---- Stock management ---- */
 export type UniformCycle = 'maternelle' | 'cycle1' | 'cycle2';
-export type UniformSize = '4'|'6'|'8'|'10'|'12'|'S'|'M'|'L'|'XL';
+export type UniformSize = '4'|'6'|'8'|'10'|'12'|'14'|'16'|'S'|'M'|'L'|'XL';
 export const UNIFORM_CYCLES: { id: UniformCycle; label: string }[] = [
   { id: 'maternelle', label: 'Maternelle / Jardin' },
   { id: 'cycle1', label: '1er Cycle' },
   { id: 'cycle2', label: '2nd Cycle' },
 ];
-export const UNIFORM_SIZES: UniformSize[] = ['4','6','8','10','12','S','M','L','XL'];
+export const UNIFORM_SIZES: UniformSize[] = ['4','6','8','10','12','14','16','S','M','L','XL'];
 
 export interface UniformStockItem {
   id: string;
@@ -227,7 +227,7 @@ export const uniformRemaining = (i: UniformStockItem) => Math.max(0, uniformAvai
 export type BookClass = 'Jardin'|'1ère année'|'2ème année'|'3ème année'|'4ème année'|'5ème année'|'6ème année'|'7ème année'|'8ème année'|'9ème année';
 export const BOOK_CLASSES: BookClass[] = ['Jardin','1ère année','2ème année','3ème année','4ème année','5ème année','6ème année','7ème année','8ème année','9ème année'];
 export const BOOK_SUBJECTS = ['Lecture','Calcul','Écriture','Dictée','Grammaire','Conjugaison','Histoire-Géo','Sciences','Anglais','EPS'] as const;
-export type BookSubject = typeof BOOK_SUBJECTS[number];
+export type BookSubject = string;
 
 export interface BookStockItem {
   id: string;
