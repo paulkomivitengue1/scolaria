@@ -29,11 +29,13 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   const [cropDraft, setCropDraft] = useState<{ image: string; kind: 'logo' | 'receipt' } | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [pdfPrepared, setPdfPrepared] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setLogo('');
       setReceipt('');
+      setPdfPrepared(false);
       setCropDraft(null);
       setError('');
       setBusy(false);
@@ -59,6 +61,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       return;
     }
     setBusy(true);
+    setPdfPrepared(false);
     setError('');
     const w = window.open('', '_blank');
     if (!w) {
@@ -81,18 +84,11 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     <header>${logo ? '<img src="' + logo + '" alt="Logo de l’école">' : ''}<div><h1>${safeSchool}</h1><p>Copie numérique du reçu</p><p>Élève : <strong>${safeStudent}</strong></p><p>Préparé le ${new Date().toLocaleDateString('fr-FR')}</p></div></header>
     <div class="note">Cette page contient la photo du reçu fournie. Vérifie que la photo est nette et que toutes les informations sont lisibles avant de transmettre le PDF.</div>
     <img class="receipt" src="${receipt}" alt="Photo du reçu à convertir">
-    <script>window.addEventListener('load',()=>{const imgs=[...document.images];Promise.all(imgs.map(i=>i.decode().catch(()=>{}))).then(()=>setTimeout(()=>window.print(),350));</script>
+    <script>window.addEventListener('load',()=>{const imgs=[...document.images];Promise.all(imgs.map(i=>i.decode().catch(()=>{}))).then(()=>setTimeout(()=>window.print(),350));});</script>
     </body></html>`);
     w.document.close();
     setBusy(false);
-    if (parentPhone.trim()) {
-      const phone = parentPhone.replace(/\D/g, '');
-      // Keep the PDF creation separate from WhatsApp attachment: browsers do not permit a website to attach a local file automatically.
-      window.setTimeout(() => {
-        const go = window.confirm('Le PDF est prêt dans la fenêtre d’impression. Après l’avoir enregistré, ouvrir WhatsApp pour l’envoyer au parent ?');
-        if (go) window.open(`https://wa.me/${phone}?text=${encodeURIComponent('Bonjour, veuillez trouver ci-joint le reçu de paiement de ' + studentName + '.')}`, '_blank');
-      }, 500);
-    }
+    setPdfPrepared(true);
   };
 
   return (
@@ -120,7 +116,12 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
         <button disabled={!receipt || busy} onClick={createPdf} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
           <FileText size={18}/><Printer size={17}/>{busy ? 'Préparation…' : 'Créer le PDF'}
         </button>
-        {parentPhone && <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MessageCircle size={14}/> Parent : {parentPhone}. Après l’enregistrement du PDF, WhatsApp s’ouvrira pour faciliter l’envoi.</p>}
+        {pdfPrepared && <p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-800">Le PDF est ouvert dans la fenêtre d’impression. Choisis « Enregistrer en PDF », puis reviens ici pour préparer l’envoi.</p>}
+        {parentPhone && <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+          <p className="flex items-center gap-1 text-xs text-slate-600"><MessageCircle size={14}/> Destinataire : {parentPhone}</p>
+          <button type="button" disabled={!pdfPrepared} onClick={() => { const phone = parentPhone.replace(/\D/g, ''); window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent('Bonjour, veuillez trouver ci-joint le reçu de paiement de ' + studentName + '.'), '_blank', 'noopener,noreferrer'); }} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><MessageCircle size={17}/> Ouvrir WhatsApp pour joindre le PDF</button>
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">WhatsApp ne peut pas joindre automatiquement un fichier créé par le navigateur : enregistre d’abord le PDF, puis joins-le dans la conversation.</p>
+        </div>}
       </div>
       {cropDraft && <ImageCropper
         image={cropDraft.image}
