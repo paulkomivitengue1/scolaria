@@ -111,8 +111,19 @@ export async function saveFeeConfig(schoolId: string, feeConfig: FeeConfigRow[])
 
 // ── Students ────────────────────────────────────────────
 
+export async function loadCurrentAcademicYear(schoolId: string): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('schools')
+    .select('current_academic_year')
+    .eq('id', schoolId)
+    .single();
+  if (error) throw error;
+  return data.current_academic_year as string;
+}
+
 export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[], tranches: TrancheDef[]): Promise<Student[]> {
   const supa = getSupabase();
+  const currentYear = await loadCurrentAcademicYear(schoolId);
   const { data: rows, error } = await supa
     .from('students')
     .select('id, first_name, last_name, class_name, parent_name, parent_phone, birth_date, birth_place, fees_json, matricule, sexe')
@@ -122,17 +133,33 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
   if (!rows || rows.length === 0) return [];
 
   const ids = rows.map(r => r.id);
-  const { data: pays, error: payErr } = await supa
-    .from('payments')
-    .select('student_id, fee_type, tranche_index, amount')
-    .in('student_id', ids);
+  const [{ data: pays, error: payErr }, { data: history, error: historyErr }] = await Promise.all([
+    supa.from('payments')
+      .select('student_id, fee_type, tranche_index, amount')
+      .eq('school_id', schoolId)
+      .eq('academic_year', currentYear)
+      .in('student_id', ids),
+    supa.from('student_year_history')
+      .select('student_id, academic_year, total_unpaid, created_at')
+      .eq('school_id', schoolId)
+      .gt('total_unpaid', 0)
+      .order('created_at', { ascending: false }),
+  ]);
   if (payErr) throw payErr;
+  if (historyErr) throw historyErr;
 
-  // Aggregate payments: { "studentId|feeType|trancheKey": totalPaid }
+  // Aggregate only current-year payments. Single payments use tranche_index=0.
   const payMap: Record<string, number> = {};
   (pays || []).forEach(p => {
-    const key = `${p.student_id}|${p.fee_type}|${p.tranche_index}`;
+    const trancheKey = p.tranche_index === 0 ? 'single' : String(p.tranche_index);
+    const key = `${p.student_id}|${p.fee_type}|${trancheKey}`;
     payMap[key] = (payMap[key] || 0) + p.amount;
+  });
+  const previousDebt = new Map<string, { year: string; debt: number }>();
+  (history || []).forEach(row => {
+    if (!previousDebt.has(row.student_id)) {
+      previousDebt.set(row.student_id, { year: row.academic_year, debt: Number(row.total_unpaid) || 0 });
+    }
   });
 
   return rows.map(r => {
@@ -163,6 +190,8 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
       fees,
       matricule: r.matricule || '',
       sexe: (r.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
+      previousYearDebt: previousDebt.get(r.id)?.debt || 0,
+      previousYearLabel: previousDebt.get(r.id)?.year || '',
     };
   });
 }
@@ -267,8 +296,10 @@ export async function recordPayment(
   trancheKey: number | 'single',
   amount: number,
 ): Promise<void> {
+  const currentYear = await loadCurrentAcademicYear(schoolId);
   const { error } = await getSupabase().from('payments').insert({
     school_id: schoolId,
+    academic_year: currentYear,
     student_id: studentId,
     type: feeType,               // populate old column for backward compat
     month_key: 'oct',            // legacy placeholder
@@ -542,25 +573,13 @@ export async function saveSchoolLogo(schoolId: string, logoData: string): Promis
 
 // ── Year-end stock reset ────────────────────────────────
 
-export async function yearEndStockReset(
-  _schoolId: string,
-  uniforms: UniformStockItem[],
-  books: BookStockItem[],
-): Promise<void> {
-  for (const u of uniforms) {
-    const remaining = Math.max(0, u.oldStock + u.newStock - u.sold);
-    await getSupabase()
-      .from('stock_items')
-      .update({ old_stock: remaining, new_stock: 0, sold: 0 })
-      .eq('id', u.id);
-  }
-  for (const b of books) {
-    const remaining = Math.max(0, b.inStock - b.sold);
-    await getSupabase()
-      .from('stock_items')
-      .update({ in_stock: remaining, sold: 0 })
-      .eq('id', b.id);
-  }
+export async function yearEndStockReset(schoolId: string, newAcademicYear: string): Promise<{ previous_year: string; current_year: string }> {
+  const { data, error } = await getSupabase().rpc('gestilys_start_new_academic_year', {
+    p_school_id: schoolId,
+    p_new_year: newAcademicYear,
+  });
+  if (error) throw error;
+  return data as { previous_year: string; current_year: string };
 }
 
 // ── Grade periods ──────────────────────────────────────
