@@ -164,7 +164,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} allowFreeform={cropDraft.target !== 'logo'} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
