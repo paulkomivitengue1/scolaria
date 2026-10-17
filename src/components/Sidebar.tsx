@@ -29,7 +29,7 @@ const SECTIONS: NavSection[] = [
     title: 'Pilotage',
     items: [
       { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-      { view: 'dashboard', label: 'Statistiques', icon: BarChart3 },
+      { view: 'statistiques', label: 'Statistiques', icon: BarChart3 },
     ],
   },
   {
@@ -38,14 +38,14 @@ const SECTIONS: NavSection[] = [
       { view: 'classes', label: 'Classes', icon: GraduationCap },
       { view: 'cartes', label: 'Cartes scolaires', icon: CreditCard },
       { view: 'bulletins', label: 'Bulletins', icon: ClipboardList },
-      { view: 'cahier', label: 'Élèves', icon: Users },
-      { view: 'cahier', label: 'Inscriptions / élèves', icon: UserPlus },
+      { view: 'inscriptions', label: 'Inscriptions / élèves', icon: UserPlus },
     ],
   },
   {
     title: 'Finance',
     items: [
-      { view: 'cahier', label: 'Paiements', icon: Wallet },
+      { view: 'cahier', label: 'Cahier de caisse', icon: Wallet },
+      { view: 'paiements', label: 'Paiements', icon: CreditCard },
       { view: 'impayes', label: 'Impayés par tranche', icon: AlertCircle },
       { view: 'enseignants', label: 'Enseignants & Salaires', icon: Users },
       { view: 'depenses', label: 'Dépenses', icon: Receipt },
