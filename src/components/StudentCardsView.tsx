@@ -8,6 +8,7 @@ type Mode = 'individual' | 'class';
 
 export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, onSchoolLogoChange }: { students: Student[]; schoolId: string; schoolName: string; schoolLogo: string; onSchoolLogoChange: (logoData: string) => Promise<void> }) {
   const [mode, setMode] = useState<Mode>('class');
+  const [largePreview, setLargePreview] = useState(false);
   const [className, setClassName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [localSchoolLogo, setLocalSchoolLogo] = useState(schoolLogo);
@@ -121,7 +122,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   };
 
   return (
-    <div className="student-cards-view animate-fadeIn">
+<div className={`student-cards-view animate-fadeIn ${largePreview ? "student-cards-zoom" : ""}`}>
+      <style>{".student-cards-view.student-cards-zoom .student-cards-print { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px; } .student-cards-view.student-cards-zoom .student-id-card { height: 320px; max-width: 520px; border-radius: 16px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-header img, .student-cards-view.student-cards-zoom .student-id-card .student-card-logo-fallback { width: 48px; height: 48px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-header p:first-child { font-size: 17px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-header p:last-child { font-size: 12px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-main { gap: 14px; margin-top: 12px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-photo-column { width: 112px; } .student-cards-view.student-cards-zoom .student-id-card .student-photo-frame { width: 100px !important; height: 130px !important; min-width: 100px !important; min-height: 130px !important; max-width: 100px !important; max-height: 130px !important; flex: 0 0 100px !important; } .student-cards-view.student-cards-zoom .student-id-card .student-card-info-column > p:first-child, .student-cards-view.student-cards-zoom .student-id-card .student-card-info-column > p:nth-child(3) { font-size: 13px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-info-column > p:nth-child(2), .student-cards-view.student-cards-zoom .student-id-card .student-card-info-column > p:nth-child(4) { font-size: 21px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-info-column > .grid p:first-child { font-size: 12px; } .student-cards-view.student-cards-zoom .student-id-card .student-card-info-column > .grid p:last-child { font-size: 15px; } .student-cards-view.student-cards-zoom .student-id-card > div.relative { padding: 18px; }"}</style>
       <style>{`
         @page { size: A4 portrait; margin: 10mm; }
         @media print {
@@ -163,7 +165,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Cartes scolaires</h1>
           <p className="mt-1 text-sm text-slate-500">Créez une carte individuelle ou les cartes d'une classe, puis imprimez ou enregistrez en PDF.</p>
         </div>
-        <button onClick={printCards} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 text-sm font-700 text-white shadow-card disabled:cursor-not-allowed disabled:opacity-40"><Printer className="h-4 w-4" /> Enregistrer en PDF / Imprimer</button>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setLargePreview(v => !v)} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-700 text-slate-700 disabled:opacity-40">{largePreview ? "Aperçu normal" : "Aperçu agrandi"}</button><button onClick={printCards} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 text-sm font-700 text-white shadow-card disabled:cursor-not-allowed disabled:opacity-40"><Printer className="h-4 w-4" /> Enregistrer en PDF / Imprimer</button></div>
       </div>
 
       {students.length === 0 ? (
