@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, CreditCard, Printer, Upload, Users, UserRound } from 'lucide-react';
 import type { Student } from '../types';
 import { ImageCropper } from './ImageCropper';
+import { DEFAULT_STUDENT_CARD_FIELDS, loadStudentCardFields, saveStudentCardFields, type StudentCardFields } from '../lib/db';
 
 type Mode = 'individual' | 'class';
 
-export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLogoChange }: { students: Student[]; schoolName: string; schoolLogo: string; onSchoolLogoChange: (logoData: string) => Promise<void> }) {
+export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, onSchoolLogoChange }: { students: Student[]; schoolId: string; schoolName: string; schoolLogo: string; onSchoolLogoChange: (logoData: string) => Promise<void> }) {
   const [mode, setMode] = useState<Mode>('class');
   const [className, setClassName] = useState('');
   const [studentId, setStudentId] = useState('');
@@ -14,6 +15,18 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
+  const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
+  const [fieldsSaving, setFieldsSaving] = useState(false);
+  useEffect(() => { let alive = true; loadStudentCardFields(schoolId).then(fields => { if (alive) setCardFields(fields); }).catch(() => { if (alive) window.alert('Impossible de charger les options de carte.'); }); return () => { alive = false; }; }, [schoolId]);
+  const toggleCardField = async (key: keyof StudentCardFields) => {
+    const previous = cardFields;
+    const next = { ...previous, [key]: !previous[key] };
+    setCardFields(next);
+    setFieldsSaving(true);
+    try { await saveStudentCardFields(schoolId, next); }
+    catch { setCardFields(previous); window.alert('Les options de carte n’ont pas été enregistrées. Réessayez.'); }
+    finally { setFieldsSaving(false); }
+  };
   const logoGalleryRef = useRef<HTMLInputElement>(null);
   const logoCameraRef = useRef<HTMLInputElement>(null);
   const photoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -114,14 +127,35 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
         @media print {
           body * { visibility: hidden !important; }
           .student-cards-print, .student-cards-print * { visibility: visible !important; }
-          .student-cards-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; display: grid !important; grid-template-columns: repeat(2, 85.6mm) !important; gap: 6mm !important; }
-          .student-id-card { width: 85.6mm !important; height: 54mm !important; margin: 0 !important; box-shadow: none !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .student-cards-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; display: grid !important; grid-template-columns: repeat(2, 85.6mm) !important; gap: 6mm !important; align-items:start !important; }
+          .student-id-card { width: 85.6mm !important; height: 54mm !important; min-height:54mm !important; max-width:none !important; margin: 0 !important; box-shadow: none !important; overflow:hidden !important; break-inside: avoid !important; page-break-inside: avoid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .student-id-card > div.relative { padding: 1.5mm !important; }
+          .student-id-card .student-card-details { gap: 0 !important; }
+          .student-id-card .student-card-details > p { margin-top: 0.35mm !important; line-height: 1.15 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+          .student-id-card .student-card-header { padding-bottom: 0.7mm !important; gap: 1mm !important; }
+          .student-id-card .student-card-header img, .student-id-card .student-card-header .student-card-logo-fallback { width: 6mm !important; height: 6mm !important; }
+          /* Explicit print columns avoid depending on DOM child-order selectors. */
+          .student-id-card .student-card-main { display: grid !important; grid-template-columns: 18mm minmax(0, 1fr) !important; column-gap: 2mm !important; align-items: start !important; margin-top: 1mm !important; min-height: 0 !important; height: 31mm !important; flex: 0 0 31mm !important; width: 100% !important; overflow: hidden !important; }
+          .student-id-card .student-card-photo-column { display: flex !important; flex-direction: column !important; align-items: center !important; grid-column: 1 !important; grid-row: 1 !important; width: 18mm !important; min-width: 18mm !important; max-width: 18mm !important; flex: none !important; margin: 0 !important; }
+          .student-id-card .student-card-info-column { display: block !important; grid-column: 2 !important; grid-row: 1 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: hidden !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: visible !important; }
+          .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
+          .student-id-card .student-card-info-column > .grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.35mm 1.5mm !important; margin-top: 0.6mm !important; }
+          .student-id-card .student-card-info-column > .grid > div { min-width: 0 !important; overflow: visible !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6px !important; line-height: 1 !important; white-space: nowrap !important; }
+          .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7px !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
+          .student-id-card .student-card-main .student-photo-frame { margin: 0 !important; }
+          .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
+          .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
           .student-card-photo-upload { display: none !important; }
           .student-cards-print-empty { display: none !important; }
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 48 / 62} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { setPhotos(prev => ({ ...prev, [target]: image })); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -129,7 +163,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
           <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Cartes scolaires</h1>
           <p className="mt-1 text-sm text-slate-500">Créez une carte individuelle ou les cartes d'une classe, puis imprimez ou enregistrez en PDF.</p>
         </div>
-        <button onClick={printCards} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 text-sm font-700 text-white shadow-card disabled:cursor-not-allowed disabled:opacity-40"><Printer className="h-4 w-4" /> Imprimer / PDF</button>
+        <button onClick={printCards} disabled={!selectedStudents.length} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 text-sm font-700 text-white shadow-card disabled:cursor-not-allowed disabled:opacity-40"><Printer className="h-4 w-4" /> Enregistrer en PDF / Imprimer</button>
       </div>
 
       {students.length === 0 ? (
@@ -178,8 +212,26 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     <button type="button" onClick={() => logoCameraRef.current?.click()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-4 w-4" /> Prendre une photo</button>
                   </div>
                   <input ref={logoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
-                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => { setLocalSchoolLogo(data); void onSchoolLogoChange(data).catch(() => window.alert('Le logo n’a pas pu être enregistré. Gérez-le dans Paramètres.')); }); input.value = ''; }} />
+                  <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
                 </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <label className="text-xs font-700 text-slate-600">Informations sur la carte</label>
+                  <span className="text-[10px] text-slate-400">{fieldsSaving ? 'Enregistrement…' : 'Enregistré automatiquement'}</span>
+                </div>
+                {([
+                  ['matricule', 'Matricule'],
+                  ['sexe', 'Sexe'],
+                  ['parentName', 'Nom du parent'],
+                  ['birthDate', 'Date de naissance'],
+                  ['birthPlace', 'Lieu de naissance'],
+                ] as [keyof StudentCardFields, string][]).map(([key, label]) => (
+                  <label key={key} className="flex min-h-9 items-center justify-between gap-3 border-t border-slate-100 py-1.5 text-xs text-slate-600">
+                    <span>{label}</span>
+                    <input type="checkbox" checked={cardFields[key]} onChange={() => void toggleCardField(key)} className="h-4 w-4 accent-blue-700" />
+                  </label>
+                ))}
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Couleur principale</label>
@@ -204,31 +256,34 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                 <article className="student-id-card relative flex h-[205px] w-full max-w-[325px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card" style={{ borderTop: `5px solid ${accent}` }}>
                   <div className="absolute inset-x-0 top-0 h-16 opacity-10" style={{ background: accent }} />
                   <div className="relative flex min-w-0 flex-1 flex-col p-3">
-                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
-                      <div className="min-w-0 flex-1">
+                    <div className="student-card-header flex items-center gap-2 border-b border-slate-100 pb-2">
+                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
+                      <div className="student-card-details min-w-0 flex-1">
                         <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: accent }}>{schoolName || 'Établissement scolaire'}</p>
                         <p className="text-[8px] font-700 uppercase tracking-widest text-slate-500">CARTE SCOLAIRE</p>
                       </div>
                     </div>
-                    <div className="mt-2 flex min-h-0 flex-1 gap-2">
-                      <div className="flex w-[52px] shrink-0 flex-col items-center">
-                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="h-[62px] w-[48px] rounded-md object-cover" /> : <div className="grid h-[62px] w-[48px] place-items-center rounded-md bg-slate-100 text-lg font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
-                        <span className="mt-1 text-[7px] font-700 text-slate-500">ÉLÈVE</span>
+                    <div className="student-card-main mt-2 flex min-h-0 flex-1 gap-2">
+                      <div className="student-card-photo-column flex w-[26px] shrink-0 flex-col items-center">
+                        {photos[s.id] ? <img src={photos[s.id]} alt={'Photo de ' + s.firstName} className="student-photo-frame rounded object-cover" style={{ width: 18, height: 23, minWidth: 18, minHeight: 23, maxWidth: 18, maxHeight: 23, flex: "0 0 18px", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div className="student-photo-frame grid h-[23px] w-[18px] place-items-center rounded bg-slate-100 text-[9px] font-800" style={{ color: accent }}>{(s.firstName[0] || '') + (s.lastName[0] || '')}</div>}
+                        
                       </div>
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="student-card-details student-card-info-column min-w-0 flex-1 space-y-1">
                         <p className="break-words text-[9px] text-slate-500">Prénom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.firstName}</p>
                         <p className="break-words text-[9px] text-slate-500">Nom</p><p className="break-words text-[12px] font-800 leading-tight text-slate-900">{s.lastName}</p>
-                        <div className="mt-1 grid grid-cols-2 gap-1">
+                        <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
                           <div><p className="text-[8px] text-slate-500">Classe</p><p className="break-words text-[10px] font-700 text-slate-800">{s.className}</p></div>
-                          <div><p className="text-[8px] text-slate-500">Sexe</p><p className="text-[10px] font-700 text-slate-800">{s.sexe === 'F' ? 'F' : 'M'}</p></div>
+                          {cardFields.sexe && <div><p className="text-[8px] text-slate-500">Sexe</p><p className="text-[10px] font-700 text-slate-800">{s.sexe === 'F' ? 'F' : 'M'}</p></div>}
+                          {cardFields.birthDate && <div><p className="text-[8px] text-slate-500">Né(e) le</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthDate ? new Date(s.birthDate + 'T00:00:00').toLocaleDateString('fr-FR') : 'Non renseignée'}</p></div>}
+                          {cardFields.birthPlace && <div><p className="text-[8px] text-slate-500">À</p><p className="student-card-birth-value break-words text-[9px] font-600 text-slate-800">{s.birthPlace?.trim() || 'Non renseigné'}</p></div>}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-1 flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
-                      <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>
+                    {(cardFields.matricule || academicYear) && <div className="mt-1 flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
+                      {cardFields.matricule && <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>}
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
-                    </div>
+                    </div>}
+                    {cardFields.parentName && <p className="mt-1 text-[8px] leading-tight text-slate-600">Parent : {s.parentName || '—'}</p>}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
@@ -237,7 +292,7 @@ export function StudentCardsView({ students, schoolName, schoolLogo, onSchoolLog
                     <button type="button" onClick={() => photoInputRefs.current['camera-' + s.id]?.click()} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-600 text-slate-600 hover:bg-slate-50"><Camera className="h-3.5 w-3.5" /> Prendre une photo</button>
                   </div>
                   <input ref={node => { photoInputRefs.current['gallery-' + s.id] = node; }} type="file" accept="image/*" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: s.id })); input.value = ''; }} />
-                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setPhotos(prev => ({ ...prev, [s.id]: data }))); input.value = ''; }} />
+                  <input ref={node => { photoInputRefs.current['camera-' + s.id] = node; }} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: s.id })); input.value = ''; }} />
                 </div>
               </div>
             ))}
