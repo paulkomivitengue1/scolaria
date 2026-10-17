@@ -19,8 +19,8 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
   GraduationCap, FileText, PartyPopper, Utensils, Bus, Layers,
 };
 
-interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; matricule: string; sexe: 'M' | 'F'; }
-const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', matricule: '', sexe: 'M' };
+interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate: string; birthPlace: string; matricule: string; sexe: 'M' | 'F'; }
+const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', birthDate: '', birthPlace: '', matricule: '', sexe: 'M' };
 
 export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, onGenerateMatricule }: AddStudentModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -48,7 +48,7 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
 
   useEffect(() => { if (open) setForm(EMPTY_FORM); }, [open]);
 
-  const valid = form.firstName.trim() && form.lastName.trim() && form.className && form.parentName.trim() && form.parentPhone.trim() && form.sexe && Object.values(plans).some(Boolean);
+  const valid = form.firstName.trim() && form.lastName.trim() && form.className && form.sexe && Object.values(plans).some(Boolean);
   const selectedFeeTypes = feeTypes.filter(f => plans[f.feeType]);
 
   const totalForClass = (feeType: string) => form.className ? getFeeTotalForClass(feeConfig, feeType, form.className) : 0;
@@ -70,6 +70,8 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
       className: form.className.trim(),
       parentName: form.parentName.trim(),
       parentPhone: form.parentPhone.trim(),
+      birthDate: form.birthDate,
+      birthPlace: form.birthPlace.trim(),
       matricule: form.matricule.trim(),
       sexe: form.sexe,
       fees,
@@ -97,6 +99,10 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
           <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{CLASS_LIST.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
           <Field label="Nom du parent"><input value={form.parentName} onChange={e => setForm({ ...form, parentName: e.target.value })} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
           <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => setForm({ ...form, parentPhone: e.target.value })} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Date de naissance (facultatif)"><input type="date" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} className={inputCls} /></Field>
+            <Field label="Lieu de naissance (facultatif)"><input value={form.birthPlace} onChange={e => setForm({ ...form, birthPlace: e.target.value })} placeholder="Bamako" className={inputCls} /></Field>
+          </div>
 
           <Field label="Matricule"><input value={form.matricule} onChange={e => setForm({ ...form, matricule: e.target.value })} placeholder="ECOLE-2026-001" className={inputCls} /></Field>
 

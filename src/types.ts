@@ -50,6 +50,8 @@ export interface Student {
   className: string;
   parentName: string;
   parentPhone: string;
+  birthDate?: string;
+  birthPlace?: string;
   fees: FeeSubscription[];
   matricule: string;
   sexe: 'M' | 'F';
