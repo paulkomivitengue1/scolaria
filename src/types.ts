@@ -1,4 +1,4 @@
-export type AppView = 'dashboard' | 'cahier' | 'classes' | 'cartes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'enseignants' | 'parametres';
+export type AppView = 'dashboard' | 'cahier' | 'classes' | 'cartes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'enseignants' | 'parametres' | 'definitions';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 
@@ -55,6 +55,8 @@ export interface Student {
   fees: FeeSubscription[];
   matricule: string;
   sexe: 'M' | 'F';
+  previousYearDebt?: number;
+  previousYearLabel?: string;
 }
 
 // ── School config (loaded from DB) ─────────────────────
