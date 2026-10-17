@@ -7,7 +7,7 @@ import {
 import { useAuth } from './lib/auth';
 import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock, loadSupplyStock, syncSupplyStock,
-  loadSchoolFeeConfig, saveTranches, saveFeeConfig,
+  loadSchoolFeeConfig, loadCurrentAcademicYear, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
   loadExpenses, addExpenseDB, deleteExpenseDB,
   updateSchoolName, loadSchoolLogo, saveSchoolLogo, yearEndStockReset,
@@ -62,6 +62,7 @@ export default function App() {
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
   const [schoolLogo, setSchoolLogo] = useState('');
+  const [currentAcademicYear, setCurrentAcademicYear] = useState('');
 
   const [query, setQuery] = useState('');
   const [view, setView] = useState<AppView>('dashboard');
@@ -94,7 +95,8 @@ export default function App() {
   const loadAllData = useCallback(async (schoolId: string) => {
     setDataLoading(true);
     try {
-      const schoolConfig = await loadSchoolFeeConfig(schoolId);
+      const [schoolConfig, academicYear] = await Promise.all([loadSchoolFeeConfig(schoolId), loadCurrentAcademicYear(schoolId)]);
+      setCurrentAcademicYear(academicYear);
       setFeeConfig(schoolConfig);
 
       const results = await Promise.allSettled([
@@ -149,6 +151,7 @@ export default function App() {
       setExpenses([]);
       setTeachers([]);
       setSalaryPayments([]);
+      setCurrentAcademicYear('');
       setDataLoading(false);
     }
   }, [user, profile?.schoolId, loadAllData]);
@@ -435,19 +438,10 @@ export default function App() {
     }
   };
 
-  const handleYearEnd = async () => {
-    if (!profile?.schoolId) return;
-    try {
-      await yearEndStockReset(profile.schoolId, uniforms, books);
-      const [unis, bks] = await Promise.all([
-        loadUniformStock(profile.schoolId),
-        loadBookStock(profile.schoolId),
-      ]);
-      setUniforms(unis);
-      setBooks(bks);
-    } catch (err) {
-      console.error('Year-end reset failed:', err);
-    }
+  const handleYearEnd = async (nextYear: string) => {
+    if (!profile?.schoolId) throw new Error('École non identifiée. Reconnecte-toi puis réessaie.');
+    await yearEndStockReset(profile.schoolId, nextYear);
+    await loadAllData(profile.schoolId);
   };
 
   const handleNavigate = (v: AppView) => {
@@ -622,7 +616,7 @@ export default function App() {
 
               {view === 'stocks' && <StocksView uniforms={uniforms} books={books} supplies={supplies} onUniformsChange={handleUniformsChange} onBooksChange={handleBooksChange} onSuppliesChange={handleSuppliesChange} />}
 
-              {view === 'parametres' && <ConfigurationPanel
+              {(view === 'parametres' || view === 'definitions') && <ConfigurationPanel
                 feeConfig={feeConfig}
                 onSaveFeeConfig={handleFeeConfigSave}
                 onReset={handleResetFeeConfig}
@@ -632,6 +626,8 @@ export default function App() {
                 onSchoolLogoChange={handleSchoolLogoChange}
                 uniforms={uniforms}
                 books={books}
+                supplies={supplies}
+                currentAcademicYear={currentAcademicYear}
                 onYearEnd={handleYearEnd}
                 gradePeriods={gradePeriods}
                 onSaveGradePeriods={handleSaveGradePeriods}
