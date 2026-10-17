@@ -115,7 +115,7 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
   const supa = getSupabase();
   const { data: rows, error } = await supa
     .from('students')
-    .select('id, first_name, last_name, class_name, parent_name, parent_phone, fees_json, matricule, sexe')
+    .select('id, first_name, last_name, class_name, parent_name, parent_phone, birth_date, birth_place, fees_json, matricule, sexe')
     .eq('school_id', schoolId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -158,6 +158,8 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
       className: r.class_name,
       parentName: r.parent_name,
       parentPhone: r.parent_phone,
+      birthDate: r.birth_date || '',
+      birthPlace: r.birth_place || '',
       fees,
       matricule: r.matricule || '',
       sexe: (r.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
@@ -180,6 +182,8 @@ export async function addStudentDB(schoolId: string, student: Omit<Student, 'id'
       class_name: student.className,
       parent_name: student.parentName,
       parent_phone: student.parentPhone,
+      birth_date: student.birthDate || null,
+      birth_place: student.birthPlace || null,
       fees_json: feesJson,
       status: 'actif',
       matricule: student.matricule || null,
@@ -202,6 +206,8 @@ export async function updateStudentDB(studentId: string, updates: {
   className: string;
   parentName: string;
   parentPhone: string;
+  birthDate?: string;
+  birthPlace?: string;
   fees: FeeSubscription[];
   matricule: string;
   sexe: 'M' | 'F';
@@ -219,6 +225,8 @@ export async function updateStudentDB(studentId: string, updates: {
       class_name: updates.className,
       parent_name: updates.parentName,
       parent_phone: updates.parentPhone,
+      birth_date: updates.birthDate || null,
+      birth_place: updates.birthPlace || null,
       fees_json: feesJson,
       matricule: updates.matricule || null,
       sexe: updates.sexe,
@@ -470,6 +478,28 @@ export async function loadPricing(schoolId: string): Promise<Record<string, Reco
   });
   return pricing;
 }
+
+
+export async function loadStudentCardFields(schoolId: string): Promise<StudentCardFields> {
+  const { data, error } = await getSupabase()
+    .from('schools')
+    .select('student_card_fields')
+    .eq('id', schoolId)
+    .single();
+  if (error) throw error;
+  return { ...DEFAULT_STUDENT_CARD_FIELDS, ...(data.student_card_fields || {}) };
+}
+
+
+export async function saveStudentCardFields(schoolId: string, fields: StudentCardFields): Promise<void> {
+  const { error } = await getSupabase()
+    .from('schools')
+    .update({ student_card_fields: fields })
+    .eq('id', schoolId);
+  if (error) throw error;
+}
+
+// ── School ──────────────────────────────────────────────
 
 // ── School ──────────────────────────────────────────────
 
@@ -794,3 +824,21 @@ export async function unpaySalaryDB(paymentId: string): Promise<void> {
   const { error } = await getSupabase().from('salary_payments').delete().eq('id', paymentId);
   if (error) throw error;
 }
+
+export type StudentCardFields = {
+  matricule: boolean;
+  sexe: boolean;
+  parentName: boolean;
+  birthDate: boolean;
+  birthPlace: boolean;
+};
+
+export const DEFAULT_STUDENT_CARD_FIELDS: StudentCardFields = {
+  matricule: true,
+  sexe: true,
+  parentName: false,
+  // Birth information is useful on school cards and is enabled by default.
+  birthDate: true,
+  birthPlace: true,
+};
+
