@@ -238,6 +238,8 @@ export interface BookStockItem {
   inStock: number;
   sold: number;
   price: number;
+  oldStock?: number;
+  newStock?: number;
 }
 export type BookStockMap = Record<string, BookStockItem>;
 
@@ -249,6 +251,8 @@ export interface SupplyStockItem {
   quantity: number;
   minStock: number;
   price: number;
+  oldQuantity?: number;
+  newQuantity?: number;
 }
 
 
