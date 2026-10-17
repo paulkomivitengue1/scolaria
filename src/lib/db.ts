@@ -333,21 +333,26 @@ export async function syncUniformStock(
         })
         .select('id')
         .single();
-      if (!error && data) result[i] = { ...item, id: data.id };
+      if (error) throw error;
+      if (data) result[i] = { ...item, id: data.id };
     } else {
       const old = prevMap.get(item.id)!;
       if (old.oldStock !== item.oldStock || old.newStock !== item.newStock ||
           old.sold !== item.sold || old.price !== item.price) {
-        await getSupabase()
+        const { error } = await getSupabase()
           .from('stock_items')
           .update({ old_stock: item.oldStock, new_stock: item.newStock, sold: item.sold, price: item.price })
-          .eq('id', item.id);
+          .eq('id', item.id).eq('school_id', schoolId);
+        if (error) throw error;
       }
     }
   }
 
   for (const old of prev) {
-    if (!nextMap.has(old.id)) await getSupabase().from('stock_items').delete().eq('id', old.id);
+    if (!nextMap.has(old.id)) {
+      const { error } = await getSupabase().from('stock_items').delete().eq('id', old.id).eq('school_id', schoolId);
+      if (error) throw error;
+    }
   }
   return result;
 }
@@ -373,20 +378,25 @@ export async function syncBookStock(
         })
         .select('id')
         .single();
-      if (!error && data) result[i] = { ...item, id: data.id };
+      if (error) throw error;
+      if (data) result[i] = { ...item, id: data.id };
     } else {
       const old = prevMap.get(item.id)!;
       if (old.inStock !== item.inStock || old.sold !== item.sold || old.price !== item.price) {
-        await getSupabase()
+        const { error } = await getSupabase()
           .from('stock_items')
           .update({ in_stock: item.inStock, sold: item.sold, price: item.price })
-          .eq('id', item.id);
+          .eq('id', item.id).eq('school_id', schoolId);
+        if (error) throw error;
       }
     }
   }
 
   for (const old of prev) {
-    if (!nextMap.has(old.id)) await getSupabase().from('stock_items').delete().eq('id', old.id);
+    if (!nextMap.has(old.id)) {
+      const { error } = await getSupabase().from('stock_items').delete().eq('id', old.id).eq('school_id', schoolId);
+      if (error) throw error;
+    }
   }
   return result;
 }
