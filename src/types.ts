@@ -237,6 +237,17 @@ export interface BookStockItem {
 }
 export type BookStockMap = Record<string, BookStockItem>;
 
+export interface SupplyStockItem {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  quantity: number;
+  minStock: number;
+  price: number;
+}
+
+
 export const bookRemaining = (b: BookStockItem) => Math.max(0, b.inStock - b.sold);
 
 /* ---- Report cards (bulletins) ---- */
