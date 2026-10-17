@@ -31,6 +31,12 @@ ALTER TABLE public.payments
   ALTER COLUMN academic_year SET DEFAULT (CASE WHEN EXTRACT(MONTH FROM CURRENT_DATE)::int >= 8 THEN EXTRACT(YEAR FROM CURRENT_DATE)::int::text || '-' || (EXTRACT(YEAR FROM CURRENT_DATE)::int + 1)::text ELSE (EXTRACT(YEAR FROM CURRENT_DATE)::int - 1)::text || '-' || EXTRACT(YEAR FROM CURRENT_DATE)::int::text END),
   ALTER COLUMN academic_year SET NOT NULL;
 
+-- Classify the existing books and supplies as carried-over stock.
+UPDATE public.stock_items
+SET old_stock = in_stock
+WHERE category IN ('livre','fourniture')
+  AND old_stock = 0 AND new_stock = 0 AND in_stock > 0;
+
 CREATE TABLE IF NOT EXISTS public.student_year_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   school_id uuid NOT NULL REFERENCES public.schools(id) ON DELETE CASCADE,
