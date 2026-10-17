@@ -798,7 +798,8 @@ function SuppliesPanel({ supplies, onChange }: { supplies: SupplyStockItem[]; on
       {filtered.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">Aucun article. Ajoutez votre première fourniture ci-dessus.</p> :
       <div className="space-y-3">{filtered.map(item=><div key={item.id} className="flex flex-col gap-3 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0"><p className="font-bold text-slate-900">{item.name}</p><p className="text-xs text-slate-500">{item.category} · {item.unit} · {formatFCFA(item.price)} / unité</p>
-        {item.quantity <= item.minStock && <p className="mt-1 text-xs font-bold text-amber-700">Stock faible — seuil : {item.minStock}</p>}</div>
+        {item.quantity <= item.minStock && <p className="mt-1 text-xs font-bold text-amber-700">Stock faible — seuil : {item.minStock}</p>}
+        {item.quantity <= item.minStock && <p className="mt-1 text-xs font-semibold text-slate-600">À acheter pour atteindre le seuil : {Math.max(0, item.minStock - item.quantity)} {item.unit || 'unité'}{Math.max(0, item.minStock - item.quantity) > 1 ? 's' : ''}</p>}</div>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" aria-label={`Diminuer ${item.name}`} onClick={()=>onChange(supplies.map(i=>i.id===item.id?{...i,quantity:Math.max(0,i.quantity-1)}:i))} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"><Minus className="h-4 w-4"/></button>
           <span className="min-w-12 text-center text-sm font-bold text-slate-900">{item.quantity}</span>
