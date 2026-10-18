@@ -284,6 +284,32 @@ export function AdminPanel({ onExit }: Props) {
   const validatedPayments = payments.filter((p) => p.status === 'valide');
   const rejectedPayments = payments.filter((p) => p.status === 'rejete');
   const confirmedManualRevenue = validatedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const revenueBetween = (start: Date, end = now) => validatedPayments
+    .filter(p => new Date(p.received_at) >= start && new Date(p.received_at) < end)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const revenueToday = revenueBetween(todayStart);
+  const revenueLast7Days = revenueBetween(weekStart);
+  const revenueThisMonth = revenueBetween(monthStart);
+  const revenuePreviousMonth = revenueBetween(previousMonthStart, monthStart);
+  const monthlyRecurringRevenue = schools
+    .filter(s => s.subscription_status === 'active')
+    .reduce((sum, s) => {
+      const monthly = Number(s.subscription_amount) || ({ Essentiel: 10000, Premium: 20000, 'Élite': 30000 } as Record<string, number>)[s.plan] || 0;
+      return sum + (s.billing_period === 'annuel' ? monthly / 10 : monthly);
+    }, 0);
+  const annualRecurringRevenue = monthlyRecurringRevenue * 12;
+  const planDistribution = (['Essentiel', 'Premium', 'Élite'] as const).map(plan => ({
+    plan,
+    count: schools.filter(s => s.subscription_status === 'active' && s.plan === plan).length,
+  }));
+  const activeTrialConversion = schools.length ? Math.round((paidCount / schools.length) * 100) : 0;
   const paymentProviderStats = (['Orange Money', 'Wave', 'Moov Money'] as const).map(provider => ({
     provider,
     count: payments.filter(p => p.provider === provider).length,
@@ -296,9 +322,6 @@ export function AdminPanel({ onExit }: Props) {
   const expiredCount = schools.filter(s => s.subscription_status === 'expired' || (s.subscription_status === 'trial' && new Date(s.trial_ends_at) <= new Date())).length;
 
   // Per-period new client stats
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
   const newToday = schools.filter((s) => new Date(s.created_at) >= todayStart).length;
@@ -406,6 +429,33 @@ export function AdminPanel({ onExit }: Props) {
                     <p className="text-sm font-800 text-royal-700">{formatFCFA(item.confirmed)}</p>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            {/* ── Business metrics: MRR / ARR / sales ── */}
+            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+              <div className="mb-4">
+                <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-indigo-700"><TrendingUp className="h-3 w-3" /> Indicateurs business</div>
+                <h2 className="font-display text-lg font-800 tracking-tight text-ink sm:text-xl">Revenus récurrents et activité commerciale</h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">MRR/ARR estimés à partir des abonnements marqués actifs. Les recettes encaissées proviennent uniquement de l’historique des paiements validés : ce sont deux indicateurs différents.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p className="text-xs font-700 text-indigo-800">MRR estimé</p><p className="mt-1 text-xl font-800 text-indigo-950">{formatFCFA(Math.round(monthlyRecurringRevenue))}</p><p className="mt-1 text-[11px] text-indigo-700">Revenu mensuel récurrent</p></div>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p className="text-xs font-700 text-indigo-800">ARR estimé</p><p className="mt-1 text-xl font-800 text-indigo-950">{formatFCFA(Math.round(annualRecurringRevenue))}</p><p className="mt-1 text-[11px] text-indigo-700">MRR × 12</p></div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-700 text-emerald-800">Conversion payante</p><p className="mt-1 text-xl font-800 text-emerald-950">{activeTrialConversion}%</p><p className="mt-1 text-[11px] text-emerald-700">{paidCount} école(s) active(s) sur {schools.length}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-700 text-slate-700">Panier moyen validé</p><p className="mt-1 text-xl font-800 text-ink">{formatFCFA(validatedPayments.length ? Math.round(confirmedManualRevenue / validatedPayments.length) : 0)}</p><p className="mt-1 text-[11px] text-slate-500">Par paiement, historique chargé</p></div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 p-3"><p className="text-xs font-700 text-slate-500">Aujourd’hui</p><p className="mt-1 text-base font-800 text-ink">{formatFCFA(revenueToday)}</p></div>
+                <div className="rounded-xl border border-slate-200 p-3"><p className="text-xs font-700 text-slate-500">7 derniers jours</p><p className="mt-1 text-base font-800 text-ink">{formatFCFA(revenueLast7Days)}</p></div>
+                <div className="rounded-xl border border-slate-200 p-3"><p className="text-xs font-700 text-slate-500">Mois en cours</p><p className="mt-1 text-base font-800 text-ink">{formatFCFA(revenueThisMonth)}</p></div>
+                <div className="rounded-xl border border-slate-200 p-3"><p className="text-xs font-700 text-slate-500">Mois précédent</p><p className="mt-1 text-base font-800 text-ink">{formatFCFA(revenuePreviousMonth)}</p></div>
+              </div>
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-800 uppercase tracking-wide text-slate-500">Répartition des abonnements actifs</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {planDistribution.map(item => <div key={item.plan} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-3"><span className="text-sm font-700 text-slate-700">{item.plan}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-800 text-slate-700">{item.count} école(s)</span></div>)}
+                </div>
               </div>
             </section>
 
