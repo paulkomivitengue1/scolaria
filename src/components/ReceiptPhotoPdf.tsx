@@ -7,6 +7,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   schoolName: string;
+  schoolId?: string;
   parentPhone: string;
   studentName: string;
   defaultAmount?: number;
@@ -26,10 +27,12 @@ function readImage(file: File): Promise<string> {
   });
 }
 
-export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studentName, defaultAmount = 0, feeLabel = 'Scolarité' }: Props) {
+export function ReceiptPhotoPdf({ open, onClose, schoolName, schoolId = '', parentPhone, studentName, defaultAmount = 0, feeLabel = 'Scolarité' }: Props) {
   const [logo, setLogo] = useState('');
   const [receipt, setReceipt] = useState('');
-  const [cropDraft, setCropDraft] = useState<{ image: string; kind: 'logo' | 'receipt' } | null>(null);
+  const [stamp, setStamp] = useState('');
+  const [cropDraft, setCropDraft] = useState<{ image: string; kind: 'logo' | 'receipt' | 'stamp' } | null>(null);
+  useEffect(() => { try { setStamp(schoolId ? localStorage.getItem('gestilys-school-stamp-' + schoolId) || '' : ''); } catch { setStamp(''); } }, [schoolId, open]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pdfPrepared, setPdfPrepared] = useState(false);
@@ -115,6 +118,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
     const safeReference = escapeHtml(reference || '—');
     const safeNote = escapeHtml(note || '');
     const logoMarkup = logo ? '<img src="' + logo + '" alt="Logo de l’école">' : '';
+    const stampMarkup = stamp ? '<div class="stamp-block"><span>Cachet de l’établissement</span><img class="school-stamp" src="' + stamp + '" alt="Cachet de l’établissement"></div>' : '<div class="stamp-block"><span>Cachet de l’établissement</span><div class="stamp-placeholder"></div></div>';
     const bodyContent = mode === 'photo'
       ? `<img class="receipt" src="${receipt}" alt="Photo du reçu à convertir">
          <header>${logoMarkup}<div><h1>${safeSchool}</h1><p>Copie numérique du reçu</p><p>Élève : <strong>${safeStudent}</strong></p><p>Préparé le ${new Date().toLocaleDateString('fr-FR')}</p></div></header>
@@ -123,7 +127,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
          <section class="custom-receipt"><div class="receipt-title">REÇU DE PAIEMENT</div><div class="amount">${safeAmount} FCFA</div>
          <div class="line"><span>Motif</span><strong>${safePurpose}</strong></div><div class="line"><span>Mode de paiement</span><strong>${safeMethod}</strong></div>
          <div class="line"><span>Référence</span><strong>${safeReference}</strong></div><div class="line"><span>Parent / responsable</span><strong>${escapeHtml(parentPhone || '—')}</strong></div>
-         ${safeNote ? '<p class="custom-note">' + safeNote + '</p>' : ''}<p class="signature">Signature / cachet de l’établissement</p></section>`;
+         ${safeNote ? '<p class="custom-note">' + safeNote + '</p>' : ''}<div class="receipt-signatures"><p class="signature">Signature</p>${stampMarkup}</div></section>`;
     setBusy(true);
     setPdfPrepared(false);
     setError('');
@@ -141,7 +145,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       .note{font-size:10px;background:#f4f6ff;border:1px solid #dce2ff;border-radius:6px;padding:7px;margin-bottom:8px}
       header{position:relative;z-index:1}.receipt{position:relative;z-index:2;display:block;width:100%;max-height:205mm;object-fit:contain;margin:0 auto 10px;object-position:top center;order:0}
       .custom-receipt{border:1.5px solid #cbd5e1;border-radius:8px;padding:14px;margin-top:10px}.receipt-title{text-align:center;font-size:15px;font-weight:800;letter-spacing:1px}.amount{text-align:center;font-size:25px;font-weight:800;margin:16px 0;color:#3730a3}
-      .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:9px 0;font-size:11px}.line span{color:#64748b}.line strong{text-align:right;overflow-wrap:anywhere}.custom-note{margin-top:14px;padding:8px;background:#f8fafc}.signature{margin-top:35px;text-align:right;font-size:10px;color:#475569}
+      .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:9px 0;font-size:11px}.line span{color:#64748b}.line strong{text-align:right;overflow-wrap:anywhere}.custom-note{margin-top:14px;padding:8px;background:#f8fafc}.receipt-signatures{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:24px}.signature{margin:0;min-width:100px;padding-top:18px;border-top:1px solid #94a3b8;text-align:center;font-size:10px;color:#475569}.stamp-block{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:9px;color:#475569}.school-stamp{width:76px;height:58px;object-fit:contain}.stamp-placeholder{width:76px;height:42px;border:1px dashed #cbd5e1;border-radius:4px}
       @media print{.toolbar{display:none}}
       .toolbar{padding:10px 0;margin-bottom:12px}button{padding:11px 16px;border:0;border-radius:9px;background:#2563eb !important;color:#fff !important;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(37,99,235,.25)}button:hover{background:#1d4ed8 !important}
     </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / Enregistrer en PDF</button><p>Choisis « Enregistrer au format PDF » ou imprime directement.</p></div>
