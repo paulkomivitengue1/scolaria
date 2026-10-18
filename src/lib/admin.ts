@@ -75,8 +75,8 @@ export async function adminSetSchoolStatus(code: string, schoolId: string, statu
   await adminFetch(code, 'set_school_status', undefined, schoolId, status);
 }
 
-export async function adminSetSchoolPaidStatus(code: string, schoolId: string, paid: boolean): Promise<void> {
-  await adminFetch(code, 'set_school_paid_status', undefined, schoolId, undefined, paid);
+export async function adminSetSchoolPaidStatus(code: string, schoolId: string, paid: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel'): Promise<void> {
+  await adminFetch(code, 'set_school_paid_status', undefined, schoolId, undefined, paid, plan, billingPeriod);
 }
 
 export async function adminSetSchoolPlan(code: string, schoolId: string, plan: 'Essentiel' | 'Premium' | 'Élite', billingPeriod: 'mensuel' | 'annuel'): Promise<void> {
