@@ -8,6 +8,7 @@ import type {
   SchoolFeeConfig,
   UniformStockItem,
   BookStockItem,
+  SupplyStockItem,
   UniformCycle,
   UniformSize,
   BookClass,
@@ -110,28 +111,55 @@ export async function saveFeeConfig(schoolId: string, feeConfig: FeeConfigRow[])
 
 // ── Students ────────────────────────────────────────────
 
+export async function loadCurrentAcademicYear(schoolId: string): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('schools')
+    .select('current_academic_year')
+    .eq('id', schoolId)
+    .single();
+  if (error) throw error;
+  return data.current_academic_year as string;
+}
+
 export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[], tranches: TrancheDef[]): Promise<Student[]> {
   const supa = getSupabase();
+  const currentYear = await loadCurrentAcademicYear(schoolId);
   const { data: rows, error } = await supa
     .from('students')
-    .select('id, first_name, last_name, class_name, parent_name, parent_phone, fees_json, matricule, sexe')
+    .select('id, first_name, last_name, class_name, parent_name, parent_phone, birth_date, birth_place, fees_json, matricule, sexe')
     .eq('school_id', schoolId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!rows || rows.length === 0) return [];
 
   const ids = rows.map(r => r.id);
-  const { data: pays, error: payErr } = await supa
-    .from('payments')
-    .select('student_id, fee_type, tranche_index, amount')
-    .in('student_id', ids);
+  const [{ data: pays, error: payErr }, { data: history, error: historyErr }] = await Promise.all([
+    supa.from('payments')
+      .select('student_id, fee_type, tranche_index, amount')
+      .eq('school_id', schoolId)
+      .eq('academic_year', currentYear)
+      .in('student_id', ids),
+    supa.from('student_year_history')
+      .select('student_id, academic_year, total_unpaid, created_at')
+      .eq('school_id', schoolId)
+      .gt('total_unpaid', 0)
+      .order('created_at', { ascending: false }),
+  ]);
   if (payErr) throw payErr;
+  if (historyErr) throw historyErr;
 
-  // Aggregate payments: { "studentId|feeType|trancheKey": totalPaid }
+  // Aggregate only current-year payments. Single payments use tranche_index=0.
   const payMap: Record<string, number> = {};
   (pays || []).forEach(p => {
-    const key = `${p.student_id}|${p.fee_type}|${p.tranche_index}`;
+    const trancheKey = p.tranche_index === 0 ? 'single' : String(p.tranche_index);
+    const key = `${p.student_id}|${p.fee_type}|${trancheKey}`;
     payMap[key] = (payMap[key] || 0) + p.amount;
+  });
+  const previousDebt = new Map<string, { year: string; debt: number }>();
+  (history || []).forEach(row => {
+    if (!previousDebt.has(row.student_id)) {
+      previousDebt.set(row.student_id, { year: row.academic_year, debt: Number(row.total_unpaid) || 0 });
+    }
   });
 
   return rows.map(r => {
@@ -157,9 +185,13 @@ export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[],
       className: r.class_name,
       parentName: r.parent_name,
       parentPhone: r.parent_phone,
+      birthDate: r.birth_date || '',
+      birthPlace: r.birth_place || '',
       fees,
       matricule: r.matricule || '',
       sexe: (r.sexe === 'F' ? 'F' : 'M') as 'M' | 'F',
+      previousYearDebt: previousDebt.get(r.id)?.debt || 0,
+      previousYearLabel: previousDebt.get(r.id)?.year || '',
     };
   });
 }
@@ -179,6 +211,8 @@ export async function addStudentDB(schoolId: string, student: Omit<Student, 'id'
       class_name: student.className,
       parent_name: student.parentName,
       parent_phone: student.parentPhone,
+      birth_date: student.birthDate || null,
+      birth_place: student.birthPlace || null,
       fees_json: feesJson,
       status: 'actif',
       matricule: student.matricule || null,
@@ -201,6 +235,8 @@ export async function updateStudentDB(studentId: string, updates: {
   className: string;
   parentName: string;
   parentPhone: string;
+  birthDate?: string;
+  birthPlace?: string;
   fees: FeeSubscription[];
   matricule: string;
   sexe: 'M' | 'F';
@@ -218,6 +254,8 @@ export async function updateStudentDB(studentId: string, updates: {
       class_name: updates.className,
       parent_name: updates.parentName,
       parent_phone: updates.parentPhone,
+      birth_date: updates.birthDate || null,
+      birth_place: updates.birthPlace || null,
       fees_json: feesJson,
       matricule: updates.matricule || null,
       sexe: updates.sexe,
@@ -258,8 +296,10 @@ export async function recordPayment(
   trancheKey: number | 'single',
   amount: number,
 ): Promise<void> {
+  const currentYear = await loadCurrentAcademicYear(schoolId);
   const { error } = await getSupabase().from('payments').insert({
     school_id: schoolId,
+    academic_year: currentYear,
     student_id: studentId,
     type: feeType,               // populate old column for backward compat
     month_key: 'oct',            // legacy placeholder
@@ -295,19 +335,29 @@ export async function loadUniformStock(schoolId: string): Promise<UniformStockIt
 export async function loadBookStock(schoolId: string): Promise<BookStockItem[]> {
   const { data, error } = await getSupabase()
     .from('stock_items')
-    .select('id, class_level, subject, in_stock, sold, price')
+    .select('id, class_level, subject, in_stock, old_stock, new_stock, sold, price')
     .eq('school_id', schoolId)
     .eq('category', 'livre')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data || []).map(r => ({
-    id: r.id,
-    className: r.class_level as BookClass,
-    subject: r.subject as BookSubject,
-    inStock: r.in_stock,
-    sold: r.sold,
-    price: r.price ?? 0,
-  }));
+  return (data || []).map(r => {
+    const storedOld = Number(r.old_stock) || 0;
+    const storedNew = Number(r.new_stock) || 0;
+    const legacyTotal = Number(r.in_stock) || 0;
+    const hasSplit = storedOld + storedNew > 0 || legacyTotal === 0;
+    const oldStock = hasSplit ? storedOld : legacyTotal;
+    const newStock = hasSplit ? storedNew : 0;
+    return {
+      id: r.id,
+      className: r.class_level as BookClass,
+      subject: r.subject as BookSubject,
+      inStock: oldStock + newStock,
+      oldStock,
+      newStock,
+      sold: r.sold,
+      price: r.price ?? 0,
+    };
+  });
 }
 
 export async function syncUniformStock(
@@ -332,21 +382,26 @@ export async function syncUniformStock(
         })
         .select('id')
         .single();
-      if (!error && data) result[i] = { ...item, id: data.id };
+      if (error) throw error;
+      if (data) result[i] = { ...item, id: data.id };
     } else {
       const old = prevMap.get(item.id)!;
       if (old.oldStock !== item.oldStock || old.newStock !== item.newStock ||
           old.sold !== item.sold || old.price !== item.price) {
-        await getSupabase()
+        const { error } = await getSupabase()
           .from('stock_items')
           .update({ old_stock: item.oldStock, new_stock: item.newStock, sold: item.sold, price: item.price })
-          .eq('id', item.id);
+          .eq('id', item.id).eq('school_id', schoolId);
+        if (error) throw error;
       }
     }
   }
 
   for (const old of prev) {
-    if (!nextMap.has(old.id)) await getSupabase().from('stock_items').delete().eq('id', old.id);
+    if (!nextMap.has(old.id)) {
+      const { error } = await getSupabase().from('stock_items').delete().eq('id', old.id).eq('school_id', schoolId);
+      if (error) throw error;
+    }
   }
   return result;
 }
@@ -368,24 +423,88 @@ export async function syncBookStock(
         .insert({
           school_id: schoolId, category: 'livre', name: '',
           class_level: item.className, subject: item.subject,
-          in_stock: item.inStock, sold: item.sold, price: item.price,
+          in_stock: (item.oldStock ?? item.inStock) + (item.newStock ?? 0), old_stock: item.oldStock ?? item.inStock, new_stock: item.newStock ?? 0, sold: item.sold, price: item.price,
         })
         .select('id')
         .single();
-      if (!error && data) result[i] = { ...item, id: data.id };
+      if (error) throw error;
+      if (data) result[i] = { ...item, id: data.id };
     } else {
       const old = prevMap.get(item.id)!;
-      if (old.inStock !== item.inStock || old.sold !== item.sold || old.price !== item.price) {
-        await getSupabase()
+      if (old.inStock !== item.inStock || old.oldStock !== item.oldStock || old.newStock !== item.newStock || old.sold !== item.sold || old.price !== item.price) {
+        const { error } = await getSupabase()
           .from('stock_items')
-          .update({ in_stock: item.inStock, sold: item.sold, price: item.price })
-          .eq('id', item.id);
+          .update({ in_stock: (item.oldStock ?? item.inStock) + (item.newStock ?? 0), old_stock: item.oldStock ?? item.inStock, new_stock: item.newStock ?? 0, sold: item.sold, price: item.price })
+          .eq('id', item.id).eq('school_id', schoolId);
+        if (error) throw error;
       }
     }
   }
 
   for (const old of prev) {
-    if (!nextMap.has(old.id)) await getSupabase().from('stock_items').delete().eq('id', old.id);
+    if (!nextMap.has(old.id)) {
+      const { error } = await getSupabase().from('stock_items').delete().eq('id', old.id).eq('school_id', schoolId);
+      if (error) throw error;
+    }
+  }
+  return result;
+}
+
+export async function loadSupplyStock(schoolId: string): Promise<SupplyStockItem[]> {
+  const { data, error } = await getSupabase()
+    .from('stock_items')
+    .select('id, name, subject, unit, in_stock, old_stock, new_stock, sold, min_stock, price')
+    .eq('school_id', schoolId)
+    .eq('category', 'fourniture')
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(r => {
+    const storedOld = Number(r.old_stock) || 0;
+    const storedNew = Number(r.new_stock) || 0;
+    const legacyTotal = Number(r.in_stock) || 0;
+    const hasSplit = storedOld + storedNew > 0 || legacyTotal === 0;
+    const oldQuantity = hasSplit ? storedOld : legacyTotal;
+    const newQuantity = hasSplit ? storedNew : 0;
+    return {
+      id: r.id, name: r.name || r.subject || '', category: r.subject || 'Fourniture',
+      unit: r.unit || 'unité', quantity: Math.max(0, oldQuantity + newQuantity - (Number(r.sold) || 0)),
+      oldQuantity, newQuantity, sold: Number(r.sold) || 0, minStock: r.min_stock ?? 3, price: r.price || 0,
+    };
+  });
+}
+
+export async function syncSupplyStock(
+  schoolId: string, prev: SupplyStockItem[], next: SupplyStockItem[],
+): Promise<SupplyStockItem[]> {
+  const prevMap = new Map(prev.map(i => [i.id, i]));
+  const nextMap = new Map(next.map(i => [i.id, i]));
+  const result = [...next];
+  for (let i = 0; i < next.length; i++) {
+    const item = next[i];
+    const values = { name: item.name, subject: item.category, unit: item.unit,
+      in_stock: item.quantity, old_stock: item.oldQuantity ?? item.quantity, new_stock: item.newQuantity ?? 0, sold: item.sold ?? 0, min_stock: item.minStock, price: item.price };
+    if (!prevMap.has(item.id)) {
+      const { data, error } = await getSupabase().from('stock_items')
+        .insert({ school_id: schoolId, category: 'fourniture', ...values })
+        .select('id').single();
+      if (error) throw error;
+      if (data) result[i] = { ...item, id: data.id };
+    } else {
+      const old = prevMap.get(item.id)!;
+      if (old.name !== item.name || old.category !== item.category || old.unit !== item.unit ||
+          old.quantity !== item.quantity || old.oldQuantity !== item.oldQuantity || old.newQuantity !== item.newQuantity || old.minStock !== item.minStock || old.price !== item.price) {
+        const { error } = await getSupabase().from('stock_items').update(values)
+          .eq('id', item.id).eq('school_id', schoolId);
+        if (error) throw error;
+      }
+    }
+  }
+  for (const old of prev) {
+    if (!nextMap.has(old.id)) {
+      const { error } = await getSupabase().from('stock_items').delete()
+        .eq('id', old.id).eq('school_id', schoolId);
+      if (error) throw error;
+    }
   }
   return result;
 }
@@ -409,6 +528,49 @@ export async function loadPricing(schoolId: string): Promise<Record<string, Reco
   return pricing;
 }
 
+
+export async function loadStudentCardFields(schoolId: string): Promise<StudentCardFields> {
+  const { data, error } = await getSupabase()
+    .from('schools')
+    .select('student_card_fields')
+    .eq('id', schoolId)
+    .single();
+  if (error) throw error;
+  return { ...DEFAULT_STUDENT_CARD_FIELDS, ...(data.student_card_fields || {}) };
+}
+
+
+export async function saveStudentCardFields(schoolId: string, fields: StudentCardFields): Promise<void> {
+  const { error } = await getSupabase()
+    .from('schools')
+    .update({ student_card_fields: fields })
+    .eq('id', schoolId);
+  if (error) throw error;
+}
+
+export async function loadStudentCardPhotos(schoolId: string): Promise<Record<string, string>> {
+  const { data, error } = await getSupabase()
+    .from('student_card_photos')
+    .select('student_id, photo_data')
+    .eq('school_id', schoolId);
+  if (error) throw error;
+  return Object.fromEntries((data || []).map(row => [row.student_id, row.photo_data]));
+}
+
+export async function saveStudentCardPhoto(schoolId: string, studentId: string, photoData: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('student_card_photos')
+    .upsert({
+      school_id: schoolId,
+      student_id: studentId,
+      photo_data: photoData,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'school_id,student_id' });
+  if (error) throw error;
+}
+
+// ── School ──────────────────────────────────────────────
+
 // ── School ──────────────────────────────────────────────
 
 export async function updateSchoolName(schoolId: string, name: string): Promise<void> {
@@ -429,25 +591,13 @@ export async function saveSchoolLogo(schoolId: string, logoData: string): Promis
 
 // ── Year-end stock reset ────────────────────────────────
 
-export async function yearEndStockReset(
-  _schoolId: string,
-  uniforms: UniformStockItem[],
-  books: BookStockItem[],
-): Promise<void> {
-  for (const u of uniforms) {
-    const remaining = Math.max(0, u.oldStock + u.newStock - u.sold);
-    await getSupabase()
-      .from('stock_items')
-      .update({ old_stock: remaining, new_stock: 0, sold: 0 })
-      .eq('id', u.id);
-  }
-  for (const b of books) {
-    const remaining = Math.max(0, b.inStock - b.sold);
-    await getSupabase()
-      .from('stock_items')
-      .update({ in_stock: remaining, sold: 0 })
-      .eq('id', b.id);
-  }
+export async function yearEndStockReset(schoolId: string, newAcademicYear: string): Promise<{ previous_year: string; current_year: string }> {
+  const { data, error } = await getSupabase().rpc('gestilys_start_new_academic_year', {
+    p_school_id: schoolId,
+    p_new_year: newAcademicYear,
+  });
+  if (error) throw error;
+  return data as { previous_year: string; current_year: string };
 }
 
 // ── Grade periods ──────────────────────────────────────
@@ -732,3 +882,21 @@ export async function unpaySalaryDB(paymentId: string): Promise<void> {
   const { error } = await getSupabase().from('salary_payments').delete().eq('id', paymentId);
   if (error) throw error;
 }
+
+export type StudentCardFields = {
+  matricule: boolean;
+  sexe: boolean;
+  parentName: boolean;
+  birthDate: boolean;
+  birthPlace: boolean;
+};
+
+export const DEFAULT_STUDENT_CARD_FIELDS: StudentCardFields = {
+  matricule: true,
+  sexe: true,
+  parentName: false,
+  // Birth information is useful on school cards and is enabled by default.
+  birthDate: true,
+  birthPlace: true,
+};
+

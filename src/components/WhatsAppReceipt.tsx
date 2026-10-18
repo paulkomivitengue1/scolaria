@@ -98,7 +98,7 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
 
         <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-3 space-y-2">
           <button onClick={() => setPhotoPdfOpen(true)} className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 text-sm font-700 text-indigo-700 hover:bg-indigo-50">
-            <FileText className="h-4 w-4" /> Créer un PDF à partir d’une photo
+            <FileText className="h-4 w-4" /> Créer / personnaliser un reçu
           </button>
           <button onClick={send} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-700 text-white shadow-sm transition hover:brightness-105 active:scale-95" style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
             <Send className="h-4 w-4" /> Envoyer sur WhatsApp
@@ -106,7 +106,7 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
         </div>
       </div>
     </div>
-    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} />
+    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} defaultAmount={isTrancheMode ? paidAmount! : totalPaid} feeLabel={ft.label} />
     </>
   );
 }

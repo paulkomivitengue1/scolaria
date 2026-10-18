@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X, ClipboardList, Upload, Image as ImageIcon } from 'lucide-react';
-import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem, GradePeriod } from '../types';
+import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem, SupplyStockItem, GradePeriod } from '../types';
 import { ImageCropper } from './ImageCropper';
 import { CLASS_LIST, formatFCFA, getFeeTotalForClass, uniformRemaining, bookRemaining, FEE_TYPE_ICONS, getFeeAccent } from '../types';
 
@@ -14,7 +14,9 @@ interface ConfigPanelProps {
   onSchoolLogoChange: (logoData: string) => Promise<void>;
   uniforms: UniformStockItem[];
   books: BookStockItem[];
-  onYearEnd: () => void;
+  supplies: SupplyStockItem[];
+  currentAcademicYear: string;
+  onYearEnd: (nextYear: string) => Promise<void>;
   gradePeriods: GradePeriod[];
   onSaveGradePeriods: (periods: GradePeriod[]) => Promise<void>;
 }
@@ -25,7 +27,7 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
-export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, schoolLogo, onSchoolLogoChange, uniforms, books, onYearEnd, gradePeriods, onSaveGradePeriods }: ConfigPanelProps) {
+export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, schoolLogo, onSchoolLogoChange, uniforms, books, supplies, currentAcademicYear, onYearEnd, gradePeriods, onSaveGradePeriods }: ConfigPanelProps) {
   const [tranches, setTranches] = useState<TrancheDef[]>(feeConfig.tranches);
   const [feeTypes, setFeeTypes] = useState<FeeTypeDef[]>(feeConfig.feeTypes);
   const [configRows, setConfigRows] = useState<FeeConfigRow[]>(feeConfig.feeConfig);
@@ -512,7 +514,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
       )}
 
       {/* Year-end section */}
-      <YearEndSection uniforms={uniforms} books={books} onYearEnd={onYearEnd} />
+      <YearEndSection uniforms={uniforms} books={books} supplies={supplies} currentAcademicYear={currentAcademicYear} onYearEnd={onYearEnd} />
 
       <div className="flex items-start gap-2 rounded-xl border border-gold-200 bg-gold-50 px-4 py-3 text-xs text-gold-700"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><p>Les nouveaux élèves inscrits via « Ajouter un élève » utiliseront automatiquement ces tarifs selon leur classe et les frais cochés. Modifier un tarif n'affecte pas les élèves déjà inscrits.</p></div>
     </div>
@@ -556,18 +558,38 @@ function PriceInput({ value, onChange, accent }: { value: number; onChange: (v: 
   );
 }
 
-function YearEndSection({ uniforms, books, onYearEnd }: { uniforms: UniformStockItem[]; books: BookStockItem[]; onYearEnd: () => void }) {
+function YearEndSection({ uniforms, books, supplies, currentAcademicYear, onYearEnd }: { uniforms: UniformStockItem[]; books: BookStockItem[]; supplies: SupplyStockItem[]; currentAcademicYear: string; onYearEnd: (nextYear: string) => Promise<void> }) {
   const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+  const [nextYear, setNextYear] = useState('');
+  useEffect(() => {
+    const start = Number(currentAcademicYear.split('-')[0]);
+    setNextYear(Number.isFinite(start) && start > 1900 ? `${start + 1}-${start + 2}` : '');
+  }, [currentAcademicYear]);
 
   const totalUniforms = uniforms.reduce((s, i) => s + uniformRemaining(i), 0);
   const totalBooks = books.reduce((s, i) => s + bookRemaining(i), 0);
+  const totalSupplies = supplies.reduce((s, i) => s + i.quantity, 0);
 
-  const handleConfirm = () => {
-    onYearEnd();
-    setConfirm(false);
-    setDone(true);
-    setTimeout(() => setDone(false), 4000);
+  const handleConfirm = async () => {
+    if (!/^\d{4}-\d{4}$/.test(nextYear) || nextYear === currentAcademicYear) {
+      setError('Saisis une nouvelle année au format AAAA-AAAA, différente de l’année actuelle.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await onYearEnd(nextYear);
+      setConfirm(false);
+      setDone(true);
+      setTimeout(() => setDone(false), 5000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'La nouvelle année n’a pas pu être préparée.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -577,37 +599,50 @@ function YearEndSection({ uniforms, books, onYearEnd }: { uniforms: UniformStock
           <CalendarClock className="h-5 w-5" />
         </span>
         <div className="flex-1">
-          <h3 className="font-display text-lg font-800 text-ink">Clôture d'exercice / Nouvelle Année</h3>
+          <h3 className="font-display text-lg font-800 text-ink">Clôture d'exercice / Nouvelle année</h3>
           <p className="mt-0.5 text-sm text-slate-500">
-            Prépare la rentrée scolaire en un clic : les compteurs « Vendus » et « Distribués » repassent à zéro, et le stock restant de cette année devient automatiquement l'« Ancien Stock » de la prochaine.
+            Année actuelle : <strong>{currentAcademicYear || 'Non définie'}</strong>. L’historique des paiements et des dettes sera conservé. Les paiements de la nouvelle année repartiront à zéro.
           </p>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Tenues reportées</div>
+          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Tenues restantes</div>
           <div className="font-display text-xl font-800 text-royal-700">{totalUniforms}</div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Livres reportés</div>
+          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Livres restants</div>
           <div className="font-display text-xl font-800 text-royal-700">{totalBooks}</div>
         </div>
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <div className="text-[11px] font-700 uppercase tracking-wider text-slate-400">Fournitures restantes</div>
+          <div className="font-display text-xl font-800 text-royal-700">{totalSupplies}</div>
+        </div>
       </div>
+      <div className="mt-4">
+        <label className="block text-sm font-700 text-slate-700">Nouvelle année scolaire
+          <input value={nextYear} onChange={e => setNextYear(e.target.value)} placeholder="2027-2028" inputMode="numeric" className="mt-2 h-11 w-full max-w-xs rounded-xl border border-slate-300 bg-white px-3 text-sm font-600 text-slate-900 outline-none focus:border-royal-500 focus:ring-2 focus:ring-royal-500/20" />
+        </label>
+      </div>
+      {error && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       {done ? (
         <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700">
-          <Check className="h-4 w-4" /> Nouvelle année scolaire préparée avec succès !
+          <Check className="h-4 w-4" /> Année {currentAcademicYear} préparée. L’historique précédent est conservé.
         </div>
       ) : confirm ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-600 text-slate-600">Confirmer la clôture ?</span>
-          <button onClick={handleConfirm} className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-2 text-sm font-700 text-white shadow-cardLg transition hover:brightness-105 active:scale-95">
-            <Check className="h-4 w-4" /> Oui, préparer la rentrée
-          </button>
-          <button onClick={() => setConfirm(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-600 text-slate-500 transition hover:bg-slate-50">Annuler</button>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-700 text-amber-900">Confirmer le passage de {currentAcademicYear} à {nextYear} ?</p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-800">Cette action conserve les anciens paiements et les dettes, archive les stocks et remet les compteurs de vente à zéro. Elle ne peut pas être annulée depuis ce bouton.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button disabled={busy} onClick={() => void handleConfirm()} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-2 text-sm font-700 text-white disabled:opacity-50">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {busy ? 'Préparation…' : 'Confirmer la nouvelle année'}
+            </button>
+            <button disabled={busy} onClick={() => setConfirm(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-600 text-slate-600 disabled:opacity-50">Annuler</button>
+          </div>
         </div>
       ) : (
-        <button onClick={() => setConfirm(true)} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-5 py-2.5 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95">
-          <Sparkles className="h-4 w-4" /> Préparer la nouvelle rentrée scolaire <ArrowRight className="h-4 w-4" />
+        <button onClick={() => { setError(''); setConfirm(true); }} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-5 py-2.5 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95">
+          <Sparkles className="h-4 w-4" /> Préparer la nouvelle année <ArrowRight className="h-4 w-4" />
         </button>
       )}
     </div>

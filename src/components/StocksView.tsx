@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Shirt, BookOpen, Boxes, Plus, Minus, Zap, AlertTriangle, Package,
   TrendingDown, Layers, BookMarked, CheckCircle2, XCircle,
 } from 'lucide-react';
 import type {
-  UniformStockItem, BookStockItem, UniformCycle, UniformSize, BookClass, BookSubject,
+  UniformStockItem, BookStockItem, SupplyStockItem, UniformCycle, UniformSize, BookClass, BookSubject,
 } from '../types';
 import {
   UNIFORM_CYCLES, UNIFORM_SIZES, BOOK_CLASSES, BOOK_SUBJECTS,
@@ -12,16 +12,18 @@ import {
 } from '../types';
 import { newUniformItem, newBookItem } from '../data';
 
-type SubTab = 'tenues' | 'livres';
+type SubTab = 'tenues' | 'livres' | 'fournitures';
 
 interface Props {
   uniforms: UniformStockItem[];
   books: BookStockItem[];
   onUniformsChange: (u: UniformStockItem[]) => void;
   onBooksChange: (b: BookStockItem[]) => void;
+  supplies: SupplyStockItem[];
+  onSuppliesChange: (items: SupplyStockItem[]) => void;
 }
 
-export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }: Props) {
+export function StocksView({ uniforms, books, onUniformsChange, onBooksChange, supplies, onSuppliesChange }: Props) {
   const [sub, setSub] = useState<SubTab>('tenues');
 
   return (
@@ -32,11 +34,11 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }:
             <Boxes className="h-3 w-3" /> Inventaire
           </div>
           <h1 className="font-display text-2xl font-700 tracking-tight text-ink sm:text-3xl">Gestion des Stocks</h1>
-          <p className="mt-1 text-sm text-slate-500">Suivez les tenues et les livres de votre établissement en temps réel.</p>
+          <p className="mt-1 text-sm text-slate-500">Suivez les tenues, livres et fournitures de votre établissement.</p>
         </div>
       </div>
 
-      <div className="mb-6 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+      <div className="mb-6 flex w-full gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto">
         <button
           onClick={() => setSub('tenues')}
           className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-700 transition ${
@@ -53,12 +55,18 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }:
         >
           <BookOpen className="h-4 w-4" /> Stocks des Livres
         </button>
+        <button onClick={() => setSub('fournitures')}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-700 transition ${sub === 'fournitures' ? 'bg-royal-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <Package className="h-4 w-4" /> Fournitures
+        </button>
       </div>
 
       {sub === 'tenues' ? (
         <TenuesPanel uniforms={uniforms} onChange={onUniformsChange} />
-      ) : (
+      ) : sub === 'livres' ? (
         <LivresPanel books={books} onChange={onBooksChange} />
+      ) : (
+        <SuppliesPanel supplies={supplies} onChange={onSuppliesChange} />
       )}
     </div>
   );
@@ -67,48 +75,23 @@ export function StocksView({ uniforms, books, onUniformsChange, onBooksChange }:
 /* ---------- Quantity input (mobile-friendly) ---------- */
 
 function QtyInput({ value, onChange, max }: { value: number; onChange: (v: number) => void; max?: number }) {
-  const clamp = (v: number) => {
-    const n = Math.max(1, Math.floor(v));
-    return max !== undefined ? Math.min(n, max) : n;
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => { setDraft(String(value)); }, [value]);
+  const clamp = (v: number) => Math.max(1, max !== undefined ? Math.min(Math.floor(v), max) : Math.floor(v));
+  const commit = () => {
+    const parsed = Number.parseInt(draft, 10);
+    const next = clamp(Number.isFinite(parsed) ? parsed : 1);
+    setDraft(String(next));
+    onChange(next);
   };
   return (
-    <div className="inline-flex shrink-0 items-center gap-0.5 rounded-xl border-2 border-slate-200 bg-white p-0.5">
-      <button
-        type="button"
-        onClick={() => onChange(clamp(value - 1))}
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition active:scale-90 hover:bg-slate-200"
-        aria-label="Diminuer la quantité"
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </button>
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        value={value}
-        onChange={(e) => {
-          const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
-          onChange(clamp(isNaN(parsed) ? 1 : parsed));
-        }}
-        onBlur={(e) => {
-          const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10);
-          onChange(clamp(isNaN(parsed) ? 1 : parsed));
-        }}
-        className="w-8 bg-transparent text-center font-800 text-sm text-ink outline-none"
-        aria-label="Quantité"
-      />
-      <button
-        type="button"
-        onClick={() => onChange(clamp(value + 1))}
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600 transition active:scale-90 hover:bg-slate-200"
-        aria-label="Augmenter la quantité"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
+    <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border-2 border-slate-300 bg-white p-1">
+      <button type="button" onClick={() => { const next = clamp(value - 1); setDraft(String(next)); onChange(next); }} className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-700" aria-label="Diminuer la quantité"><Minus className="h-4 w-4" /></button>
+      <input type="number" min="1" inputMode="numeric" value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }} className="w-16 bg-transparent text-center text-base font-800 text-slate-900 outline-none" aria-label="Quantité à ajouter ou distribuer" />
+      <button type="button" onClick={() => { const next = clamp(value + 1); setDraft(String(next)); onChange(next); }} className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-700" aria-label="Augmenter la quantité"><Plus className="h-4 w-4" /></button>
     </div>
   );
 }
-
 /* ---------- Toast (success + error) ---------- */
 
 function Toast({ message, type }: { message: string; type: 'success' | 'error' }) {
@@ -262,11 +245,11 @@ function TenuesPanel({
               <div className="mt-3 grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Ancien stock</div>
-                  <div className="font-display text-xl font-800 text-slate-700">{item.oldStock}</div>
+                  <NumberInput value={item.oldStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
                 </div>
                 <div className="rounded-xl bg-royal-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
-                  <div className="font-display text-xl font-800 text-royal-700">{item.newStock}</div>
+                  <NumberInput value={item.newStock} onChange={(v) => updateItem(item.id, { newStock: v })} />
                 </div>
                 <div className="rounded-xl bg-gold-50 px-3 py-2.5">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-gold-700">Prix unitaire</div>
@@ -434,6 +417,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
   const [activeClass, setActiveClass] = useState<BookClass>('Jardin');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [customSubject, setCustomSubject] = useState('');
 
   const getQty = (id: string) => qtys[id] ?? 1;
   const setQty = (id: string, v: number) => setQtys(prev => ({ ...prev, [id]: v }));
@@ -451,17 +435,31 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
 
   const totals = useMemo(() => {
     const inStock = classItems.reduce((s, i) => s + i.inStock, 0);
+    const oldStock = classItems.reduce((s, i) => s + (i.oldStock ?? i.inStock), 0);
+    const newStock = classItems.reduce((s, i) => s + (i.newStock ?? 0), 0);
     const sold = classItems.reduce((s, i) => s + i.sold, 0);
-    return { inStock, sold, remaining: Math.max(0, inStock - sold) };
+    return { inStock, oldStock, newStock, sold, remaining: Math.max(0, inStock - sold) };
   }, [classItems]);
 
   const updateItem = (id: string, patch: Partial<BookStockItem>) => {
-    onChange(books.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    onChange(books.map((b) => {
+      if (b.id !== id) return b;
+      const next = { ...b, ...patch };
+      if ('oldStock' in patch || 'newStock' in patch) {
+        next.oldStock = Math.max(0, next.oldStock ?? 0);
+        next.newStock = Math.max(0, next.newStock ?? 0);
+        next.inStock = next.oldStock + next.newStock;
+      } else if ('inStock' in patch) {
+        next.oldStock = Math.max(0, next.inStock);
+        next.newStock = 0;
+      }
+      return next;
+    }));
   };
 
   const buyQty = (item: BookStockItem) => {
     const qty = getQty(item.id);
-    updateItem(item.id, { inStock: item.inStock + qty });
+    updateItem(item.id, { newStock: (item.newStock ?? 0) + qty });
     resetQty(item.id);
     showToast(`Réapprovisionnement — ${qty} livre(s) ${item.subject} ajouté(s)`);
   };
@@ -479,8 +477,10 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
   };
 
   const ensureSubject = (subject: BookSubject) => {
-    if (!classItems.some((i) => i.subject === subject)) {
-      onChange([...books, newBookItem(activeClass, subject)]);
+    const clean = subject.trim();
+    if (clean && !classItems.some((i) => i.subject.toLowerCase() === clean.toLowerCase())) {
+      onChange([...books, newBookItem(activeClass, clean)]);
+      setCustomSubject('');
     }
   };
 
@@ -506,8 +506,9 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
       </div>
 
       {/* summary cards */}
-      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
-        <SummaryCard icon={Package} label="Qté Initiale" value={totals.inStock} accent="royal" />
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        <SummaryCard icon={Package} label="Ancien stock" value={totals.oldStock} accent="slate" />
+        <SummaryCard icon={Plus} label="Nouveaux achats" value={totals.newStock} accent="royal" />
         <SummaryCard icon={TrendingDown} label="Distribuée" value={totals.sold} accent="gold" />
         <SummaryCard icon={Boxes} label="Reste" value={totals.remaining} accent="emerald" />
       </div>
@@ -549,10 +550,14 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                 ) : null}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2.5">
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl bg-slate-50 px-2.5 py-2.5 text-center">
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-slate-600">Ancien stock</div>
+                  <NumberInput value={item.oldStock ?? item.inStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
+                </div>
                 <div className="rounded-xl bg-royal-50 px-2.5 py-2.5 text-center">
-                  <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Qté Initiale</div>
-                  <div className="font-display text-xl font-800 text-royal-700">{item.inStock}</div>
+                  <div className="text-[10px] font-700 uppercase tracking-wider text-royal-700">Nouveaux achats</div>
+                  <NumberInput value={item.newStock ?? 0} onChange={(v) => updateItem(item.id, { newStock: v })} />
                 </div>
                 <div className="rounded-xl bg-slate-50 px-2.5 py-2.5 text-center">
                   <div className="text-[10px] font-700 uppercase tracking-wider text-slate-400">Distribuée</div>
@@ -624,7 +629,8 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60 text-left text-[11px] font-700 uppercase tracking-wider text-slate-400">
                 <th className="px-5 py-3">Matière</th>
-                <th className="px-3 py-3 text-right">Qté Initiale</th>
+                <th className="px-3 py-3 text-right">Ancien stock</th>
+                <th className="px-3 py-3 text-right">Nouveaux achats</th>
                 <th className="px-3 py-3 text-right">Distribuée</th>
                 <th className="px-3 py-3 text-right">Prix unitaire</th>
                 <th className="px-3 py-3 text-right">Reste Armoire</th>
@@ -634,7 +640,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <tbody>
               {classItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-400">
+                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-slate-400">
                     Aucun livre enregistré pour cette classe. Ajoutez une matière ci-dessous.
                   </td>
                 </tr>
@@ -659,7 +665,10 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
                       </div>
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <NumberInput value={item.inStock} onChange={(v) => updateItem(item.id, { inStock: v })} />
+                      <NumberInput value={item.oldStock ?? item.inStock} onChange={(v) => updateItem(item.id, { oldStock: v })} />
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <NumberInput value={item.newStock ?? 0} onChange={(v) => updateItem(item.id, { newStock: v })} />
                     </td>
                     <td className="px-3 py-3 text-right font-700 text-slate-600">{item.sold}</td>
                     <td className="px-3 py-3 text-right">
@@ -711,6 +720,7 @@ function LivresPanel({ books, onChange }: { books: BookStockItem[]; onChange: (b
             <Plus className="h-3 w-3" /> {subject}
           </button>
         ))}
+        <form onSubmit={e => { e.preventDefault(); ensureSubject(customSubject); }} className="flex w-full flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row"><input value={customSubject} onChange={e => setCustomSubject(e.target.value)} placeholder="Autre matière ou titre de livre" className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-300 px-3 text-base text-slate-900"/><button type="submit" className="min-h-11 rounded-xl bg-royal-700 px-4 text-sm font-bold text-white">Ajouter</button></form>
       </div>
     </div>
   );
@@ -752,4 +762,28 @@ function NumberInput({ value, onChange }: { value: number; onChange: (v: number)
       className="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-right text-sm font-700 text-ink outline-none transition focus:border-royal-400 focus:ring-4"
     />
   );
+}
+
+
+function SuppliesPanel({ supplies, onChange }: { supplies: SupplyStockItem[]; onChange: (items: SupplyStockItem[]) => void }) {
+ const [toast,setToast]=useState<{msg:string;type:'success'|'error'}|null>(null);
+ const [seeded,setSeeded]=useState(false),[active,setActive]=useState('Toutes'),[name,setName]=useState(''),[category,setCategory]=useState('Cahiers'),[unit,setUnit]=useState('unité'),[quantity,setQuantity]=useState('0'),[price,setPrice]=useState('0'),[minStock,setMinStock]=useState('3'),[query,setQuery]=useState(''),[custom,setCustom]=useState(''),[qtys,setQtys]=useState<Record<string,number>>({});
+ useEffect(()=>{if(!seeded&&supplies.length===0){setSeeded(true);onChange([{id:'default-cahier-100',name:'Cahier de 100 pages',category:'Cahiers',unit:'unité',quantity:0,oldQuantity:0,newQuantity:0,sold:0,minStock:10,price:0},{id:'default-cahier-200',name:'Cahier de 200 pages',category:'Cahiers',unit:'unité',quantity:0,oldQuantity:0,newQuantity:0,sold:0,minStock:10,price:0},{id:'default-bic-bleu',name:'Bic bleu',category:'Écriture',unit:'pièce',quantity:0,oldQuantity:0,newQuantity:0,sold:0,minStock:20,price:0},{id:'default-crayon',name:'Crayon à papier',category:'Écriture',unit:'pièce',quantity:0,oldQuantity:0,newQuantity:0,sold:0,minStock:10,price:0},{id:'default-regle',name:'Règle',category:'Matériel',unit:'pièce',quantity:0,oldQuantity:0,newQuantity:0,sold:0,minStock:5,price:0}]);}},[seeded,supplies.length,onChange]);
+ const categories=Array.from(new Set(['Cahiers','Écriture','Matériel',...supplies.map(x=>x.category).filter(Boolean)]));
+ const filtered=supplies.filter(x=>(active==='Toutes'||x.category===active)&&(x.name+' '+x.category).toLowerCase().includes(query.toLowerCase()));
+ const totals={old:supplies.reduce((a,x)=>a+(x.oldQuantity??Math.max(0,x.quantity-(x.newQuantity??0))),0),bought:supplies.reduce((a,x)=>a+(x.newQuantity??0),0),sold:supplies.reduce((a,x)=>a+(x.sold??0),0),available:supplies.reduce((a,x)=>a+x.quantity,0)};
+ const update=(id:string,p:Partial<SupplyStockItem>)=>onChange(supplies.map(x=>x.id===id?{...x,...p}:x));
+ const q=(id:string)=>qtys[id]??1, setQ=(id:string,v:number)=>setQtys(p=>({...p,[id]:Math.max(1,v)}));
+ const add=()=>{if(!name.trim())return;const n=Math.max(0,Number(quantity)||0);onChange([...supplies,{id:'supply-'+Date.now(),name:name.trim(),category:category.trim()||'Autres',unit,quantity:n,oldQuantity:0,newQuantity:n,sold:0,minStock:Math.max(0,Number(minStock)||0),price:Math.max(0,Number(price)||0)}]);setActive(category.trim()||'Autres');setName('');setQuantity('0');setPrice('0');};
+ const buy=(x:SupplyStockItem)=>{const n=q(x.id);update(x.id,{newQuantity:(x.newQuantity??0)+n,quantity:x.quantity+n});setQ(x.id,1);setToast({msg:`Achat enregistré : ${n} ${x.unit}(s) de ${x.name}.`,type:'success'});};
+ const sell=(x:SupplyStockItem)=>{const n=q(x.id);if(n>x.quantity){setToast({msg:`Stock insuffisant : ${x.name} — ${x.quantity} disponible(s), ${n} demandé(s).`,type:'error'});return;}update(x.id,{sold:(x.sold??0)+n,quantity:x.quantity-n});setQ(x.id,1);setToast({msg:`Vente enregistrée : ${n} ${x.unit}(s) de ${x.name}.`,type:'success'});};
+ return <div className="space-y-5">
+ {toast && <Toast message={toast.msg} type={toast.type} />}
+ <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900"><strong>Comment modifier le stock ?</strong> Modifie « Ancien stock » ou « Prix » directement. Pour augmenter la quantité, choisis une quantité puis « + Achat ». Pour enregistrer une sortie, choisis une quantité puis « Vente » : le stock disponible diminue et le total vendu augmente.</div>
+ <div className="grid grid-cols-2 gap-3 xl:grid-cols-4"><SummaryCard icon={Package} label="Ancien stock" value={totals.old} accent="slate"/><SummaryCard icon={Plus} label="Nouveaux achats" value={totals.bought} accent="royal"/><SummaryCard icon={TrendingDown} label="Total vendu" value={totals.sold} accent="gold"/><SummaryCard icon={Boxes} label="Total disponible" value={totals.available} accent="emerald"/></div>
+ <div className="grid grid-cols-1 gap-3 sm:grid-cols-3"><div className="rounded-2xl border border-royal-100 bg-royal-50 p-4"><p className="text-sm font-700 text-royal-700">Articles suivis</p><p className="mt-1 text-2xl font-800">{supplies.length}</p></div><div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-700 text-amber-800">Stocks faibles</p><p className="mt-1 text-2xl font-800">{supplies.filter(x=>x.quantity<=x.minStock).length}</p></div><div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4"><p className="text-sm font-700 text-emerald-800">Valeur disponible</p><p className="mt-1 text-xl font-800">{formatFCFA(supplies.reduce((a,x)=>a+x.quantity*x.price,0))}</p></div></div>
+ <div className="flex flex-wrap gap-2">{['Toutes',...categories].map(c=><button key={c} onClick={()=>setActive(c)} className={`rounded-xl px-4 py-2.5 text-sm font-800 ${active===c?'bg-royal-800 text-white':'border border-slate-200 bg-white text-slate-700'}`}>{c}</button>)}<input value={custom} onChange={e=>setCustom(e.target.value)} placeholder="Nouveau sous-module" className="w-44 rounded-xl border px-3 py-2 text-sm"/><button onClick={()=>{if(custom.trim()){setCategory(custom.trim());setActive(custom.trim());setCustom('');}}} className="rounded-xl border border-royal-200 px-3 py-2 text-sm font-800 text-royal-700">+ Créer</button></div>
+ <form onSubmit={e=>{e.preventDefault();add();}} className="grid grid-cols-1 gap-3 rounded-2xl border border-royal-100 bg-gradient-to-br from-white to-royal-50 p-4 shadow-card sm:grid-cols-2 lg:grid-cols-3"><label className="text-sm font-700">Nom de la fourniture<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Cahier de 200 pages" className="mt-1 w-full rounded-xl border px-3 py-3 text-base"/></label><label className="text-sm font-700">Sous-module<input value={category} onChange={e=>setCategory(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-3 text-base"/></label><label className="text-sm font-700">Unité<input value={unit} onChange={e=>setUnit(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-3 text-base"/></label><label className="text-sm font-700">Stock initial<input type="number" min="0" value={quantity} onChange={e=>setQuantity(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-3 text-base"/></label><label className="text-sm font-700">Prix unitaire (FCFA)<input type="number" min="0" value={price} onChange={e=>setPrice(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-3 text-base"/></label><label className="text-sm font-700">Seuil d’alerte<input type="number" min="0" value={minStock} onChange={e=>setMinStock(e.target.value)} className="mt-1 w-full rounded-xl border px-3 py-3 text-base"/></label><button type="submit" className="rounded-xl bg-royal-800 px-4 py-3 text-base font-800 text-white lg:col-span-3">+ Ajouter la fourniture</button></form>
+ <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card"><div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="font-display text-xl font-800">{active==='Toutes'?'Toutes les fournitures':active}</h2><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher…" className="rounded-xl border px-3 py-2.5 text-base sm:max-w-xs"/></div>
+ <div className="space-y-3">{filtered.map(x=>{const old=x.oldQuantity??Math.max(0,x.quantity-(x.newQuantity??0)),bought=x.newQuantity??0,sold=x.sold??0;return <article key={x.id} className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white to-slate-50 p-4 shadow-sm"><div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-display text-xl font-800 text-ink">{x.name}</h3><span className="rounded-full bg-royal-50 px-3 py-1 text-sm font-800 text-royal-700">{x.category}</span></div><p className="mt-1 text-sm text-slate-600">{x.unit} · {formatFCFA(x.price)} / unité</p><div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-xl bg-slate-100 p-3"><p className="text-xs font-800 uppercase text-slate-600">Ancien stock</p><p className="text-2xl font-800">{old}</p></div><div className="rounded-xl bg-royal-50 p-3"><p className="text-xs font-800 uppercase text-royal-700">Nouveaux achats</p><p className="text-2xl font-800">{bought}</p></div><div className="rounded-xl bg-gold-50 p-3"><p className="text-xs font-800 uppercase text-gold-700">Vendus</p><p className="text-2xl font-800">{sold}</p></div><div className="rounded-xl bg-emerald-50 p-3"><p className="text-xs font-800 uppercase text-emerald-700">Disponible</p><p className="text-2xl font-800">{x.quantity}</p></div></div><div className="mt-3 flex flex-wrap items-center gap-2"><label className="text-sm font-700">Ancien stock <input type="number" min="0" value={old} onChange={e=>update(x.id,{oldQuantity:Math.max(0,Number(e.target.value)||0),quantity:Math.max(0,Number(e.target.value)||0)+bought-sold})} className="ml-1 w-24 rounded-lg border px-2 py-2 text-base"/></label><label className="text-sm font-700">Prix <input type="number" min="0" value={x.price} onChange={e=>update(x.id,{price:Math.max(0,Number(e.target.value)||0)})} className="ml-1 w-28 rounded-lg border px-2 py-2 text-base"/></label></div></div><div className="xl:w-64"><p className="mb-2 text-sm font-800">Quantité à enregistrer</p><QtyInput value={q(x.id)} onChange={v=>setQ(x.id,v)}/><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={()=>buy(x)} className="rounded-xl border-2 border-royal-200 bg-royal-50 px-3 py-3 text-sm font-800 text-royal-700">+ Achat</button><button onClick={()=>sell(x)} disabled={x.quantity<=0} className="rounded-xl bg-gold-500 px-3 py-3 text-sm font-800 text-white disabled:bg-slate-300">Vente</button></div><button onClick={()=>onChange(supplies.filter(i=>i.id!==x.id))} className="mt-2 w-full rounded-xl border border-red-200 px-3 py-2.5 text-sm font-700 text-red-700">Supprimer</button></div></div></article>})}{filtered.length===0&&<p className="py-8 text-center text-slate-500">Aucune fourniture dans ce sous-module.</p>}</div></div></div>;
 }

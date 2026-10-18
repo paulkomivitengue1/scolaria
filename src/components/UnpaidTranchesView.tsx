@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  AlertCircle, ChevronDown, Users, Wallet, TrendingDown, Filter,
+  AlertCircle, ChevronDown, Users, Wallet, TrendingDown, Filter, MessageCircle,
 } from 'lucide-react';
 import type {
   Student, SchoolFeeConfig,
@@ -53,6 +53,13 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
   const totalPaid = rows.reduce((s, r) => s + r.paid, 0);
 
   const trancheLabel = tranches.find(t => t.index === selectedTranche)?.label ?? `Tranche ${selectedTranche}`;
+  const openReminder = (student: Student, remaining: number) => {
+    const phone = (student.parentPhone || '').replace(/\D/g, '');
+    if (!phone) { window.alert('Aucun numéro de téléphone du parent n’est enregistré pour cet élève.'); return; }
+    const normalizedPhone = phone.length === 8 ? `223${phone}` : phone;
+    const message = `Bonjour, nous vous informons qu’un solde de ${formatFCFA(remaining)} reste à régler pour ${student.firstName} ${student.lastName}, au titre de ${trancheLabel}. Merci de contacter l’établissement pour toute précision. Cordialement.`;
+    window.open(`https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
   const availableClasses = useMemo(() => {
     const set = new Set(students.map(s => s.className));
     return CLASS_LIST.filter(c => set.has(c));
@@ -178,6 +185,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
                       <div className="font-display text-sm font-800 text-red-600">{formatFCFAShort(remaining)}</div>
                     </div>
                   </div>
+                  <button type="button" onClick={() => openReminder(s, remaining)} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-700 text-white hover:bg-emerald-700"><MessageCircle className="h-4 w-4" /> Rappeler sur WhatsApp</button>
                 </div>
               );
             })}
@@ -202,6 +210,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
                     <th className="px-3 py-3 text-right">Payé</th>
                     <th className="px-3 py-3 text-right">Reste à payer</th>
                     <th className="px-5 py-3 text-right">Progression</th>
+                    <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,6 +240,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
                             <span className="w-10 text-right text-xs font-700 text-slate-500">{pct}%</span>
                           </div>
                         </td>
+                        <td className="px-4 py-3 text-right"><button type="button" onClick={() => openReminder(s, remaining)} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-700 text-white hover:bg-emerald-700"><MessageCircle className="h-3.5 w-3.5" /> WhatsApp</button></td>
                       </tr>
                     );
                   })}
@@ -239,7 +249,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
                   <tr className="border-t-2 border-slate-200 bg-slate-50">
                     <td colSpan={4} className="px-5 py-3 text-right font-700 uppercase tracking-wider text-slate-500">Total impayé</td>
                     <td className="px-3 py-3 text-right font-display text-base font-800 text-red-600">{formatFCFA(totalUnpaid)}</td>
-                    <td className="px-5 py-3" />
+                    <td className="px-5 py-3" colSpan={2} />
                   </tr>
                 </tfoot>
               </table>

@@ -78,7 +78,7 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
       icon: AlertCircle,
       iconBg: 'bg-gold-50',
       iconColor: 'text-gold-600',
-      target: 'cahier',
+      target: 'impayes',
       actionLabel: 'Suivre les impayés',
     },
     {
@@ -88,7 +88,7 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
       icon: PieChart,
       iconBg: 'bg-teal-50',
       iconColor: 'text-teal-600',
-      target: 'cahier',
+      target: 'impayes',
       actionLabel: 'Voir les statistiques',
     },
     {

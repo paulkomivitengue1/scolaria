@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
+  LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -29,7 +29,7 @@ const SECTIONS: NavSection[] = [
     title: 'Pilotage',
     items: [
       { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-      { view: 'cahier', label: 'Statistiques', icon: BarChart3 },
+      { view: 'statistiques', label: 'Statistiques', icon: BarChart3 },
     ],
   },
   {
@@ -37,14 +37,15 @@ const SECTIONS: NavSection[] = [
     items: [
       { view: 'classes', label: 'Classes', icon: GraduationCap },
       { view: 'cartes', label: 'Cartes scolaires', icon: CreditCard },
-      { view: 'cahier', label: 'Élèves', icon: Users },
-      { view: 'cahier', label: 'Inscriptions', icon: UserPlus },
+      { view: 'bulletins', label: 'Bulletins', icon: ClipboardList },
+      { view: 'inscriptions', label: 'Inscriptions / élèves', icon: UserPlus },
     ],
   },
   {
     title: 'Finance',
     items: [
-      { view: 'cahier', label: 'Paiements', icon: Wallet },
+      { view: 'cahier', label: 'Cahier de caisse', icon: Wallet },
+      { view: 'paiements', label: 'Paiements', icon: CreditCard },
       { view: 'impayes', label: 'Impayés par tranche', icon: AlertCircle },
       { view: 'enseignants', label: 'Enseignants & Salaires', icon: Users },
       { view: 'depenses', label: 'Dépenses', icon: Receipt },
@@ -123,8 +124,15 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
           ))}
         </nav>
 
-        {/* Bottom: settings + logout */}
+        {/* Bottom: administration + settings + logout */}
         <div className="shrink-0 border-t border-slate-200 px-3 py-3">
+          <button
+            onClick={() => { window.location.hash = '/scolaria-admin'; }}
+            className="mb-2 flex w-full items-center gap-3 rounded-xl border border-royal-100 bg-royal-50 px-3 py-2.5 text-sm font-700 text-royal-700 transition hover:bg-royal-100"
+          >
+            <ShieldCheck className="h-4.5 w-4.5 shrink-0" />
+            <span>Panneau administrateur</span>
+          </button>
           <button
             onClick={() => onNavigate('parametres')}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${

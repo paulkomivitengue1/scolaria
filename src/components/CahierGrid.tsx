@@ -93,6 +93,7 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
                             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-royal-100 to-royal-200 text-xs font-700 text-royal-700">{ini}</div>
                             <div className="leading-tight">
                               <div className="font-600 text-ink">{s.firstName} {s.lastName}</div>
+                              {s.previousYearDebt && s.previousYearDebt > 0 && <div className="mt-1 inline-flex max-w-full rounded-md bg-amber-50 px-1.5 py-1 text-[10px] font-700 text-amber-800">Impayé {s.previousYearLabel} : {formatFCFA(s.previousYearDebt)}</div>}
                               <div className="text-[11px] text-slate-400">{s.parentName}</div>
                               {s.matricule && <div className="text-[10px] font-600 text-royal-400">{s.matricule}</div>}
                             </div>
@@ -130,6 +131,7 @@ export function CahierGrid({ students, feeTypes, tranches, activeFeeType, onFeeT
                       <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-royal-100 to-royal-200 text-sm font-700 text-royal-700">{ini}</div>
                       <div className="leading-tight">
                         <div className="font-600 text-ink">{s.firstName} {s.lastName}</div>
+                        {s.previousYearDebt && s.previousYearDebt > 0 && <div className="mt-1 inline-flex rounded-md bg-amber-50 px-1.5 py-1 text-[10px] font-700 text-amber-800">Impayé {s.previousYearLabel} : {formatFCFA(s.previousYearDebt)}</div>}
                         <div className="text-[11px] text-slate-400">{s.className} · {s.parentName}</div>
                         {s.matricule && <div className="text-[10px] font-600 text-royal-400">{s.matricule}</div>}
                       </div>
