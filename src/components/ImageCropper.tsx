@@ -1,14 +1,32 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, RotateCcw, X } from 'lucide-react';
+import { Check, RotateCcw, RotateCw, FlipHorizontal, FlipVertical, X } from 'lucide-react';
 
 type Props = { image: string; aspectRatio: number; title: string; onCancel: () => void; onApply: (image: string) => void; allowFreeform?: boolean };
 
 export function ImageCropper({ image, aspectRatio, title, onCancel, onApply, allowFreeform = false }: Props) {
+  const [workingImage, setWorkingImage] = useState(image);
   const [zoom, setZoom] = useState(1);
   const [horizontal, setHorizontal] = useState(50);
   const [vertical, setVertical] = useState(50);
+  const [rotationBusy, setRotationBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  useEffect(() => { setWorkingImage(image); setZoom(1); setHorizontal(50); setVertical(50); }, [image]);
+  const transform = async (degrees: number, flipX: boolean, flipY: boolean) => {
+    setRotationBusy(true);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => { const node = new Image(); node.onload = () => resolve(node); node.onerror = () => reject(new Error('Image illisible')); node.src = workingImage; });
+      const swap = Math.abs(degrees % 180) === 90;
+      const canvas = document.createElement('canvas');
+      canvas.width = swap ? img.naturalHeight : img.naturalWidth;
+      canvas.height = swap ? img.naturalWidth : img.naturalHeight;
+      const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Canvas indisponible');
+      ctx.translate(canvas.width / 2, canvas.height / 2); ctx.rotate(degrees * Math.PI / 180); ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+      ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+      setWorkingImage(canvas.toDataURL('image/png')); setZoom(1); setHorizontal(50); setVertical(50);
+    } catch { window.alert('Impossible de transformer cette image. Réessaie avec une autre photo.'); }
+    finally { setRotationBusy(false); }
+  };
   const [customAspectRatio, setCustomAspectRatio] = useState(aspectRatio);
   const effectiveAspectRatio = allowFreeform ? customAspectRatio : aspectRatio;
   const frameWidth = 320;
@@ -17,7 +35,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply, all
     setBusy(true);
     try {
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const node = new Image(); node.onload = () => resolve(node); node.onerror = () => reject(new Error('Image illisible')); node.src = image;
+        const node = new Image(); node.onload = () => resolve(node); node.onerror = () => reject(new Error('Image illisible')); node.src = workingImage;
       });
       const scale = Math.max(frameWidth / img.naturalWidth, frameHeight / img.naturalHeight) * zoom;
       const drawnWidth = img.naturalWidth * scale;
@@ -45,17 +63,23 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply, all
   };
   const [naturalSize, setNaturalSize] = useState({ width: 320, height: 320 / aspectRatio });
   useEffect(() => {
-    const img = new Image(); img.onload = () => setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight }); img.src = image;
-  }, [image]);
+    const img = new Image(); img.onload = () => setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight }); img.src = workingImage;
+  }, [workingImage]);
   useEffect(() => { setCustomAspectRatio(aspectRatio); }, [aspectRatio, image]);
   const scale = Math.max(frameWidth / naturalSize.width, frameHeight / naturalSize.height) * zoom;
   const width = naturalSize.width * scale;
   const height = naturalSize.height * scale;
   return createPortal(<div className="fixed inset-0 overflow-y-auto overscroll-contain bg-slate-950/95 p-2 sm:flex sm:items-center sm:justify-center sm:p-6" style={{ zIndex: 2147483647, isolation: "isolate", WebkitOverflowScrolling: "touch" }} role="dialog" aria-modal="true" aria-label={title}>
     <div className="mx-auto my-2 max-h-[calc(100dvh-1rem)] w-full max-w-lg touch-pan-y overscroll-contain overflow-x-hidden overflow-y-auto rounded-2xl bg-white p-4 pb-8 shadow-2xl sm:my-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6" style={{ WebkitOverflowScrolling: "touch" }}>
-      <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-800 text-slate-900">Recadrer {title.toLowerCase()}</h2><p className="text-sm text-slate-500">Ajustez le zoom et le cadrage avant d’enregistrer.</p></div><button type="button" onClick={onCancel} aria-label="Fermer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"><X className="h-5 w-5" /></button></div>
+      <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-lg font-800 text-slate-900">Modifier {title.toLowerCase()}</h2><p className="text-sm text-slate-500">Recadrez, tournez, retournez et ajustez le zoom avant d’enregistrer.</p></div><button type="button" onClick={onCancel} aria-label="Fermer" className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"><X className="h-5 w-5" /></button></div>
       <div className="mx-auto overflow-hidden rounded-xl bg-slate-100" style={{ width: 'min(100%, 320px)', aspectRatio: String(effectiveAspectRatio), position: 'relative' }}>
-        <img src={image} alt="Aperçu à recadrer" draggable={false} style={{ position: 'absolute', width, height, maxWidth: 'none', objectFit: 'fill', left: (frameWidth - width) * horizontal / 100, top: (frameHeight - height) * vertical / 100 }} />
+        <img src={workingImage} alt="Aperçu à recadrer" draggable={false} style={{ position: 'absolute', width, height, maxWidth: 'none', objectFit: 'fill', left: (frameWidth - width) * horizontal / 100, top: (frameHeight - height) * vertical / 100 }} />
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <button type="button" disabled={rotationBusy} onClick={() => void transform(-90, false, false)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 text-xs font-700 disabled:opacity-50"><RotateCcw className="h-4 w-4"/> Tourner gauche</button>
+        <button type="button" disabled={rotationBusy} onClick={() => void transform(90, false, false)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 text-xs font-700 disabled:opacity-50"><RotateCw className="h-4 w-4"/> Tourner droite</button>
+        <button type="button" disabled={rotationBusy} onClick={() => void transform(0, true, false)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 text-xs font-700 disabled:opacity-50"><FlipHorizontal className="h-4 w-4"/> Retourner H</button>
+        <button type="button" disabled={rotationBusy} onClick={() => void transform(0, false, true)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 text-xs font-700 disabled:opacity-50"><FlipVertical className="h-4 w-4"/> Retourner V</button>
       </div>
       <div className="mt-5 space-y-4">
         {allowFreeform && <label className="block text-sm font-600 text-slate-700">Format du cadrage <span className="float-right text-slate-500">{effectiveAspectRatio.toFixed(2)}:1</span><input className="mt-2 w-full accent-indigo-600" type="range" min="0.3" max="2.5" step="0.05" value={customAspectRatio} onChange={e => setCustomAspectRatio(Number(e.target.value))} /><span className="mt-1 block text-xs font-normal text-slate-500">Déplace le curseur pour adapter le cadre à la taille du reçu.</span></label>}
@@ -63,7 +87,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply, all
         <label className="block text-sm font-600 text-slate-700">Déplacement horizontal<input className="mt-2 w-full accent-indigo-600" type="range" min="0" max="100" value={horizontal} onChange={e => setHorizontal(Number(e.target.value))} /></label>
         <label className="block text-sm font-600 text-slate-700">Déplacement vertical<input className="mt-2 w-full accent-indigo-600" type="range" min="0" max="100" value={vertical} onChange={e => setVertical(Number(e.target.value))} /></label>
       </div>
-      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between"><button type="button" onClick={() => { setZoom(1); setHorizontal(50); setVertical(50); setCustomAspectRatio(aspectRatio); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-700"><RotateCcw className="h-4 w-4" /> Réinitialiser</button><div className="flex gap-2"><button type="button" onClick={onCancel} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-700">Annuler</button><button type="button" disabled={busy} onClick={() => void apply()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-700 text-white disabled:opacity-50"><Check className="h-4 w-4" /> {busy ? 'Enregistrement…' : 'Valider le cadrage'}</button></div></div>
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between"><button type="button" onClick={() => { setZoom(1); setHorizontal(50); setVertical(50); setCustomAspectRatio(aspectRatio); setWorkingImage(image); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-700"><RotateCcw className="h-4 w-4" /> Réinitialiser</button><div className="flex gap-2"><button type="button" onClick={onCancel} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-700">Annuler</button><button type="button" disabled={busy} onClick={() => void apply()} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-700 text-white disabled:opacity-50"><Check className="h-4 w-4" /> {busy ? 'Enregistrement…' : 'Valider le cadrage'}</button></div></div>
     </div>
   </div>, document.body);
 }

@@ -12,7 +12,9 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   const [className, setClassName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [localSchoolLogo, setLocalSchoolLogo] = useState(schoolLogo);
+  const [schoolStamp, setSchoolStamp] = useState('');
   useEffect(() => { setLocalSchoolLogo(schoolLogo); }, [schoolLogo]);
+  useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
   const [photos, setPhotos] = useState<Record<string, string>>({});
   useEffect(() => {
     let alive = true;
@@ -170,7 +172,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} allowFreeform={cropDraft.target !== 'logo'} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} allowFreeform={cropDraft.target !== 'logo'} title={cropDraft.target === 'logo' ? 'le logo' : cropDraft.target === 'stamp' ? 'le cachet' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else if (target === 'stamp') { try { localStorage.setItem('gestilys-school-stamp-' + schoolId, image); setSchoolStamp(image); } catch { window.alert('Image du cachet trop volumineuse. Choisissez une image plus légère.'); } } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -230,6 +232,20 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                   <input ref={logoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const input = e.currentTarget; const f = input.files?.[0]; if (f) void readImage(f, data => setCropDraft({ image: data, target: 'logo' })); input.value = ''; }} />
                 </div>
               </div>
+              <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-3">
+                <label className="block text-xs font-700 text-slate-700">Cachet de l’école (photo ou image)
+                  <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={e => {
+                    const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
+                    if (!file || !file.type.startsWith('image/')) return;
+                    const reader = new FileReader();
+                    reader.onload = () => { if (typeof reader.result === 'string') setCropDraft({ image: reader.result, target: 'stamp' }); };
+                    reader.onerror = () => window.alert('Impossible de lire cette image. Choisissez une autre photo.');
+                    reader.readAsDataURL(file);
+                  }}/>
+                </label>
+                {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-14 w-full object-contain"/>}
+                <p className="mt-1 text-[10px] text-slate-500">Sur cet appareil, réutilisé sur les reçus et bulletins de cette école.</p>
+              </div>
               <div className="rounded-xl border border-slate-200 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <label className="text-xs font-700 text-slate-600">Informations sur la carte</label>
@@ -270,6 +286,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
               <div key={s.id} className="student-card-wrapper">
                 <article className="student-id-card relative flex h-[205px] w-full max-w-[325px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card" style={{ borderTop: `5px solid ${accent}` }}>
                   <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16 opacity-10" style={{ background: accent }} />
+                  {schoolStamp && <img src={schoolStamp} alt="Cachet de l’école" className="pointer-events-none absolute bottom-1 right-1 z-20 h-7 w-10 object-contain opacity-90 print:h-[9mm] print:w-[13mm]" />}
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
                     <div className="student-card-header flex items-center gap-2 border-b border-slate-100 pb-2">
                       {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}

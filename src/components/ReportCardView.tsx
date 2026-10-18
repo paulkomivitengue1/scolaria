@@ -4,6 +4,7 @@ import {
   Loader2, History, Printer, ArrowLeft,
 } from 'lucide-react';
 import type { Student, GradePeriod, ReportCard, GradeRow } from '../types';
+import { ImageCropper } from './ImageCropper';
 import {
   gradeAverage, gradeAppreciation, gradeColor, DEFAULT_SUBJECTS,
 } from '../types';
@@ -42,6 +43,9 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [showStudentPhoto, setShowStudentPhoto] = useState(false);
   const [showParentName, setShowParentName] = useState(false);
   const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
+  const [schoolStamp, setSchoolStamp] = useState('');
+  const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
+  useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
 
   useEffect(() => {
     try {
@@ -397,6 +401,11 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     const formatBorder = bulletinFormat === 'officiel' ? '4px solid ' + formatColor : bulletinFormat === 'minimal' ? '1px solid #cbd5e1' : '2px solid ' + formatColor;
     return (
       <div className="space-y-4">
+        {stampCropDraft && <ImageCropper image={stampCropDraft} aspectRatio={1} allowFreeform title="le cachet" onCancel={() => setStampCropDraft(null)} onApply={image => {
+          try { localStorage.setItem('gestilys-school-stamp-' + schoolId, image); setSchoolStamp(image); }
+          catch { window.alert('Image du cachet trop volumineuse. Choisissez une image plus légère.'); }
+          setStampCropDraft(null);
+        }} />}
         <div className="print:hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-white p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm font-700 text-slate-700">Format du bulletin
@@ -407,6 +416,19 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             {bulletinFormat==='personnalise'&&<><label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label><div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={showStudentPhoto} onChange={e=>{setShowStudentPhoto(e.target.checked);setFormatSaved(false);}}/> Photo de l’élève</label><label className="flex items-center gap-2"><input type="checkbox" checked={showParentName} onChange={e=>{setShowParentName(e.target.checked);setFormatSaved(false);}}/> Nom du parent</label></div></>}
             <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo:true,showStudentPhoto,showParentName}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
           </div>
+          <label className="mt-3 block rounded-xl border border-dashed border-indigo-200 bg-white p-3 text-sm font-700 text-slate-700">
+            Cachet de l’école (photo ou image)
+            <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={e => {
+              const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
+              if (!file || !file.type.startsWith('image/')) return;
+              const reader = new FileReader();
+              reader.onload = () => { if (typeof reader.result === 'string') setStampCropDraft(reader.result); };
+              reader.onerror = () => window.alert('Impossible de lire cette image. Choisissez une autre photo.');
+              reader.readAsDataURL(file);
+            }}/>
+            {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-16 w-full object-contain"/>}
+            <span className="mt-1 block text-xs font-normal text-slate-500">Sur cet appareil, le même cachet sera réutilisé sur les reçus et les cartes scolaires.</span>
+          </label>
           <p className="mt-2 text-xs text-slate-500">Les modèles modifient aussi la disposition, les espacements et l’en-tête. Le logo provient automatiquement des paramètres de l’école. La personnalisation permet de choisir les éléments affichés.</p>
         </div>
         <div className="flex items-center gap-3 print:hidden">
@@ -490,12 +512,16 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             </div>
           )}
 
-          {/* Signature */}
-          <div className="mt-8 flex justify-between text-xs text-slate-400">
-            <div className="text-center">
+          {/* Signature et cachet de l’établissement */}
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-4 text-xs text-slate-500">
+            <div className="min-w-[120px] text-center">
               <div className="border-t border-slate-300 pt-1">Le directeur / La directrice</div>
             </div>
-            <div className="text-center">
+            <div className="flex min-w-[110px] flex-col items-center gap-1 text-center">
+              {schoolStamp ? <img src={schoolStamp} alt="Cachet de l’établissement" className="h-16 w-20 object-contain" /> : <div className="h-12 w-20 rounded border border-dashed border-slate-300 print:hidden" />}
+              <span>Cachet de l’école</span>
+            </div>
+            <div className="min-w-[100px] text-center">
               <div className="border-t border-slate-300 pt-1">Le secrétaire</div>
             </div>
           </div>

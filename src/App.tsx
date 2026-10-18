@@ -723,6 +723,7 @@ export default function App() {
         open={receiptOpen}
         onClose={() => setReceiptOpen(false)}
         schoolName={profile?.schoolName || ''}
+        schoolId={profile?.schoolId || ''}
         initialFeeType={receiptFeeType}
         feeTypes={feeConfig.feeTypes}
         tranches={feeConfig.tranches}
@@ -732,6 +733,7 @@ export default function App() {
         open={trancheReceiptOpen}
         onClose={() => setTrancheReceiptOpen(false)}
         schoolName={profile?.schoolName || ''}
+        schoolId={profile?.schoolId || ''}
         initialFeeType={trancheReceiptFeeType}
         feeTypes={feeConfig.feeTypes}
         tranches={feeConfig.tranches}
