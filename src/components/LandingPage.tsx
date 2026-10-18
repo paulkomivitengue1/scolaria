@@ -358,9 +358,9 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:18,alignItems:'stretch'}}>
               {[
-                {name:'Petite école',desc:'Pour démarrer et gérer les opérations essentielles.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#eff6ff',accent:'#1d4ed8',popular:false},
-                {name:'École moyenne',desc:'Pour un établissement avec un suivi quotidien plus complet.',monthly:20000,students:'De 151 à 500 élèves',tone:'#eef2ff',accent:'#4338ca',popular:true},
-                {name:'Grande école',desc:'Pour les établissements avec un effectif important.',monthly:30000,students:'Plus de 500 élèves',tone:'#fff7df',accent:'#a16207',popular:false},
+                {name:'Essentiel',desc:'Les outils indispensables pour démarrer la gestion numérique de votre école.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#eff6ff',accent:'#1d4ed8',popular:false,features:['Élèves et classes','Présences et frais scolaires','Reçus de paiement','Assistance au démarrage']},
+                {name:'Premium',desc:'Un suivi administratif et financier plus complet pour votre établissement.',monthly:20000,students:'Jusqu’à 500 élèves',tone:'#eef2ff',accent:'#4338ca',popular:true,features:['Tout le forfait Essentiel','Stocks et fournitures','Bulletins et cartes scolaires','Rapports financiers avancés','Assistance prioritaire']},
+                {name:'Élite',desc:'Le contrôle approfondi pour les établissements qui ont besoin de plus.',monthly:30000,students:'Effectif illimité',tone:'#fff7df',accent:'#a16207',popular:false,features:['Tout le forfait Premium','Personnalisation avancée','Gestion multi-utilisateur avancée','Exports et rapports détaillés','Accompagnement prioritaire']},
               ].map(plan=><article key={plan.name} style={{position:'relative',display:'flex',flexDirection:'column',border:plan.popular?'2px solid #1d4ed8':'1px solid #dbe3ef',borderRadius:22,background:'white',padding:24,boxShadow:plan.popular?'0 16px 38px rgba(29,78,216,.12)':'0 8px 22px rgba(15,23,42,.04)'}}>
                 {plan.popular&&<span style={{position:'absolute',right:16,top:16,borderRadius:999,background:'#dbeafe',color:'#1d4ed8',fontSize:10,fontWeight:900,padding:'6px 9px'}}>RECOMMANDÉ</span>}
                 <span style={{alignSelf:'flex-start',borderRadius:10,background:plan.tone,color:plan.accent,padding:'7px 10px',fontSize:11,fontWeight:900}}>{plan.students}</span>
@@ -368,7 +368,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
                 <p style={{fontSize:13,lineHeight:1.7,color:'#64748b',minHeight:44,marginTop:7}}>{plan.desc}</p>
                 <div style={{marginTop:20,color:'#172554'}}><strong style={{fontSize:32,letterSpacing:'-.04em'}}>{(billingPeriod==='mensuel'?plan.monthly:plan.monthly*10).toLocaleString('fr-FR')}</strong><span style={{fontSize:12,color:'#64748b'}}> FCFA / {billingPeriod==='mensuel'?'mois':'an'}</span></div>
                 {billingPeriod==='annuel'&&<p style={{marginTop:4,color:'#15803d',fontSize:12,fontWeight:800}}>Économie : {(plan.monthly*2).toLocaleString('fr-FR')} FCFA / an</p>}
-                <ul style={{display:'grid',gap:10,margin:'22px 0 24px',fontSize:13,color:'#334155',flex:1}}><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Gestion des élèves et des classes</li><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Suivi des paiements et reçus</li><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Accès sur téléphone et ordinateur</li><li style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/> Assistance au démarrage</li></ul>
+                <ul style={{display:'grid',gap:10,margin:'22px 0 24px',fontSize:13,color:'#334155',flex:1}}>{plan.features.map(feature=><li key={feature} style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/><span>{feature}</span></li>)}</ul>
                 <button className="gl-btn gl-btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={onEnter}>Demander une démonstration <ArrowRight size={16}/></button>
               </article>)}
             </div>
