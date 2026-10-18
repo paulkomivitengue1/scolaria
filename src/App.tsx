@@ -477,8 +477,56 @@ export default function App() {
     );
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return <LandingOrAuth onEnterAuth={() => {}} />;
+  }
+
+  // Never send an authenticated user to the public landing page just because
+  // their school profile has not loaded or could not be fetched. Fail closed.
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-900">
+        <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-amber-100 text-amber-800">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <h1 className="mt-4 text-2xl font-extrabold text-slate-950">
+            {loading ? 'Chargement de votre école…' : 'Impossible de charger votre compte'}
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-slate-700">
+            {loading
+              ? 'Nous vérifions votre compte et le statut de votre essai. Cette étape peut prendre quelques secondes.'
+              : 'Votre session est ouverte, mais les informations de votre école ne sont pas disponibles. Pour protéger vos données et vérifier votre abonnement, l’accès à l’espace scolaire reste bloqué. Réessayez ou contactez Gestilys.'}
+          </p>
+          {!loading && (
+            <>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-blue-800 px-4 py-3 font-bold text-white hover:bg-blue-900"
+              >
+                Réessayer
+              </button>
+              <a
+                href="https://wa.me/22373369410?text=Bonjour%20Gestilys%2C%20je%20suis%20connect%C3%A9%20mais%20mon%20profil%20d%E2%80%99%C3%A9cole%20ne%20se%20charge%20pas."
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 font-bold text-emerald-900 hover:bg-emerald-100"
+              >
+                Contacter Gestilys sur WhatsApp
+              </a>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Se déconnecter
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (profile.subscriptionStatus === 'suspended') {
