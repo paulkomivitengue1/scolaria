@@ -120,8 +120,10 @@ export function AdminPanel({ onExit }: Props) {
     try {
       await adminValidatePayment(code, paymentId);
       setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, status: 'valide' } : p)));
-      setSchools((prev) => prev.map((s) => (s.id === payment.school_id ? { ...s, subscription_status: 'active' } : s)));
-      showToast(`${payment.school_name} — 30 jours activés`);
+      const refreshedSchools = await adminListSchools(code);
+      setSchools(refreshedSchools);
+      const activated = refreshedSchools.find(s => s.id === payment.school_id);
+      showToast(`${payment.school_name} — forfait ${activated?.plan || 'activé'} confirmé`);
     } catch (err: any) {
       showToast(err.message || 'Erreur validation');
     } finally {
