@@ -9,7 +9,7 @@ import {
 } from '../types';
 import {
   loadReportCards, createReportCard, updateReportCard, deleteReportCard,
-  saveGrade, deleteGrade,
+  saveGrade, deleteGrade, loadStudentCardPhotos,
 } from '../lib/db';
 
 interface Props {
@@ -18,11 +18,12 @@ interface Props {
   schoolId: string;
   schoolName: string;
   academicYear: string;
+  schoolLogo: string;
 }
 
 type Mode = 'list' | 'edit' | 'bulletin' | 'history';
 
-export function ReportCardView({ students, gradePeriods, schoolId, schoolName, academicYear }: Props) {
+export function ReportCardView({ students, gradePeriods, schoolId, schoolName, academicYear, schoolLogo }: Props) {
   const [mode, setMode] = useState<Mode>('list');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<number>(gradePeriods[0]?.index ?? 1);
@@ -38,6 +39,10 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [bulletinFormat, setBulletinFormat] = useState('classique');
   const [customBulletinColor, setCustomBulletinColor] = useState('#1d4ed8');
   const [formatSaved, setFormatSaved] = useState(false);
+  const [showSchoolLogo, setShowSchoolLogo] = useState(true);
+  const [showStudentPhoto, setShowStudentPhoto] = useState(false);
+  const [showParentName, setShowParentName] = useState(false);
+  const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
     try {
@@ -46,9 +51,14 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         const config = JSON.parse(saved);
         setBulletinFormat(config.format || 'classique');
         setCustomBulletinColor(config.color || '#1d4ed8');
+        setShowSchoolLogo(config.showSchoolLogo !== false);
+        setShowStudentPhoto(config.showStudentPhoto === true);
+        setShowParentName(config.showParentName === true);
       }
     } catch { /* Optional saved format */ }
   }, [schoolId]);
+
+  useEffect(() => { let alive = true; loadStudentCardPhotos(schoolId).then(data => { if (alive) setStudentPhotos(data); }).catch(err => console.warn('Student card photos unavailable for bulletins:', err)); return () => { alive = false; }; }, [schoolId]);
 
   // ── Load report cards for a student ─────────────────
   const loadCards = useCallback(async (studentId: string) => {
@@ -396,10 +406,10 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <option value="classique">1. Classique</option><option value="moderne">2. Moderne</option><option value="compact">3. Compact</option><option value="officiel">4. Officiel</option><option value="minimal">5. Minimaliste</option><option value="personnalise">Personnaliser mon format</option>
               </select>
             </label>
-            {bulletinFormat==='personnalise'&&<label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label>}
-            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
+            {bulletinFormat==='personnalise'&&<><label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label><div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={showSchoolLogo} onChange={e=>{setShowSchoolLogo(e.target.checked);setFormatSaved(false);}}/> Afficher le logo</label><label className="flex items-center gap-2"><input type="checkbox" checked={showStudentPhoto} onChange={e=>{setShowStudentPhoto(e.target.checked);setFormatSaved(false);}}/> Photo de l’élève</label><label className="flex items-center gap-2"><input type="checkbox" checked={showParentName} onChange={e=>{setShowParentName(e.target.checked);setFormatSaved(false);}}/> Nom du parent</label></div></>}
+            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo,showStudentPhoto,showParentName}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
           </div>
-          <p className="mt-2 text-xs text-slate-500">Les notes et bulletins sont enregistrés dans Gestilys. Le choix du modèle est mémorisé sur cet appareil.</p>
+          <p className="mt-2 text-xs text-slate-500">Les modèles modifient aussi la disposition, les espacements et l’en-tête. Le logo provient automatiquement des paramètres de l’école. La personnalisation permet de choisir les éléments affichés.</p>
         </div>
         <div className="flex items-center gap-3 print:hidden">
           <button onClick={() => setMode('edit')} className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 active:scale-95"><ArrowLeft className="h-4 w-4" /></button>
@@ -411,20 +421,23 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         </div>
 
         {/* Printable bulletin */}
-        <div id="bulletin-print" className={`mx-auto max-w-2xl rounded-2.5xl bg-white p-6 shadow-card sm:p-8 print:shadow-none print:p-0 ${bulletinFormat==='compact'?'p-4 sm:p-5':''}`} style={{border:formatBorder}}>
+        <div id="bulletin-print" className={`mx-auto max-w-2xl bg-white shadow-card print:shadow-none print:p-0 ${bulletinFormat==='compact'?'p-3 sm:p-4':bulletinFormat==='minimal'?'p-5 sm:p-6':'rounded-2.5xl p-6 sm:p-8'}`} style={{border:formatBorder,borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'4px':'18px',fontFamily:bulletinFormat==='officiel'?'Georgia,serif':'inherit'}}>
           {/* Header */}
-          <div className="pb-4 text-center" style={{borderBottom:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':'transparent',padding:bulletinFormat==='moderne'?'12px 0':'0'}}>
-            <h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
+          <div className={`pb-4 ${bulletinFormat==='moderne'?'flex items-center gap-4 text-left':bulletinFormat==='officiel'?'text-center uppercase tracking-wide':'text-center'}`} style={{borderBottom:bulletinFormat==='officiel'?'double 5px '+formatColor:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':'transparent',padding:bulletinFormat==='moderne'?'14px':'8px 0'}}>
+            {showSchoolLogo && (schoolLogo ? <img src={schoolLogo} alt="Logo de l’école" className="mx-auto mb-2 h-14 w-14 object-contain print:h-12 print:w-12" style={{margin:bulletinFormat==='moderne'?'0':'0 auto 8px'}} /> : <div className="print:hidden mx-auto mb-2 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">Ajoutez le logo dans Paramètres pour l’afficher sur le bulletin.</div>)}
+            <div className={bulletinFormat==='moderne'?'min-w-0 flex-1':''}><h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
             <p className="mt-1 text-sm text-slate-500">Bulletin de notes · Année scolaire {academicYear}</p>
-            <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p>
+            <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p></div>
           </div>
 
           {/* Student info */}
-          <div className="mt-4 flex flex-wrap justify-between gap-4 text-sm">
+          <div className={`mt-4 flex flex-wrap justify-between gap-4 text-sm ${bulletinFormat==='compact'?'text-xs':''}`}>
+            {showStudentPhoto && studentPhotos[selectedStudent.id] && <img src={studentPhotos[selectedStudent.id]} alt="Photo de l’élève" className="h-20 w-16 rounded-md border border-slate-200 object-cover" />
             <div>
               <span className="text-slate-400">Élève : </span>
               <span className="font-700 text-ink">{selectedStudent.firstName} {selectedStudent.lastName}</span>
             </div>
+            {showParentName && <div><span className="text-slate-400">Parent : </span><span className="font-700 text-ink">{selectedStudent.parentName || '—'}</span></div>}
             <div>
               <span className="text-slate-400">Classe : </span>
               <span className="font-700 text-ink">{selectedStudent.className}</span>
@@ -432,7 +445,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           </div>
 
           {/* Grades table */}
-          <table className="mt-4 w-full border-collapse text-sm">
+          <table className={`mt-4 w-full border-collapse ${bulletinFormat==='compact'?'text-xs':'text-sm'}`} style={{border:bulletinFormat==='minimal'?'none':undefined}}>
             <thead>
               <tr className="border-b-2 border-slate-300 bg-slate-50">
                 <th className="px-3 py-2 text-left text-xs font-700 uppercase tracking-wider text-slate-600">Matière</th>
