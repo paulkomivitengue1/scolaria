@@ -252,6 +252,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         }
 
       `}
+      </style>
 
       <header className="gl-nav">
         <div className="gl-container" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
