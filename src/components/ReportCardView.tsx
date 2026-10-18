@@ -42,6 +42,8 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [showStudentPhoto, setShowStudentPhoto] = useState(false);
   const [showParentName, setShowParentName] = useState(false);
   const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
+  const [schoolStamp, setSchoolStamp] = useState('');
+  useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
 
   useEffect(() => {
     try {
@@ -407,6 +409,24 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             {bulletinFormat==='personnalise'&&<><label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label><div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={showStudentPhoto} onChange={e=>{setShowStudentPhoto(e.target.checked);setFormatSaved(false);}}/> Photo de l’élève</label><label className="flex items-center gap-2"><input type="checkbox" checked={showParentName} onChange={e=>{setShowParentName(e.target.checked);setFormatSaved(false);}}/> Nom du parent</label></div></>}
             <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo:true,showStudentPhoto,showParentName}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
           </div>
+          <label className="mt-3 block rounded-xl border border-dashed border-indigo-200 bg-white p-3 text-sm font-700 text-slate-700">
+            Cachet de l’école (photo ou image)
+            <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={async e => {
+              const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
+              if (!file || !file.type.startsWith('image/')) return;
+              try {
+                const bitmap = await createImageBitmap(file);
+                const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
+                const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+                const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas');
+                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+                const data = canvas.toDataURL('image/jpeg', 0.78);
+                localStorage.setItem('gestilys-school-stamp-' + schoolId, data); setSchoolStamp(data);
+              } catch { window.alert('Impossible d’enregistrer cette image. Choisissez une photo plus légère.'); }
+            }}/>
+            {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-16 w-full object-contain"/>}
+            <span className="mt-1 block text-xs font-normal text-slate-500">Le même cachet sera utilisé sur les reçus et les cartes scolaires.</span>
+          </label>
           <p className="mt-2 text-xs text-slate-500">Les modèles modifient aussi la disposition, les espacements et l’en-tête. Le logo provient automatiquement des paramètres de l’école. La personnalisation permet de choisir les éléments affichés.</p>
         </div>
         <div className="flex items-center gap-3 print:hidden">
@@ -490,12 +510,16 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             </div>
           )}
 
-          {/* Signature */}
-          <div className="mt-8 flex justify-between text-xs text-slate-400">
-            <div className="text-center">
+          {/* Signature et cachet de l’établissement */}
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-4 text-xs text-slate-500">
+            <div className="min-w-[120px] text-center">
               <div className="border-t border-slate-300 pt-1">Le directeur / La directrice</div>
             </div>
-            <div className="text-center">
+            <div className="flex min-w-[110px] flex-col items-center gap-1 text-center">
+              {schoolStamp ? <img src={schoolStamp} alt="Cachet de l’établissement" className="h-16 w-20 object-contain" /> : <div className="h-12 w-20 rounded border border-dashed border-slate-300 print:hidden" />}
+              <span>Cachet de l’école</span>
+            </div>
+            <div className="min-w-[100px] text-center">
               <div className="border-t border-slate-300 pt-1">Le secrétaire</div>
             </div>
           </div>
