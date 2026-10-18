@@ -190,7 +190,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, schoolId = '', pare
               } catch { setError('Impossible d’enregistrer le cachet. Choisis une image plus légère.'); }
             }}/>
             {stamp && <img src={stamp} alt="Aperçu du cachet" className="mt-3 h-16 w-full object-contain"/>}
-            <span className="mt-1 block text-xs text-slate-500">Le cachet sera réutilisé pour cette école.</span>
+            <span className="mt-1 block text-xs text-slate-500">Le cachet est enregistré sur cet appareil et réutilisé pour cette école.</span>
           </label>
           {mode === 'photo' && <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (galerie ou appareil)</span>
