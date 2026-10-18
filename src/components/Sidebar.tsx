@@ -17,6 +17,7 @@ interface NavItem {
   view: AppView;
   label: string;
   icon: typeof LayoutDashboard;
+  isNew?: boolean;
 }
 
 interface NavSection {
@@ -36,8 +37,8 @@ const SECTIONS: NavSection[] = [
     title: 'Scolarité',
     items: [
       { view: 'classes', label: 'Classes', icon: GraduationCap },
-      { view: 'cartes', label: 'Cartes scolaires', icon: CreditCard },
-      { view: 'bulletins', label: 'Bulletins', icon: ClipboardList },
+      { view: 'cartes', label: 'Cartes scolaires', icon: CreditCard, isNew: true },
+      { view: 'bulletins', label: 'Bulletins', icon: ClipboardList, isNew: true },
       { view: 'inscriptions', label: 'Inscriptions / élèves', icon: UserPlus },
     ],
   },
@@ -49,7 +50,7 @@ const SECTIONS: NavSection[] = [
       { view: 'impayes', label: 'Impayés par tranche', icon: AlertCircle },
       { view: 'enseignants', label: 'Enseignants & Salaires', icon: Users },
       { view: 'depenses', label: 'Dépenses', icon: Receipt },
-      { view: 'stocks', label: 'Stocks', icon: Boxes },
+      { view: 'stocks', label: 'Stocks', icon: Boxes, isNew: true },
     ],
   },
 ];
@@ -116,6 +117,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
                     >
                       <Icon className="h-4.5 w-4.5 shrink-0" />
                       <span className="truncate">{item.label}</span>
+                      {item.isNew && <span className="ml-auto shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-800 tracking-wide text-emerald-700">NOUVEAU</span>}
                     </button>
                   );
                 })}
