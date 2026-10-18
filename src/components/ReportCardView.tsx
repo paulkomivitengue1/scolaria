@@ -4,6 +4,7 @@ import {
   Loader2, History, Printer, ArrowLeft,
 } from 'lucide-react';
 import type { Student, GradePeriod, ReportCard, GradeRow } from '../types';
+import { ImageCropper } from './ImageCropper';
 import {
   gradeAverage, gradeAppreciation, gradeColor, DEFAULT_SUBJECTS,
 } from '../types';
@@ -43,6 +44,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [showParentName, setShowParentName] = useState(false);
   const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
   const [schoolStamp, setSchoolStamp] = useState('');
+  const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
   useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
 
   useEffect(() => {
@@ -399,6 +401,11 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     const formatBorder = bulletinFormat === 'officiel' ? '4px solid ' + formatColor : bulletinFormat === 'minimal' ? '1px solid #cbd5e1' : '2px solid ' + formatColor;
     return (
       <div className="space-y-4">
+        {stampCropDraft && <ImageCropper image={stampCropDraft} aspectRatio={1} allowFreeform title="le cachet" onCancel={() => setStampCropDraft(null)} onApply={image => {
+          try { localStorage.setItem('gestilys-school-stamp-' + schoolId, image); setSchoolStamp(image); }
+          catch { window.alert('Image du cachet trop volumineuse. Choisissez une image plus légère.'); }
+          setStampCropDraft(null);
+        }} />}
         <div className="print:hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-white p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm font-700 text-slate-700">Format du bulletin
@@ -411,18 +418,13 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           </div>
           <label className="mt-3 block rounded-xl border border-dashed border-indigo-200 bg-white p-3 text-sm font-700 text-slate-700">
             Cachet de l’école (photo ou image)
-            <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={async e => {
+            <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={e => {
               const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
               if (!file || !file.type.startsWith('image/')) return;
-              try {
-                const bitmap = await createImageBitmap(file);
-                const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
-                const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-                const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas');
-                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-                const data = canvas.toDataURL('image/jpeg', 0.78);
-                localStorage.setItem('gestilys-school-stamp-' + schoolId, data); setSchoolStamp(data);
-              } catch { window.alert('Impossible d’enregistrer cette image. Choisissez une photo plus légère.'); }
+              const reader = new FileReader();
+              reader.onload = () => { if (typeof reader.result === 'string') setStampCropDraft(reader.result); };
+              reader.onerror = () => window.alert('Impossible de lire cette image. Choisissez une autre photo.');
+              reader.readAsDataURL(file);
             }}/>
             {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-16 w-full object-contain"/>}
             <span className="mt-1 block text-xs font-normal text-slate-500">Sur cet appareil, le même cachet sera réutilisé sur les reçus et les cartes scolaires.</span>
