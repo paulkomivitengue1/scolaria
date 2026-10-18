@@ -63,7 +63,7 @@ export function ImageCropper({ image, aspectRatio, title, onCancel, onApply, all
   };
   const [naturalSize, setNaturalSize] = useState({ width: 320, height: 320 / aspectRatio });
   useEffect(() => {
-    const img = new Image(); img.onload = () => setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight }); img.src = image;
+    const img = new Image(); img.onload = () => setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight }); img.src = workingImage;
   }, [workingImage]);
   useEffect(() => { setCustomAspectRatio(aspectRatio); }, [aspectRatio, image]);
   const scale = Math.max(frameWidth / naturalSize.width, frameHeight / naturalSize.height) * zoom;
