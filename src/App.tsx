@@ -777,49 +777,64 @@ function LandingOrAuth(_: { onEnterAuth: () => void }) {
 }
 
 function SchoolSuspended({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
+  const message = encodeURIComponent(`Bonjour Gestilys, l’accès de l’école « ${schoolName} » est suspendu. Pouvez-vous m’aider à rétablir l’accès ?`);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-royal-900 to-royal-800 px-4">
-      <div className="w-full max-w-md text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-red-500/20 text-red-200 shadow-lg">
-          <Lock className="h-8 w-8" />
-        </div>
-        <h1 className="mt-6 font-display text-2xl font-800 text-white">Accès suspendu</h1>
-        <p className="mt-2 text-sm leading-relaxed text-royal-100">
-          L’accès à Gestilys pour <strong className="text-white">{schoolName}</strong> a été suspendu par l’administration.
-          Vos données restent conservées. Contactez l’équipe Gestilys pour rétablir l’accès.
-        </p>
-        <button onClick={onLogout} className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-700 text-white transition hover:bg-white/10 active:scale-95">
-          <LogOut className="h-4 w-4" /> Se déconnecter
-        </button>
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
+      <div className="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900 p-6 text-center shadow-2xl sm:p-10">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-red-500/15 text-red-300"><Lock className="h-8 w-8" /></div>
+        <h1 className="mt-6 text-3xl font-extrabold text-white">Accès suspendu</h1>
+        <p className="mt-3 text-base leading-7 text-slate-200">L’accès à Gestilys pour <strong className="text-white">{schoolName}</strong> a été suspendu par l’administration.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">Vos données sont conservées. Contactez-nous pour comprendre la situation ou demander le rétablissement de l’accès.</p>
+        <a href={`https://wa.me/22373369410?text=${message}`} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 font-bold text-slate-950 hover:bg-emerald-300">Contacter Gestilys sur WhatsApp</a>
+        <button onClick={onLogout} className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-800 px-5 py-2.5 font-semibold text-white hover:bg-slate-700"><LogOut className="h-4 w-4" /> Se déconnecter</button>
       </div>
     </div>
   );
 }
 
 function TrialExpired({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
+  const [selectedPlan, setSelectedPlan] = useState<'Essentiel' | 'Plus' | 'Premium' | 'Conseil'>('Plus');
+  const plans = [
+    { name: 'Essentiel' as const, price: '10 000 FCFA', detail: 'Pour commencer avec les outils essentiels de gestion scolaire.' },
+    { name: 'Plus' as const, price: '20 000 FCFA', detail: 'Pour une école qui souhaite un suivi plus complet de son activité.' },
+    { name: 'Premium' as const, price: '30 000 FCFA', detail: 'Pour une école qui recherche l’accompagnement le plus complet.' },
+  ];
+  const selected = plans.find(p => p.name === selectedPlan);
+  const message = encodeURIComponent(`Bonjour Gestilys ! Mon essai gratuit est terminé et je souhaite continuer. École : ${schoolName}. Formule choisie : ${selected ? selected.name + ' — ' + selected.price + ' par mois' : 'J’ai besoin d’un conseil sur la formule'}. Merci de m’indiquer les étapes pour régler et activer mon abonnement.`);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-royal-900 to-royal-800 px-4">
-      <div className="w-full max-w-md text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-gold-500/20 text-gold-300 shadow-lg">
-          <Lock className="h-8 w-8" />
+    <div className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:py-12">
+      <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-800"><Lock className="h-7 w-7" /></div>
+          <p className="mt-5 text-sm font-bold uppercase tracking-widest text-blue-800">Gestilys · Abonnement</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Votre essai est terminé</h1>
+          <p className="mt-4 text-base leading-7 text-slate-700">L’essai gratuit de 14 jours de <strong className="text-slate-950">{schoolName}</strong> est arrivé à son terme. Choisissez une formule ou demandez-nous conseil pour reprendre votre gestion scolaire.</p>
+          <p className="mt-2 text-sm font-medium text-slate-600">Vos données restent conservées. Aucun paiement n’est effectué sur cette page.</p>
         </div>
-        <h1 className="mt-6 font-display text-2xl font-800 text-white">Essai expiré</h1>
-        <p className="mt-2 text-sm leading-relaxed text-royal-100">
-          La période d'essai gratuite de 14 jours pour <strong className="text-white">{schoolName}</strong> est terminée.
-          Vos données sont conservées en sécurité. Pour continuer à utiliser Gestilys, veuillez souscrire à un abonnement.
-        </p>
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 text-left backdrop-blur-sm">
-          <h2 className="font-display text-base font-700 text-white">Reprenez où vous vous êtes arrêté</h2>
-          <ul className="mt-3 space-y-2 text-sm text-royal-100">
-            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-gold-300" /> Vos élèves et paiements sont conservés</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-gold-300" /> Vos stocks et tarifs sont intacts</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-gold-300" /> Aucune donnée ne sera supprimée</li>
-          </ul>
+        <div className="mt-9 grid gap-4 md:grid-cols-3">
+          {plans.map((plan) => (
+            <button key={plan.name} type="button" onClick={() => setSelectedPlan(plan.name)} aria-pressed={selectedPlan === plan.name} className={`rounded-2xl border-2 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${selectedPlan === plan.name ? 'border-blue-700 ring-2 ring-blue-100' : 'border-slate-200'}`}>
+              <span className="text-sm font-bold text-blue-800">{plan.name}</span>
+              <span className="mt-3 block text-2xl font-extrabold text-slate-950">{plan.price}</span>
+              <span className="mt-1 block text-xs font-semibold text-slate-500">par mois · à confirmer avec Gestilys</span>
+              <span className="mt-4 block text-sm leading-6 text-slate-700">{plan.detail}</span>
+              <span className={`mt-5 block rounded-lg px-3 py-2 text-center text-sm font-bold ${selectedPlan === plan.name ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-800'}`}>{selectedPlan === plan.name ? 'Formule sélectionnée' : 'Choisir cette formule'}</span>
+            </button>
+          ))}
         </div>
-        <button onClick={onLogout} className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-700 text-white transition hover:bg-white/10 active:scale-95">
-          <LogOut className="h-4 w-4" /> Se déconnecter
-        </button>
+        <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
+          <h2 className="text-lg font-extrabold text-slate-950">Vous hésitez sur la formule ?</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-700">Décrivez vos besoins directement à notre équipe. Nous vous aiderons à choisir sans engagement.</p>
+          <button type="button" onClick={() => setSelectedPlan('Conseil')} aria-pressed={selectedPlan === 'Conseil'} className={`mt-3 rounded-lg border px-4 py-2 text-sm font-bold ${selectedPlan === 'Conseil' ? 'border-blue-800 bg-blue-800 text-white' : 'border-blue-200 bg-white text-blue-900 hover:bg-blue-100'}`}>Je souhaite être conseillé</button>
+        </div>
+        <div className="mx-auto mt-6 max-w-3xl rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-lg font-extrabold text-slate-950">Continuer avec Gestilys</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-700">WhatsApp s’ouvrira avec un message déjà préparé, comprenant le nom de votre école et votre choix. Vous pourrez le vérifier avant de l’envoyer. L’abonnement sera activé après échange et confirmation du paiement par Gestilys.</p>
+          <a href={`https://wa.me/22373369410?text=${message}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-extrabold text-white hover:bg-emerald-600 sm:w-auto">Contacter Gestilys sur WhatsApp <span aria-hidden="true">↗</span></a>
+          <button onClick={onLogout} className="ml-0 mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 sm:ml-3"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+        </div>
+        <p className="mt-6 text-center text-xs leading-5 text-slate-500">Les tarifs affichés sont indicatifs et doivent être confirmés avec Gestilys avant activation.</p>
       </div>
     </div>
   );
-                                      }
+}
