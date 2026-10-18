@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus,
+  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays,
   type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
 
@@ -57,6 +57,9 @@ export function AdminPanel({ onExit }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editPlan, setEditPlan] = useState<'Essentiel' | 'Premium' | 'Élite'>('Essentiel');
+  const [editPeriod, setEditPeriod] = useState<'mensuel' | 'annuel'>('mensuel');
+  const [trialDays, setTrialDays] = useState('14');
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -138,6 +141,32 @@ export function AdminPanel({ onExit }: Props) {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const saveSchoolPlan = async (schoolId: string) => {
+    setActionLoading(schoolId);
+    try {
+      await adminSetSchoolPlan(code, schoolId, editPlan, editPeriod);
+      const refreshedSchools = await adminListSchools(code);
+      setSchools(refreshedSchools);
+      setSelectedSchool(refreshedSchools.find(s => s.id === schoolId) || null);
+      showToast(`Forfait ${editPlan} enregistré (${editPeriod})`);
+    } catch (err: any) { showToast(err.message || 'Impossible de modifier le forfait'); }
+    finally { setActionLoading(null); }
+  };
+
+  const saveTrialDays = async (schoolId: string) => {
+    const days = Number(trialDays);
+    if (!Number.isInteger(days) || days < 0 || days > 365) { showToast('Choisis une durée entre 0 et 365 jours'); return; }
+    setActionLoading(schoolId);
+    try {
+      await adminSetTrialDays(code, schoolId, days);
+      const refreshedSchools = await adminListSchools(code);
+      setSchools(refreshedSchools);
+      setSelectedSchool(refreshedSchools.find(s => s.id === schoolId) || null);
+      showToast(`Période d’essai réglée à ${days} jour(s)`);
+    } catch (err: any) { showToast(err.message || 'Impossible de modifier l’essai'); }
+    finally { setActionLoading(null); }
   };
 
   const setSchoolPaidStatus = async (schoolId: string, paid: boolean) => {
@@ -539,7 +568,7 @@ export function AdminPanel({ onExit }: Props) {
                               <span>{s.student_count} élève{s.student_count !== 1 ? 's' : ''}</span>
                             </div>
                           </div>
-                          <button type="button" onClick={() => setSelectedSchool(s)} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-royal-200 bg-royal-50 px-3 py-2 text-sm font-700 text-royal-800">Voir la fiche complète</button>
+                          <button type="button" onClick={() => { setSelectedSchool(s); setEditPlan(s.plan || 'Essentiel'); setEditPeriod(s.billing_period || 'mensuel'); setTrialDays('14'); }} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-royal-200 bg-royal-50 px-3 py-2 text-sm font-700 text-royal-800">Voir la fiche complète</button>
                           <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                             <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                             <span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span>
@@ -599,7 +628,7 @@ export function AdminPanel({ onExit }: Props) {
                               <td className="px-3 py-3 text-slate-600">{formatDate(s.created_at)}</td>
                               <td className="px-5 py-3 text-right">
                                 <div className="flex flex-col items-end gap-2">
-                                  <button type="button" onClick={() => setSelectedSchool(s)} className="inline-flex items-center gap-1 rounded-lg border border-royal-200 bg-royal-50 px-2.5 py-1.5 text-xs font-700 text-royal-800">Voir la fiche</button>
+                                  <button type="button" onClick={() => { setSelectedSchool(s); setEditPlan(s.plan || 'Essentiel'); setEditPeriod(s.billing_period || 'mensuel'); setTrialDays('14'); }} className="inline-flex items-center gap-1 rounded-lg border border-royal-200 bg-royal-50 px-2.5 py-1.5 text-xs font-700 text-royal-800">Voir la fiche</button>
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
                                     <StIcon className="h-3 w-3" /> {st.label}
                                   </span>
@@ -677,6 +706,31 @@ export function AdminPanel({ onExit }: Props) {
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Abonnement</p><p className="mt-1 font-700 text-ink">{selectedSchool.plan} · {statusBadge(selectedSchool.subscription_status, selectedSchool.trial_ends_at).label}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Inscription</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.created_at)}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Fin de l’essai</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.trial_ends_at)}</p></div>
+            </div>
+            <div className="mt-4 rounded-xl border border-slate-200 p-4">
+              <h3 className="font-800 text-ink">Gestion du forfait</h3>
+              <p className="mt-1 text-xs text-slate-500">Choisis le forfait réellement accordé après vérification du paiement. Ce réglage n’encaisse pas d’argent.</p>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label className="text-xs font-700 text-slate-600">Forfait
+                  <select value={editPlan} onChange={e => setEditPlan(e.target.value as typeof editPlan)} className="mt-1 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm">
+                    <option value="Essentiel">Essentiel — 10 000 FCFA/mois</option><option value="Premium">Premium — 20 000 FCFA/mois</option><option value="Élite">Élite — 30 000 FCFA/mois</option>
+                  </select>
+                </label>
+                <label className="text-xs font-700 text-slate-600">Période
+                  <select value={editPeriod} onChange={e => setEditPeriod(e.target.value as typeof editPeriod)} className="mt-1 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm">
+                    <option value="mensuel">Mensuel</option><option value="annuel">Annuel (10 mois payés)</option>
+                  </select>
+                </label>
+              </div>
+              <button type="button" onClick={() => void saveSchoolPlan(selectedSchool.id)} disabled={actionLoading === selectedSchool.id} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 py-2 text-sm font-800 text-white disabled:opacity-50">{actionLoading === selectedSchool.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer le forfait</button>
+            </div>
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <h3 className="font-800 text-amber-900">Prolonger ou terminer l’essai</h3>
+              <p className="mt-1 text-xs text-amber-800">0 jour termine l’essai; 14 jours donne deux semaines supplémentaires à partir d’aujourd’hui.</p>
+              <div className="mt-3 flex gap-2">
+                <input aria-label="Durée d’essai en jours" type="number" min="0" max="365" value={trialDays} onChange={e => setTrialDays(e.target.value)} className="h-11 min-w-0 flex-1 rounded-lg border border-amber-200 bg-white px-3 text-sm" />
+                <button type="button" onClick={() => void saveTrialDays(selectedSchool.id)} disabled={actionLoading === selectedSchool.id} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-300 bg-white px-3 text-sm font-800 text-amber-900 disabled:opacity-50">Appliquer</button>
+              </div>
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {selectedSchool.phone && <a href={`https://wa.me/${selectedSchool.phone.replace(/\\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Contacter sur WhatsApp</a>}
