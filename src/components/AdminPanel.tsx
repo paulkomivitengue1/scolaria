@@ -283,6 +283,11 @@ export function AdminPanel({ onExit }: Props) {
   const resolvedPayments = payments.filter((p) => p.status !== 'en_attente');
   const validatedPayments = payments.filter((p) => p.status === 'valide');
   const rejectedPayments = payments.filter((p) => p.status === 'rejete');
+  // Overview stats
+  const trialCount = schools.filter((s) => s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()).length;
+  const paidCount = schools.filter((s) => s.subscription_status === 'active').length;
+  const expiredCount = schools.filter(s => s.subscription_status === 'expired' || (s.subscription_status === 'trial' && new Date(s.trial_ends_at) <= new Date())).length;
+
   const confirmedManualRevenue = validatedPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -316,10 +321,7 @@ export function AdminPanel({ onExit }: Props) {
     confirmed: payments.filter(p => p.provider === provider && p.status === 'valide').reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
   }));
 
-  // Overview stats
-  const trialCount = schools.filter((s) => s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()).length;
-  const paidCount = schools.filter((s) => s.subscription_status === 'active').length;
-  const expiredCount = schools.filter(s => s.subscription_status === 'expired' || (s.subscription_status === 'trial' && new Date(s.trial_ends_at) <= new Date())).length;
+
 
   // Per-period new client stats
   const yearStart = new Date(now.getFullYear(), 0, 1);
