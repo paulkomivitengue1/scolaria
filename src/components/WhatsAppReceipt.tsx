@@ -11,6 +11,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   schoolName: string;
+  schoolId?: string;
   initialFeeType?: string | null;
   feeTypes: FeeTypeDef[];
   tranches: TrancheDef[];
@@ -18,7 +19,7 @@ interface Props {
   paidAmount?: number;
 }
 
-export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFeeType, feeTypes, tranches, trancheKey, paidAmount }: Props) {
+export function WhatsAppReceipt({ student, open, onClose, schoolName, schoolId = '', initialFeeType, feeTypes, tranches, trancheKey, paidAmount }: Props) {
   const isTrancheMode = trancheKey !== undefined && trancheKey !== null && paidAmount !== undefined;
   const [selFeeType, setSelFeeType] = useState<string>('');
   const [photoPdfOpen, setPhotoPdfOpen] = useState(false);
@@ -106,7 +107,7 @@ export function WhatsAppReceipt({ student, open, onClose, schoolName, initialFee
         </div>
       </div>
     </div>
-    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} defaultAmount={isTrancheMode ? paidAmount! : totalPaid} feeLabel={ft.label} />
+    <ReceiptPhotoPdf open={photoPdfOpen} onClose={() => setPhotoPdfOpen(false)} schoolId={schoolId} schoolName={schoolName} parentPhone={student.parentPhone} studentName={student.firstName + ' ' + student.lastName} defaultAmount={isTrancheMode ? paidAmount! : totalPaid} feeLabel={ft.label} />
     </>
   );
 }
