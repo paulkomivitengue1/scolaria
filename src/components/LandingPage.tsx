@@ -203,7 +203,56 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           .gl-price-action { width:100%; }
           .gl-stat-value { font-size:12px; }
         }
-      `}</style>
+
+        /* Pricing: sober, high-contrast and deliberately free of gradients */
+        #tarifs { background:#f7f8fa !important; }
+        #tarifs .gl-kicker { color:#475569 !important; }
+        #tarifs .gl-h2 { color:#111827 !important; max-width:760px; }
+        #tarifs .gl-sub { color:#4b5563 !important; max-width:700px; }
+        #tarifs .gl-pricing-toggle {
+          background:#e5e7eb !important; border:1px solid #d1d5db !important; border-radius:12px !important; padding:4px !important;
+        }
+        #tarifs .gl-pricing-toggle button {
+          border-radius:9px !important; min-height:42px; padding:10px 16px !important; color:#374151 !important;
+          box-shadow:none !important; border:1px solid transparent !important; background:transparent !important;
+        }
+        #tarifs .gl-pricing-toggle button[aria-pressed="true"] {
+          background:#fff !important; color:#111827 !important; border-color:#d1d5db !important;
+        }
+        #tarifs .gl-pricing-grid { gap:16px !important; }
+        #tarifs article {
+          border:1px solid #d1d5db !important; border-radius:16px !important; background:#fff !important;
+          padding:26px !important; box-shadow:0 2px 8px rgba(17,24,39,.035) !important; transition:border-color .18s ease, box-shadow .18s ease !important;
+        }
+        #tarifs article:hover { border-color:#9ca3af !important; box-shadow:0 8px 22px rgba(17,24,39,.07) !important; }
+        #tarifs article.gl-plan-popular { border:2px solid #172554 !important; padding:25px !important; }
+        #tarifs article .gl-plan-badge { background:#172554 !important; color:#fff !important; border-radius:6px !important; letter-spacing:.04em; }
+        #tarifs article > span:first-of-type { background:#f3f4f6 !important; color:#374151 !important; border-radius:7px !important; }
+        #tarifs article h3 { color:#111827 !important; font-size:22px !important; letter-spacing:-.025em; }
+        #tarifs article p { color:#4b5563 !important; }
+        #tarifs article > div[style*="marginTop:20"] { color:#111827 !important; }
+        #tarifs article > div[style*="marginTop:20"] strong { color:#111827 !important; font-size:34px !important; letter-spacing:-.045em !important; }
+        #tarifs article > div[style*="marginTop:20"] span { color:#4b5563 !important; }
+        #tarifs article ul { color:#374151 !important; padding:0; list-style:none; }
+        #tarifs article ul li { line-height:1.55; }
+        #tarifs article ul li svg { color:#374151 !important; flex-shrink:0; }
+        #tarifs article .gl-btn-primary, #tarifs .gl-btn-secondary {
+          background:#172554 !important; color:#fff !important; border:1px solid #172554 !important;
+          border-radius:10px !important; box-shadow:none !important; text-decoration:none !important;
+          font-weight:800 !important; min-height:48px; transition:background .18s ease,border-color .18s ease !important;
+        }
+        #tarifs article .gl-btn-primary:hover, #tarifs .gl-btn-secondary:hover { background:#263b69 !important; border-color:#263b69 !important; transform:none !important; }
+        #tarifs a, #tarifs a:visited { text-decoration:none !important; }
+        #tarifs a:focus-visible, #tarifs button:focus-visible { outline:3px solid #64748b !important; outline-offset:3px !important; }
+        @media (max-width:640px) {
+          #tarifs article { padding:22px !important; }
+          #tarifs article.gl-plan-popular { padding:21px !important; }
+          #tarifs article > div[style*="marginTop:20"] strong { font-size:31px !important; }
+          #tarifs .gl-pricing-toggle button { padding:9px 12px !important; font-size:12px !important; }
+        }
+
+      `}
+      </style>
 
       <header className="gl-nav">
         <div className="gl-container" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
@@ -351,17 +400,17 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <div className="gl-kicker">Des tarifs transparents</div>
             <h2 className="gl-h2">Un forfait adapté à la taille de votre école.</h2>
             <p className="gl-sub">Choisissez une formule. Les forfaits annuels reviennent à deux mois offerts par rapport au paiement mensuel.</p>
-            <div style={{display:'flex',justifyContent:'center',gap:5,margin:'24px auto 30px',padding:5,borderRadius:14,background:'#e2e8f0',width:'fit-content'}}>
-              <button onClick={()=>setBillingPeriod('mensuel')} style={{padding:'10px 18px',borderRadius:10,background:billingPeriod==='mensuel'?'white':'transparent',color:'#172554',fontSize:13,fontWeight:800,boxShadow:billingPeriod==='mensuel'?'0 1px 4px #cbd5e1':'none'}}>Mensuel</button>
-              <button onClick={()=>setBillingPeriod('annuel')} style={{padding:'10px 18px',borderRadius:10,background:billingPeriod==='annuel'?'white':'transparent',color:'#172554',fontSize:13,fontWeight:800,boxShadow:billingPeriod==='annuel'?'0 1px 4px #cbd5e1':'none'}}>Annuel · 2 mois offerts</button>
+            <div className="gl-pricing-toggle" style={{display:'flex',justifyContent:'center',gap:5,margin:'24px auto 30px',padding:5,borderRadius:14,background:'#e2e8f0',width:'fit-content'}}>
+              <button aria-pressed={billingPeriod==='mensuel'} onClick={()=>setBillingPeriod('mensuel')} style={{padding:'10px 18px',borderRadius:10,background:billingPeriod==='mensuel'?'white':'transparent',color:'#172554',fontSize:13,fontWeight:800,boxShadow:billingPeriod==='mensuel'?'0 1px 4px #cbd5e1':'none'}}>Mensuel</button>
+              <button aria-pressed={billingPeriod==='annuel'} onClick={()=>setBillingPeriod('annuel')} style={{padding:'10px 18px',borderRadius:10,background:billingPeriod==='annuel'?'white':'transparent',color:'#172554',fontSize:13,fontWeight:800,boxShadow:billingPeriod==='annuel'?'0 1px 4px #cbd5e1':'none'}}>Annuel · 2 mois offerts</button>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:18,alignItems:'stretch'}}>
+            <div className="gl-pricing-grid" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:18,alignItems:'stretch'}}>
               {[
                 {name:'Essentiel',desc:'Les outils indispensables pour démarrer la gestion numérique de votre école.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#eff6ff',accent:'#1d4ed8',popular:false,features:['Élèves et classes','Présences et frais scolaires','Reçus de paiement','Assistance au démarrage']},
                 {name:'Premium',desc:'Un suivi administratif et financier plus complet pour votre établissement.',monthly:20000,students:'Jusqu’à 500 élèves',tone:'#eef2ff',accent:'#4338ca',popular:true,features:['Tout le forfait Essentiel','Stocks et fournitures','Bulletins et cartes scolaires','Rapports financiers avancés','Assistance prioritaire']},
                 {name:'Élite',desc:'Le contrôle approfondi pour les établissements qui ont besoin de plus.',monthly:30000,students:'Effectif illimité',tone:'#fff7df',accent:'#a16207',popular:false,features:['Tout le forfait Premium','Personnalisation avancée','Gestion multi-utilisateur avancée','Exports et rapports détaillés','Accompagnement prioritaire']},
-              ].map(plan=><article key={plan.name} style={{position:'relative',display:'flex',flexDirection:'column',border:plan.popular?'2px solid #1d4ed8':'1px solid #dbe3ef',borderRadius:22,background:'white',padding:24,boxShadow:plan.popular?'0 16px 38px rgba(29,78,216,.12)':'0 8px 22px rgba(15,23,42,.04)'}}>
-                {plan.popular&&<span style={{position:'absolute',right:16,top:16,borderRadius:999,background:'#dbeafe',color:'#1d4ed8',fontSize:10,fontWeight:900,padding:'6px 9px'}}>RECOMMANDÉ</span>}
+              ].map(plan=><article key={plan.name} className={plan.popular?'gl-plan-card gl-plan-popular':'gl-plan-card'} style={{position:'relative',display:'flex',flexDirection:'column',border:plan.popular?'2px solid #1d4ed8':'1px solid #dbe3ef',borderRadius:22,background:'white',padding:24,boxShadow:plan.popular?'0 16px 38px rgba(29,78,216,.12)':'0 8px 22px rgba(15,23,42,.04)'}}>
+                {plan.popular&&<span className="gl-plan-badge" style={{position:'absolute',right:16,top:16,borderRadius:999,background:'#dbeafe',color:'#1d4ed8',fontSize:10,fontWeight:900,padding:'6px 9px'}}>RECOMMANDÉ</span>}
                 <span style={{alignSelf:'flex-start',borderRadius:10,background:plan.tone,color:plan.accent,padding:'7px 10px',fontSize:11,fontWeight:900}}>{plan.students}</span>
                 <h3 style={{fontSize:21,fontWeight:900,color:'#172554',marginTop:18}}>{plan.name}</h3>
                 <p style={{fontSize:13,lineHeight:1.7,color:'#64748b',minHeight:44,marginTop:7}}>{plan.desc}</p>
