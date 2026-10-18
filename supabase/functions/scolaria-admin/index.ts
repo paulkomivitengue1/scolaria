@@ -13,7 +13,8 @@ interface ActionBody {
   action: "list_schools" | "list_payments" | "validate_payment" | "reject_payment" | "set_school_status" | "set_school_paid_status";
   paymentId?: string;
   schoolId?: string;
-  status?: "suspend" | "restore";\n  paid?: boolean;
+  status?: "suspend" | "restore";
+  paid?: boolean;
 }
 
 Deno.serve(async (req: Request) => {
