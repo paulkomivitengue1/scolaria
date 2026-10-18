@@ -17,6 +17,10 @@ export interface AdminSchool {
   director_name: string;
   phone: string;
   student_count: number;
+  billing_period?: 'mensuel' | 'annuel';
+  subscription_amount?: number | null;
+  last_paid_at?: string | null;
+  subscription_started_at?: string | null;
 }
 
 export interface AdminManualPayment {
