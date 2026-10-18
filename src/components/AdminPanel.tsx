@@ -50,6 +50,7 @@ export function AdminPanel({ onExit }: Props) {
   const [authLoading, setAuthLoading] = useState(false);
 
   const [schools, setSchools] = useState<AdminSchool[]>([]);
+  const [selectedSchool, setSelectedSchool] = useState<AdminSchool | null>(null);
   const [payments, setPayments] = useState<AdminManualPayment[]>([]);
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
@@ -538,6 +539,7 @@ export function AdminPanel({ onExit }: Props) {
                               <span>{s.student_count} élève{s.student_count !== 1 ? 's' : ''}</span>
                             </div>
                           </div>
+                          <button type="button" onClick={() => setSelectedSchool(s)} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-royal-200 bg-royal-50 px-3 py-2 text-sm font-700 text-royal-800">Voir la fiche complète</button>
                           <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                             <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                             <span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span>
@@ -597,6 +599,7 @@ export function AdminPanel({ onExit }: Props) {
                               <td className="px-3 py-3 text-slate-600">{formatDate(s.created_at)}</td>
                               <td className="px-5 py-3 text-right">
                                 <div className="flex flex-col items-end gap-2">
+                                  <button type="button" onClick={() => setSelectedSchool(s)} className="inline-flex items-center gap-1 rounded-lg border border-royal-200 bg-royal-50 px-2.5 py-1.5 text-xs font-700 text-royal-800">Voir la fiche</button>
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
                                     <StIcon className="h-3 w-3" /> {st.label}
                                   </span>
@@ -660,6 +663,28 @@ export function AdminPanel({ onExit }: Props) {
         )}
       </main>
 
+      {selectedSchool && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3" role="dialog" aria-modal="true" aria-label="Fiche école">
+          <div className="max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div><p className="text-xs font-800 uppercase tracking-wider text-royal-700">Fiche établissement</p><h2 className="mt-1 text-xl font-800 text-ink">{selectedSchool.name}</h2><p className="text-sm text-slate-500">{selectedSchool.city || 'Ville non renseignée'}</p></div>
+              <button type="button" onClick={() => setSelectedSchool(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer la fiche"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Directeur / directrice</p><p className="mt-1 font-700 text-ink">{selectedSchool.director_name || 'Non renseigné'}</p></div>
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Téléphone</p><p className="mt-1 font-700 text-ink">{selectedSchool.phone || 'Non renseigné'}</p></div>
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Nombre d’élèves</p><p className="mt-1 text-xl font-800 text-ink">{selectedSchool.student_count}</p></div>
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Abonnement</p><p className="mt-1 font-700 text-ink">{selectedSchool.plan} · {statusBadge(selectedSchool.subscription_status, selectedSchool.trial_ends_at).label}</p></div>
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Inscription</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.created_at)}</p></div>
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Fin de l’essai</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.trial_ends_at)}</p></div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              {selectedSchool.phone && <a href={`https://wa.me/${selectedSchool.phone.replace(/\\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Contacter sur WhatsApp</a>}
+              <button type="button" onClick={() => { const s=selectedSchool; setSelectedSchool(null); void setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend'); }} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-800 text-red-700">{selectedSchool.subscription_status === 'suspended' ? 'Rétablir l’accès' : 'Suspendre l’école'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {toast && (
         <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
           <span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4" /> {toast}</span>
