@@ -139,7 +139,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
       header{display:flex;align-items:center;gap:12px;border-bottom:2px solid #667eea;padding:0 0 10px;margin-bottom:14px}
       header img{width:64px;height:55px;object-fit:contain}h1{font-size:18px;margin:0 0 5px}p{margin:4px 0;font-size:11px;color:#555}
       .note{font-size:10px;background:#f4f6ff;border:1px solid #dce2ff;border-radius:6px;padding:7px;margin-bottom:8px}
-      .receipt{display:block;width:100%;max-height:205mm;object-fit:contain;margin:0 auto 10px;object-position:top center;order:-1}
+      header{position:relative;z-index:1}.receipt{position:relative;z-index:2;display:block;width:100%;max-height:205mm;object-fit:contain;margin:0 auto 10px;object-position:top center;order:0}
       .custom-receipt{border:1.5px solid #cbd5e1;border-radius:8px;padding:14px;margin-top:10px}.receipt-title{text-align:center;font-size:15px;font-weight:800;letter-spacing:1px}.amount{text-align:center;font-size:25px;font-weight:800;margin:16px 0;color:#3730a3}
       .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:9px 0;font-size:11px}.line span{color:#64748b}.line strong{text-align:right;overflow-wrap:anywhere}.custom-note{margin-top:14px;padding:8px;background:#f8fafc}.signature{margin-top:35px;text-align:right;font-size:10px;color:#475569}
       @media print{.toolbar{display:none}}
