@@ -249,7 +249,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                   }}/>
                 </label>
                 {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-14 w-full object-contain"/>}
-                <p className="mt-1 text-[10px] text-slate-500">Réutilisé sur les reçus et bulletins de cette école.</p>
+                <p className="mt-1 text-[10px] text-slate-500">Sur cet appareil, réutilisé sur les reçus et bulletins de cette école.</p>
               </div>
               <div className="rounded-xl border border-slate-200 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
