@@ -152,8 +152,8 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, parentPhone, studen
   };
 
   return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-950/85 p-3" style={{ zIndex: 2147483647, isolation: "isolate" }}>
-      <div className="relative max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
+    <div className="fixed inset-0 overflow-y-auto overscroll-contain bg-slate-950/85 p-2 sm:flex sm:items-center sm:justify-center sm:p-4" style={{ zIndex: 2147483647, isolation: "isolate", WebkitOverflowScrolling: "touch" }}>
+      <div className="relative mx-auto my-2 max-h-[calc(100dvh-1rem)] w-full max-w-lg touch-pan-y overscroll-contain overflow-x-hidden overflow-y-auto rounded-2xl bg-white p-4 pb-8 text-slate-900 shadow-2xl sm:my-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6" style={{ WebkitOverflowScrolling: "touch" }}>
         <button onClick={onClose} className="absolute right-3 top-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Fermer"><X size={20}/></button>
         <div className="mb-4 pr-8">
           <h2 className="text-lg font-bold text-slate-900">Reçus personnalisables</h2>
