@@ -432,7 +432,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
 
           {/* Student info */}
           <div className={`mt-4 flex flex-wrap justify-between gap-4 text-sm ${bulletinFormat==='compact'?'text-xs':''}`}>
-            {showStudentPhoto && studentPhotos[selectedStudent.id] && <img src={studentPhotos[selectedStudent.id]} alt="Photo de l’élève" className="h-20 w-16 rounded-md border border-slate-200 object-cover" />
+            {showStudentPhoto && studentPhotos[selectedStudent.id] && <img src={studentPhotos[selectedStudent.id]} alt="Photo de l’élève" className="h-20 w-16 rounded-md border border-slate-200 object-cover" />}
             <div>
               <span className="text-slate-400">Élève : </span>
               <span className="font-700 text-ink">{selectedStudent.firstName} {selectedStudent.lastName}</span>
