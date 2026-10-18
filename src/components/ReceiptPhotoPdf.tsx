@@ -86,7 +86,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, schoolId = '', pare
 
   if (!open) return null;
 
-  const handleImage = async (kind: 'logo' | 'receipt', file?: File) => {
+  const handleImage = async (kind: 'logo' | 'receipt' | 'stamp', file?: File) => {
     if (!file) return;
     setError('');
     try {
@@ -175,20 +175,7 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, schoolId = '', pare
           </label>
           <label className="block cursor-pointer rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><ImagePlus size={17}/> Cachet de l’école</span>
-            <input className="block w-full text-xs" type="file" accept="image/*" onChange={async e => {
-              const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
-              if (!file || !file.type.startsWith('image/')) return;
-              try {
-                const bitmap = await createImageBitmap(file);
-                const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
-                const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-                const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas');
-                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-                const data = canvas.toDataURL('image/jpeg', 0.78);
-                if (schoolId) localStorage.setItem('gestilys-school-stamp-' + schoolId, data);
-                setStamp(data);
-              } catch { setError('Impossible d’enregistrer le cachet. Choisis une image plus légère.'); }
-            }}/>
+            <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('stamp', e.currentTarget.files?.[0]); e.currentTarget.value = ''; }}/>
             {stamp && <img src={stamp} alt="Aperçu du cachet" className="mt-3 h-16 w-full object-contain"/>}
             <span className="mt-1 block text-xs text-slate-500">Le cachet est enregistré sur cet appareil et réutilisé pour cette école.</span>
           </label>
@@ -223,12 +210,13 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, schoolId = '', pare
       </div>
       {cropDraft && <ImageCropper
         image={cropDraft.image}
-        aspectRatio={cropDraft.kind === 'logo' ? 1 : 0.72}
-        allowFreeform={cropDraft.kind === 'receipt'}
-        title={cropDraft.kind === 'logo' ? 'le logo' : 'le reçu'}
+        aspectRatio={cropDraft.kind === 'logo' || cropDraft.kind === 'stamp' ? 1 : 0.72}
+        allowFreeform={cropDraft.kind === 'receipt' || cropDraft.kind === 'stamp'}
+        title={cropDraft.kind === 'logo' ? 'le logo' : cropDraft.kind === 'stamp' ? 'le cachet' : 'le reçu'}
         onCancel={() => setCropDraft(null)}
         onApply={image => {
           if (cropDraft.kind === 'logo') setLogo(image);
+          else if (cropDraft.kind === 'stamp') { setStamp(image); try { if (schoolId) localStorage.setItem('gestilys-school-stamp-' + schoolId, image); } catch { setError('Image trop volumineuse. Choisis une image plus légère.'); } }
           else setReceipt(image);
           setCropDraft(null);
         }}
