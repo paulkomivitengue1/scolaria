@@ -425,7 +425,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               } catch { window.alert('Impossible d’enregistrer cette image. Choisissez une photo plus légère.'); }
             }}/>
             {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-16 w-full object-contain"/>}
-            <span className="mt-1 block text-xs font-normal text-slate-500">Le même cachet sera utilisé sur les reçus et les cartes scolaires.</span>
+            <span className="mt-1 block text-xs font-normal text-slate-500">Sur cet appareil, le même cachet sera réutilisé sur les reçus et les cartes scolaires.</span>
           </label>
           <p className="mt-2 text-xs text-slate-500">Les modèles modifient aussi la disposition, les espacements et l’en-tête. Le logo provient automatiquement des paramètres de l’école. La personnalisation permet de choisir les éléments affichés.</p>
         </div>
