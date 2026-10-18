@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
-  LogOut, Lock, AlertTriangle,
+  LogOut, Lock, AlertTriangle, ArrowRight, Phone,
   Search,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
