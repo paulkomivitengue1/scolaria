@@ -203,7 +203,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           .gl-price-action { width:100%; }
           .gl-stat-value { font-size:12px; }
         }
-      `}
+
         /* Pricing: sober, high-contrast and deliberately free of gradients */
         #tarifs { background:#f7f8fa !important; }
         #tarifs .gl-kicker { color:#475569 !important; }
@@ -250,7 +250,8 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           #tarifs article > div[style*="marginTop:20"] strong { font-size:31px !important; }
           #tarifs .gl-pricing-toggle button { padding:9px 12px !important; font-size:12px !important; }
         }
-</style>
+
+      `}
 
       <header className="gl-nav">
         <div className="gl-container" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
