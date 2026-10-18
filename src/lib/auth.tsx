@@ -63,22 +63,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     getSupabase().auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        setLoading(true);
         setUser(session.user);
         fetchProfile(session.user).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
+    }).catch((error) => {
+      console.error('Failed to restore authentication session:', error);
+      setLoading(false);
     });
 
     // onAuthStateChange runs synchronously — wrap async work in IIFE to avoid deadlock
     const { data: { subscription } } = getSupabase().auth.onAuthStateChange((_event, session) => {
       (async () => {
         if (session?.user) {
+          setLoading(true);
           setUser(session.user);
-          await fetchProfile(session.user);
+          try {
+            await fetchProfile(session.user);
+          } finally {
+            setLoading(false);
+          }
         } else {
           setUser(null);
           setProfile(null);
+          setLoading(false);
         }
       })();
     });
