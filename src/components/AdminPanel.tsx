@@ -169,13 +169,13 @@ export function AdminPanel({ onExit }: Props) {
     finally { setActionLoading(null); }
   };
 
-  const setSchoolPaidStatus = async (schoolId: string, paid: boolean) => {
+  const setSchoolPaidStatus = async (schoolId: string, paid: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', period?: 'mensuel' | 'annuel') => {
     setActionLoading(schoolId);
     try {
-      await adminSetSchoolPaidStatus(code, schoolId, paid);
+      await adminSetSchoolPaidStatus(code, schoolId, paid, plan, period);
       const refreshedSchools = await adminListSchools(code);
       setSchools(refreshedSchools);
-      showToast(paid ? 'Paiement confirmé : école marquée payante' : 'Paiement non reçu : école marquée impayée');
+      showToast(paid ? `Paiement confirmé : forfait ${plan} activé` : 'École marquée impayée');
     } catch (err: any) {
       showToast(err.message || 'Impossible de modifier le statut de paiement');
     } finally {
@@ -573,7 +573,7 @@ export function AdminPanel({ onExit }: Props) {
                             <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
                             <span className="text-xs font-600 text-slate-500">Inscrit le {formatDate(s.created_at)}</span>
                           </div>
-                          {s.subscription_status !== 'suspended' && <button type="button" onClick={() => setSchoolPaidStatus(s.id, s.subscription_status !== 'active')} disabled={actionLoading===s.id} className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-700 ${s.subscription_status==='active'?'border-amber-200 bg-amber-50 text-amber-800':'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{s.subscription_status==='active'?'Marquer comme impayée':'Confirmer le paiement'}</button>}
+                          {s.subscription_status !== 'suspended' && <button type="button" onClick={() => s.subscription_status==='active' ? void setSchoolPaidStatus(s.id, false) : (setSelectedSchool(s), setEditPlan(s.plan || 'Essentiel'), setEditPeriod(s.billing_period || 'mensuel'), setTrialDays('14'))} disabled={actionLoading===s.id} className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-700 ${s.subscription_status==='active'?'border-amber-200 bg-amber-50 text-amber-800':'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{s.subscription_status==='active'?'Marquer comme impayée':'Choisir forfait et confirmer'}</button>}
                           <button
                             type="button"
                             onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')}
@@ -632,7 +632,7 @@ export function AdminPanel({ onExit }: Props) {
                                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider ${st.cls}`}>
                                     <StIcon className="h-3 w-3" /> {st.label}
                                   </span>
-                                  {s.subscription_status !== 'suspended' && <button type="button" onClick={() => setSchoolPaidStatus(s.id, s.subscription_status !== 'active')} disabled={actionLoading===s.id} className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-700 ${s.subscription_status==='active'?'border-amber-200 bg-amber-50 text-amber-800':'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{s.subscription_status==='active'?'Marquer impayée':'Confirmer payé'}</button>}
+                                  {s.subscription_status !== 'suspended' && <button type="button" onClick={() => s.subscription_status==='active' ? void setSchoolPaidStatus(s.id, false) : (setSelectedSchool(s), setEditPlan(s.plan || 'Essentiel'), setEditPeriod(s.billing_period || 'mensuel'), setTrialDays('14'))} disabled={actionLoading===s.id} className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-700 ${s.subscription_status==='active'?'border-amber-200 bg-amber-50 text-amber-800':'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{s.subscription_status==='active'?'Marquer impayée':'Choisir forfait'}</button>}
                                   <button
                                     type="button"
                                     onClick={() => setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend')}
@@ -732,6 +732,7 @@ export function AdminPanel({ onExit }: Props) {
                 <button type="button" onClick={() => void saveTrialDays(selectedSchool.id)} disabled={actionLoading === selectedSchool.id} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-300 bg-white px-3 text-sm font-800 text-amber-900 disabled:opacity-50">Appliquer</button>
               </div>
             </div>
+            {selectedSchool.subscription_status !== 'active' && <button type="button" onClick={() => void setSchoolPaidStatus(selectedSchool.id, true, editPlan, editPeriod)} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white disabled:opacity-50">{actionLoading === selectedSchool.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />} Confirmer l’argent reçu et activer ce forfait</button>}
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {selectedSchool.phone && <a href={`https://wa.me/${selectedSchool.phone.replace(/\\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Contacter sur WhatsApp</a>}
               <button type="button" onClick={() => { const s=selectedSchool; setSelectedSchool(null); void setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend'); }} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-800 text-red-700">{selectedSchool.subscription_status === 'suspended' ? 'Rétablir l’accès' : 'Suspendre l’école'}</button>
