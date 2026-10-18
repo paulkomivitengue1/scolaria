@@ -395,6 +395,35 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           </div>
         </section>
 
+        <section id="nouveautes" className="gl-section">
+          <div className="gl-container">
+            <div className="gl-kicker" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+              <span style={{display:'inline-flex',alignItems:'center',borderRadius:999,background:'#dcfce7',color:'#166534',padding:'4px 9px',fontSize:10,fontWeight:900,letterSpacing:'.04em'}}>NOUVEAU</span>
+              Les nouveautés Gestilys
+            </div>
+            <h2 className="gl-h2">Gestilys évolue avec les besoins des écoles.</h2>
+            <p className="gl-sub">Nous améliorons progressivement l’outil et tenons compte des retours des directeurs. Voici les fonctionnalités récemment mises en avant.</p>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,230px),1fr))',gap:16,marginTop:26}}>
+              {[
+                {title:'Cartes scolaires',desc:'Préparez les cartes des élèves avec les informations de votre établissement.'},
+                {title:'Bulletins scolaires',desc:'Retrouvez l’espace de bulletins parmi les outils de gestion scolaire.'},
+                {title:'Stocks et fournitures',desc:'Suivez les articles et les quantités de stock de votre école.'},
+              ].map(item=><article key={item.title} style={{position:'relative',border:'1px solid #e2e8f0',borderRadius:18,padding:22,background:'#fff'}}>
+                <span style={{display:'inline-flex',borderRadius:999,background:'#dcfce7',color:'#166534',padding:'4px 8px',fontSize:10,fontWeight:900,letterSpacing:'.04em'}}>NOUVEAU</span>
+                <h3 style={{fontSize:18,fontWeight:850,color:'#172554',marginTop:14}}>{item.title}</h3>
+                <p style={{fontSize:13,lineHeight:1.7,color:'#64748b',marginTop:8}}>{item.desc}</p>
+              </article>)}
+            </div>
+            <div style={{marginTop:22,border:'1px solid #dbeafe',borderRadius:18,padding:'20px 22px',background:'#eff6ff',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:16}}>
+              <div style={{flex:'1 1 260px'}}>
+                <h3 style={{fontSize:17,fontWeight:850,color:'#172554'}}>Vous avez une idée ou une amélioration à proposer ?</h3>
+                <p style={{fontSize:13,lineHeight:1.7,color:'#475569',marginTop:5}}>Dites-nous ce qui faciliterait la gestion de votre école. Vos retours nous aident à choisir les prochaines améliorations.</p>
+              </div>
+              <a className="gl-btn gl-btn-secondary" style={{textDecoration:'none',minHeight:46,whiteSpace:'nowrap'}} href={`https://wa.me/22373369410?text=${encodeURIComponent('Bonjour Gestilys, je souhaite proposer une idée ou signaler une amélioration utile pour mon école. Nom de mon école : [à compléter]. Mon idée : [à compléter].')}`} target="_blank" rel="noreferrer">Partager une idée <ArrowRight size={16}/></a>
+            </div>
+          </div>
+        </section>
+
         <section id="tarifs" className="gl-section gl-section-soft">
           <div className="gl-container">
             <div className="gl-kicker">Des tarifs transparents</div>
