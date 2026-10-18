@@ -197,8 +197,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           .gl-stat-label { font-size:8px; }
           .gl-chart { padding:8px; }
           .gl-bars { height:65px; gap:4px; }
-          .gl-float { right:4px; bottom:-12px; padding:9px 11px; }
-          .gl-section { padding:54px 0; }
+          .gl-float { right:4px; bottom:-12px; padding:9px 11px; }          .gl-section { padding:54px 0; }
           .gl-feature-grid,.gl-step-grid { grid-template-columns:1fr; }
           .gl-price { grid-template-columns:1fr; padding:24px; }
           .gl-price-action { width:100%; }
@@ -218,7 +217,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <a className="gl-link" href="#tarifs">Tarif</a>
             <a className="gl-link" href="#questions">Questions</a>
           </nav>
-          <button className="gl-btn gl-btn-primary" style={{ padding:'11px 15px', fontSize:12 }} onClick={onEnter}>Découvrir Gestilys <ArrowRight size={15} /></button>
+          <button className="gl-btn gl-btn-primary" style={{ padding:'11px 15px', fontSize:12, minHeight:44, whiteSpace:'nowrap' }} onClick={onEnter}>Essai gratuit <ArrowRight size={15} /></button>
         </div>
       </header>
 
@@ -230,7 +229,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
               <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
               <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
-                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Découvrir la plateforme <ArrowRight size={17} /></button>
+                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Essai gratuit 14 jours <ArrowRight size={17} /></button>
                 <a href="#demonstration" className="gl-btn" style={{ border:'1px solid #dbe3ef', color:'#172554', textDecoration:'none', background:'white' }}>Voir l’aperçu</a>
               </div>
               <div className="gl-trust">
@@ -369,10 +368,10 @@ export function LandingPage({ onEnter }: LandingPageProps) {
                 <div style={{marginTop:20,color:'#172554'}}><strong style={{fontSize:32,letterSpacing:'-.04em'}}>{(billingPeriod==='mensuel'?plan.monthly:plan.monthly*10).toLocaleString('fr-FR')}</strong><span style={{fontSize:12,color:'#64748b'}}> FCFA / {billingPeriod==='mensuel'?'mois':'an'}</span></div>
                 {billingPeriod==='annuel'&&<p style={{marginTop:4,color:'#15803d',fontSize:12,fontWeight:800}}>Économie : {(plan.monthly*2).toLocaleString('fr-FR')} FCFA / an</p>}
                 <ul style={{display:'grid',gap:10,margin:'22px 0 24px',fontSize:13,color:'#334155',flex:1}}>{plan.features.map(feature=><li key={feature} style={{display:'flex',gap:8,alignItems:'flex-start'}}><Check size={16} color="#15803d"/><span>{feature}</span></li>)}</ul>
-                <button className="gl-btn gl-btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={onEnter}>Demander une démonstration <ArrowRight size={16}/></button>
+                <a className="gl-btn gl-btn-primary" style={{width:'100%',justifyContent:'center',textDecoration:'none',minHeight:48}} href={`https://wa.me/22373369410?text=${encodeURIComponent(`Bonjour Gestilys, je souhaite m’abonner à la formule ${plan.name}, paiement ${billingPeriod === 'mensuel' ? 'mensuel' : 'annuel (12 mois d’accès au prix de 10 mois)'}. Tarif : ${(billingPeriod === 'mensuel' ? plan.monthly : plan.monthly * 10).toLocaleString('fr-FR')} FCFA. École : [nom de l’école]. E-mail : [adresse e-mail]. Merci de m’indiquer les étapes de paiement et d’activation.`)}`} target="_blank" rel="noreferrer">Choisir cette formule <ArrowRight size={16}/></a>
               </article>)}
             </div>
-            <p style={{textAlign:'center',fontSize:12,color:'#64748b',marginTop:20}}>Le forfait exact et les conditions d’accompagnement sont confirmés avant toute souscription.</p>
+            <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',alignItems:'center',gap:12,marginTop:24}}><a className="gl-btn gl-btn-secondary" style={{textDecoration:'none',minHeight:48}} href={`https://wa.me/22373369410?text=${encodeURIComponent('Bonjour Gestilys, je souhaite être conseillé pour choisir une formule. Nom de mon école : [à compléter]. E-mail : [à compléter]. Merci de me guider.')}`} target="_blank" rel="noreferrer">Demander conseil sur WhatsApp <ArrowRight size={16}/></a><span style={{fontSize:12,color:'#64748b'}}>Aucun paiement automatique : l’équipe confirme les modalités avec vous.</span></div><p style={{textAlign:'center',fontSize:12,color:'#64748b',marginTop:14}}>Annuel = 10 mensualités payées pour 12 mois d’accès, soit 2 mois offerts.</p>
           </div>
         </section>
 
@@ -397,8 +396,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         </section>
       </main>
 
-      <footer className="gl-footer">
-        <div className="gl-container" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:22 }}>
+      <footer className="gl-footer">        <div className="gl-container" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:22 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}><span style={{ width:38,height:38,borderRadius:12,display:'grid',placeItems:'center',background:'rgba(255,255,255,.12)',color:'#f9d56e' }}><GraduationCap size={22}/></span><div><div style={{ fontSize:18,fontWeight:900,color:'white' }}>Gestilys</div><div style={{ fontSize:10,color:'#bfdbfe' }}>La gestion scolaire, plus simplement.</div></div></div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center', fontSize:12 }}>
             <a href="mailto:paulkomivitengue@gmail.com" style={{ color:'#dbeafe',textDecoration:'none',display:'flex',alignItems:'center',gap:6 }}><Mail size={14}/> Nous contacter</a>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
-  LogOut, Lock, AlertTriangle,
+  LogOut, Lock, AlertTriangle, ArrowRight, Phone,
   Search,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
@@ -197,8 +197,7 @@ export default function App() {
     };
   }, [students, stockSales]);
 
-  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
-  const totalSalaryPaid = useMemo(() => salaryPayments.reduce((s, p) => s + p.amount, 0), [salaryPayments]);
+  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);  const totalSalaryPaid = useMemo(() => salaryPayments.reduce((s, p) => s + p.amount, 0), [salaryPayments]);
 
   const activeStudent = students.find(s => s.id === activeStudentId) ?? null;
   const receiptStudent = students.find(s => s.id === receiptStudentId) ?? null;
@@ -397,8 +396,7 @@ export default function App() {
       setSalaryPayments(prev => [{ id: dbId, teacherId, month, amount, paidAt: new Date().toISOString() }, ...prev]);
     } catch (err) {
       console.error('Failed to pay salary:', err);
-    }
-  };
+    }  };
 
   const handleUnpaySalary = async (paymentId: string) => {
     try {
@@ -534,7 +532,7 @@ export default function App() {
   }
 
   if (isTrialExpired || profile.subscriptionStatus === 'expired') {
-    return <TrialExpired schoolName={profile.schoolName} onLogout={handleLogout} />;
+    return <TrialExpired schoolName={profile.schoolName} schoolEmail={user.email || ''} onLogout={handleLogout} />;
   }
 
   return (
@@ -597,8 +595,7 @@ export default function App() {
                   outstanding={outstanding}
                   recoveryRate={recoveryRate}
                   stockSales={stockSales}
-                  totalExpenses={totalExpenses}
-                  onNavigate={handleNavigate}
+                  totalExpenses={totalExpenses}                  onNavigate={handleNavigate}
                 />
               )}
 
@@ -797,8 +794,7 @@ export default function App() {
         tranches={feeConfig.tranches}
         schoolName={profile?.schoolName || ''}
         schoolId={profile?.schoolId || ''}
-        onGenerateMatricule={generateMatricule}
-      />
+        onGenerateMatricule={generateMatricule}      />
       <EditStudentModal
         student={editStudent}
         open={editOpen}
@@ -840,48 +836,61 @@ function SchoolSuspended({ schoolName, onLogout }: { schoolName: string; onLogou
   );
 }
 
-function TrialExpired({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
-  const [selectedPlan, setSelectedPlan] = useState<'Essentiel' | 'Plus' | 'Premium' | 'Conseil'>('Plus');
+function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: string; schoolEmail: string; onLogout: () => void }) {
+  const [billingPeriod, setBillingPeriod] = useState<'mensuel' | 'annuel'>('annuel');
   const plans = [
-    { name: 'Essentiel' as const, price: '10 000 FCFA', detail: 'Pour commencer avec les outils essentiels de gestion scolaire.' },
-    { name: 'Plus' as const, price: '20 000 FCFA', detail: 'Pour une école qui souhaite un suivi plus complet de son activité.' },
-    { name: 'Premium' as const, price: '30 000 FCFA', detail: 'Pour une école qui recherche l’accompagnement le plus complet.' },
+    { name: 'Essentiel' as const, monthly: 10000, detail: 'Pour commencer avec les outils essentiels de gestion scolaire.', tone: 'blue' },
+    { name: 'Premium' as const, monthly: 20000, detail: 'Pour un suivi administratif et financier plus complet.', tone: 'violet' },
+    { name: 'Élite' as const, monthly: 30000, detail: 'Pour les établissements qui ont besoin d’un suivi plus approfondi.', tone: 'gold' },
   ];
-  const selected = plans.find(p => p.name === selectedPlan);
-  const message = encodeURIComponent(`Bonjour Gestilys ! Mon essai gratuit est terminé et je souhaite continuer. École : ${schoolName}. Formule choisie : ${selected ? selected.name + ' — ' + selected.price + ' par mois' : 'J’ai besoin d’un conseil sur la formule'}. Merci de m’indiquer les étapes pour régler et activer mon abonnement.`);
+  const whatsappUrl = (planName: string, amount: number, period: 'mensuel' | 'annuel') => {
+    const periodLabel = period === 'mensuel' ? 'mensuel, 1 mois' : 'annuel, 12 mois d’accès pour le prix de 10 mois (2 mois offerts)';
+    const message = encodeURIComponent(
+      "Bonjour, je souhaite m'abonner à Gestilys, formule " + planName + " (" + amount.toLocaleString('fr-FR') + " FCFA, " + periodLabel + "), pour l'école " + schoolName + " (" + schoolEmail + "). Merci de m'indiquer les étapes pour régler et activer mon abonnement."
+    );
+    return 'https://wa.me/22373369410?text=' + message;
+  };
+  const adviceUrl = 'https://wa.me/22373369410?text=' + encodeURIComponent("Bonjour Gestilys, je souhaite être conseillé pour choisir une formule. École : " + schoolName + ". E-mail : " + schoolEmail + ". Merci de me guider.");
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:py-12">
-      <div className="mx-auto max-w-5xl">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-800"><Lock className="h-7 w-7" /></div>
-          <p className="mt-5 text-sm font-bold uppercase tracking-widest text-blue-800">Gestilys · Abonnement</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Votre essai est terminé</h1>
-          <p className="mt-4 text-base leading-7 text-slate-700">L’essai gratuit de 14 jours de <strong className="text-slate-950">{schoolName}</strong> est arrivé à son terme. Choisissez une formule ou demandez-nous conseil pour reprendre votre gestion scolaire.</p>
-          <p className="mt-2 text-sm font-medium text-slate-600">Vos données restent conservées. Aucun paiement n’est effectué sur cette page.</p>
+    <div className="min-h-screen overflow-hidden bg-slate-950 px-4 py-8 text-slate-900 sm:py-12" style={{ background: 'radial-gradient(ellipse at top left, rgba(37,99,235,.32), transparent 42%), radial-gradient(ellipse at bottom right, rgba(124,58,237,.25), transparent 40%), #080f2a' }}>
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-amber-200/30 bg-gradient-to-br from-amber-300 to-yellow-500 text-blue-950 shadow-lg shadow-amber-500/20"><Lock className="h-7 w-7" /></div>
+          <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-amber-300">Gestilys · Abonnement</p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Continuez avec Gestilys</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-blue-100 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-white">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
+          <p className="mt-2 text-xs leading-6 text-blue-200">Vos données restent conservées. Aucun paiement automatique n’est effectué sur cette page.</p>
         </div>
-        <div className="mt-9 grid gap-4 md:grid-cols-3">
-          {plans.map((plan) => (
-            <button key={plan.name} type="button" onClick={() => setSelectedPlan(plan.name)} aria-pressed={selectedPlan === plan.name} className={`rounded-2xl border-2 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${selectedPlan === plan.name ? 'border-blue-700 ring-2 ring-blue-100' : 'border-slate-200'}`}>
-              <span className="text-sm font-bold text-blue-800">{plan.name}</span>
-              <span className="mt-3 block text-2xl font-extrabold text-slate-950">{plan.price}</span>
-              <span className="mt-1 block text-xs font-semibold text-slate-500">par mois · à confirmer avec Gestilys</span>
-              <span className="mt-4 block text-sm leading-6 text-slate-700">{plan.detail}</span>
-              <span className={`mt-5 block rounded-lg px-3 py-2 text-center text-sm font-bold ${selectedPlan === plan.name ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-800'}`}>{selectedPlan === plan.name ? 'Formule sélectionnée' : 'Choisir cette formule'}</span>
-            </button>
-          ))}
+        <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-white/10 bg-white/10 p-1.5 backdrop-blur">
+          <button type="button" onClick={() => setBillingPeriod('mensuel')} aria-pressed={billingPeriod === 'mensuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'mensuel' ? 'bg-white text-blue-950 shadow-lg' : 'text-blue-100 hover:bg-white/10')}>Mensuel</button>
+          <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'annuel' ? 'bg-gradient-to-r from-amber-300 to-yellow-400 text-blue-950 shadow-lg' : 'text-blue-100 hover:bg-white/10')}>Annuel · 2 mois offerts</button>
         </div>
-        <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
-          <h2 className="text-lg font-extrabold text-slate-950">Vous hésitez sur la formule ?</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-700">Décrivez vos besoins directement à notre équipe. Nous vous aiderons à choisir sans engagement.</p>
-          <button type="button" onClick={() => setSelectedPlan('Conseil')} aria-pressed={selectedPlan === 'Conseil'} className={`mt-3 rounded-lg border px-4 py-2 text-sm font-bold ${selectedPlan === 'Conseil' ? 'border-blue-800 bg-blue-800 text-white' : 'border-blue-200 bg-white text-blue-900 hover:bg-blue-100'}`}>Je souhaite être conseillé</button>
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
+          {plans.map((plan) => {
+            const amount = billingPeriod === 'mensuel' ? plan.monthly : plan.monthly * 10;
+            const tone = plan.tone === 'gold' ? { border: 'border-amber-300/50', badge: 'bg-amber-300/15 text-amber-200' } : plan.tone === 'violet' ? { border: 'border-violet-300/40', badge: 'bg-violet-300/15 text-violet-200' } : { border: 'border-blue-300/40', badge: 'bg-blue-300/15 text-blue-200' };
+            return (
+              <article key={plan.name} className={'relative flex flex-col rounded-3xl border ' + tone.border + ' bg-white/[.07] p-5 text-white shadow-2xl backdrop-blur transition duration-200 hover:-translate-y-1 hover:bg-white/[.10] sm:p-6'}>
+                {plan.name === 'Premium' && <span className="absolute right-4 top-4 rounded-full bg-violet-300/15 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-violet-100">POPULAIRE</span>}
+                <span className={'inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
+                <p className="mt-5 text-sm leading-6 text-blue-100">{plan.detail}</p>
+                <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-semibold text-blue-200">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
+                {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-extrabold text-emerald-200">✓ 2 mois offerts · Économie de { (plan.monthly * 2).toLocaleString('fr-FR') } FCFA</div>}
+                <p className="mt-3 text-xs leading-5 text-blue-200">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
+                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 to-yellow-400 px-4 py-3 text-sm font-extrabold text-blue-950 shadow-lg shadow-amber-500/15 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-200/40">Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
+              </article>
+            );
+          })}
         </div>
-        <div className="mx-auto mt-6 max-w-3xl rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-lg font-extrabold text-slate-950">Continuer avec Gestilys</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-700">WhatsApp s’ouvrira avec un message déjà préparé, comprenant le nom de votre école et votre choix. Vous pourrez le vérifier avant de l’envoyer. L’abonnement sera activé après échange et confirmation du paiement par Gestilys.</p>
-          <a href={`https://wa.me/22373369410?text=${message}`} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-extrabold text-white hover:bg-emerald-600 sm:w-auto">Contacter Gestilys sur WhatsApp <span aria-hidden="true">↗</span></a>
-          <button onClick={onLogout} className="ml-0 mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-semibold text-slate-700 hover:bg-slate-50 sm:ml-3"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+        <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-white/10 bg-white/[.06] p-5 text-center backdrop-blur sm:p-6">
+          <h2 className="text-lg font-extrabold text-white">Besoin d’un conseil avant de choisir ?</h2>
+          <p className="mt-2 text-sm leading-6 text-blue-100">Notre équipe peut vous aider à identifier la formule adaptée à votre école.</p>
+          <a href={adviceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-400 px-5 py-3 text-sm font-extrabold text-emerald-950 transition hover:bg-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-200/30"><Phone className="h-4 w-4" /> Demander conseil sur WhatsApp <ArrowRight className="h-4 w-4" /></a>
         </div>
-        <p className="mt-6 text-center text-xs leading-5 text-slate-500">Les tarifs affichés sont indicatifs et doivent être confirmés avec Gestilys avant activation.</p>
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <button onClick={onLogout} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-blue-100 transition hover:bg-white/10"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+          <p className="text-center text-xs leading-5 text-blue-200">L’activation se fait après échange avec Gestilys et confirmation du paiement.</p>
+        </div>
       </div>
     </div>
   );
