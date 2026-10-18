@@ -172,7 +172,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
         }
       `}</style>
 
-      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} allowFreeform={cropDraft.target !== 'logo'} title={cropDraft.target === 'logo' ? 'le logo' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
+      {cropDraft && <ImageCropper image={cropDraft.image} aspectRatio={cropDraft.target === 'logo' ? 1 : 18 / 23} allowFreeform={cropDraft.target !== 'logo'} title={cropDraft.target === 'logo' ? 'le logo' : cropDraft.target === 'stamp' ? 'le cachet' : 'la photo de l’élève'} onCancel={() => setCropDraft(null)} onApply={image => { const target = cropDraft.target; setCropDraft(null); if (target === 'logo') { setLocalSchoolLogo(image); void onSchoolLogoChange(image).catch(() => window.alert('Le logo recadré n’a pas pu être enregistré. Réessayez.')); } else if (target === 'stamp') { try { localStorage.setItem('gestilys-school-stamp-' + schoolId, image); setSchoolStamp(image); } catch { window.alert('Image du cachet trop volumineuse. Choisissez une image plus légère.'); } } else { void saveStudentCardPhoto(schoolId, target, image).then(() => setPhotos(prev => ({ ...prev, [target]: image }))).catch(() => window.alert('La photo n’a pas pu être enregistrée. Vérifiez la connexion puis réessayez.')); } }} />}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -234,18 +234,13 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
               </div>
               <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 p-3">
                 <label className="block text-xs font-700 text-slate-700">Cachet de l’école (photo ou image)
-                  <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={async e => {
+                  <input type="file" accept="image/*" className="mt-2 block w-full text-xs" onChange={e => {
                     const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
                     if (!file || !file.type.startsWith('image/')) return;
-                    try {
-                      const bitmap = await createImageBitmap(file);
-                      const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
-                      const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-                      const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas');
-                      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-                      const data = canvas.toDataURL('image/jpeg', 0.78);
-                      localStorage.setItem('gestilys-school-stamp-' + schoolId, data); setSchoolStamp(data);
-                    } catch { window.alert('Impossible d’enregistrer cette image. Choisissez une photo plus légère.'); }
+                    const reader = new FileReader();
+                    reader.onload = () => { if (typeof reader.result === 'string') setCropDraft({ image: reader.result, target: 'stamp' }); };
+                    reader.onerror = () => window.alert('Impossible de lire cette image. Choisissez une autre photo.');
+                    reader.readAsDataURL(file);
                   }}/>
                 </label>
                 {schoolStamp && <img src={schoolStamp} alt="Aperçu du cachet" className="mt-2 h-14 w-full object-contain"/>}
