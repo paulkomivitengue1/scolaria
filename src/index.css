@@ -243,3 +243,35 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
     margin: 0 !important;
   }
 }
+
+
+/* Gestilys accessibility pass: sober surfaces and readable contrast */
+:root {
+  --royal-50:#f3f6fb; --royal-100:#dce5f1; --royal-200:#b8c9df;
+  --royal-300:#7186a5; --royal-400:#536b8e; --royal-600:#244b91;
+  --royal-700:#1e3a6d; --royal-900:#142746;
+  --gold-300:#9a6b00; --gold-400:#8a5b00; --gold-500:#b77900;
+  --gold-600:#925f00; --gold-700:#754900;
+  --slate-400:#64748b; --canvas:#f7f8fa;
+}
+.text-slate-300{color:#526176!important}
+.text-slate-400{color:#59677b!important}
+.text-royal-100{color:#34445e!important}
+.text-royal-300{color:#465a78!important}
+.text-royal-400{color:#3e5578!important}
+.text-gold-300{color:#815700!important}
+.text-gold-400{color:#815700!important}
+.text-shimmer{background:none!important;background-image:none!important;color:#1e3a6d!important;-webkit-text-fill-color:currentColor!important}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+input,select,textarea{color:#172033}
+input::placeholder,textarea::placeholder{color:#64748b;opacity:1}
+.gestilys-landing .gl-hero{background:#f7f9fc!important}
+.gestilys-landing .gl-hero:before,.gestilys-landing .gl-hero:after{display:none!important}
+.gestilys-landing .gl-btn-primary{background:#e4b63f!important;color:#172033!important;box-shadow:none!important}
+.gestilys-landing .gl-btn-primary:hover{background:#d6a52c!important;box-shadow:none!important}
+.gestilys-landing .gl-title span{color:#244b91!important}
+.gestilys-landing .gl-mock{animation:none!important;transform:none!important;box-shadow:0 8px 28px rgba(15,23,42,.08)!important}
+.gestilys-landing .gl-feature:after{display:none!important}
+.gestilys-landing .gl-feature,.gestilys-landing .gl-step,.gestilys-landing .gl-demo-card{box-shadow:0 1px 3px rgba(15,23,42,.07)!important}
+.gestilys-landing .gl-btn:hover,.gestilys-landing .gl-feature:hover,.gestilys-landing .gl-step:hover,.gestilys-landing .gl-demo-card:hover{transform:none!important}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
