@@ -173,6 +173,25 @@ export function ReceiptPhotoPdf({ open, onClose, schoolName, schoolId = '', pare
             <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('logo', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
             {logo && <img src={logo} alt="Aperçu du logo" className="mt-3 h-20 w-full object-contain"/>}
           </label>
+          <label className="block cursor-pointer rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-3 hover:border-indigo-400">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><ImagePlus size={17}/> Cachet de l’école</span>
+            <input className="block w-full text-xs" type="file" accept="image/*" onChange={async e => {
+              const file = e.currentTarget.files?.[0]; e.currentTarget.value = '';
+              if (!file || !file.type.startsWith('image/')) return;
+              try {
+                const bitmap = await createImageBitmap(file);
+                const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
+                const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+                const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas');
+                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+                const data = canvas.toDataURL('image/jpeg', 0.78);
+                if (schoolId) localStorage.setItem('gestilys-school-stamp-' + schoolId, data);
+                setStamp(data);
+              } catch { setError('Impossible d’enregistrer le cachet. Choisis une image plus légère.'); }
+            }}/>
+            {stamp && <img src={stamp} alt="Aperçu du cachet" className="mt-3 h-16 w-full object-contain"/>}
+            <span className="mt-1 block text-xs text-slate-500">Le cachet sera réutilisé pour cette école.</span>
+          </label>
           {mode === 'photo' && <label className="block cursor-pointer rounded-xl border border-dashed border-slate-300 p-3 hover:border-indigo-400">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Camera size={17}/> Photo du reçu (galerie ou appareil)</span>
             <input className="block w-full text-xs" type="file" accept="image/*" onChange={e => { void handleImage('receipt', e.target.files?.[0]); e.currentTarget.value = ''; }}/>
