@@ -294,6 +294,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <nav className="gl-nav-links" style={{ display:'flex', alignItems:'center', gap:25 }}>
             <a className="gl-link" href="#fonctionnalites">Fonctionnalités</a>
             <a className="gl-link" href="#demonstration">Aperçu</a>
+            <a className="gl-link" href="#nouveautes">Nouveautés</a>
             <a className="gl-link" href="#tarifs">Tarifs</a>
             <a className="gl-link" href="#questions">Questions</a>
           </nav>
@@ -303,6 +304,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <a href="#accueil" onClick={() => setMobileMenuOpen(false)}>Accueil <ArrowRight size={15} /></a>
           <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)}>Fonctionnalités <ArrowRight size={15} /></a>
           <a href="#demonstration" onClick={() => setMobileMenuOpen(false)}>Aperçu du logiciel <ArrowRight size={15} /></a>
+          <a href="#nouveautes" onClick={() => setMobileMenuOpen(false)}>Nouveautés Gestilys <ArrowRight size={15} /></a>
           <a href="#tarifs" onClick={() => setMobileMenuOpen(false)}>Formules et tarifs <ArrowRight size={15} /></a>
           <a href="#questions" onClick={() => setMobileMenuOpen(false)}>Questions fréquentes <ArrowRight size={15} /></a>
           <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact <ArrowRight size={15} /></a>
@@ -431,6 +433,39 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               <article className="gl-step"><div className="gl-step-num">01</div><h3>Découvrez l’espace</h3><p>Ouvrez Gestilys et explorez les rubriques disponibles pour votre établissement.</p></article>
               <article className="gl-step"><div className="gl-step-num">02</div><h3>Configurez votre école</h3><p>Renseignez les informations utiles, les classes, les élèves et les frais à suivre.</p></article>
               <article className="gl-step"><div className="gl-step-num">03</div><h3>Suivez les opérations</h3><p>Enregistrez les paiements et consultez les informations de gestion depuis votre espace.</p></article>
+            </div>
+          </div>
+        </section>
+
+        <section id="nouveautes" className="gl-section" style={{ background: 'linear-gradient(180deg,#ffffff 0%,#f5f8ff 100%)' }}>
+          <div className="gl-container">
+            <div className="gl-kicker">Gestilys évolue</div>
+            <h2 className="gl-h2">Des outils concrets pour mieux gérer votre école</h2>
+            <p className="gl-lead">Les modules essentiels sont réunis dans un même espace, avec une interface pensée pour les directeurs et les équipes scolaires.</p>
+            <div className="gl-feature-grid" style={{ marginTop: 28 }}>
+              <article className="gl-feature-card">
+                <div className="gl-feature-icon"><CreditCard size={22} /></div>
+                <h3>Cartes scolaires</h3>
+                <p>Préparez les cartes des élèves avec photo, logo de l’établissement et informations configurables, puis lancez l’impression.</p>
+              </article>
+              <article className="gl-feature-card">
+                <div className="gl-feature-icon"><FileText size={22} /></div>
+                <h3>Bulletins scolaires</h3>
+                <p>Retrouvez le module de bulletins dans l’application pour organiser les informations scolaires des élèves.</p>
+              </article>
+              <article className="gl-feature-card">
+                <div className="gl-feature-icon"><Package size={22} /></div>
+                <h3>Stocks et fournitures</h3>
+                <p>Suivez les articles et les quantités de stock pour mieux garder une vue d’ensemble sur les fournitures de l’école.</p>
+              </article>
+              <article className="gl-feature-card">
+                <div className="gl-feature-icon"><Wallet size={22} /></div>
+                <h3>Suivi des paiements</h3>
+                <p>Consultez les paiements enregistrés et les montants restant à suivre depuis les rubriques de gestion.</p>
+              </article>
+            </div>
+            <div style={{ marginTop: 26, display: 'flex', justifyContent: 'center' }}>
+              <button className="gl-btn gl-btn-secondary" onClick={onEnter}>Explorer Gestilys <ArrowRight size={16} /></button>
             </div>
           </div>
         </section>
