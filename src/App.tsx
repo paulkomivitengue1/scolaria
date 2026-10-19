@@ -881,9 +881,9 @@ function SchoolSuspended({ schoolName, onLogout }: { schoolName: string; onLogou
 function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: string; schoolEmail: string; onLogout: () => void }) {
   const [billingPeriod, setBillingPeriod] = useState<'mensuel' | 'annuel'>('annuel');
   const plans = [
-    { name: 'Essentiel' as const, monthly: 10000, detail: 'Pour commencer avec les outils essentiels de gestion scolaire.', tone: 'blue' },
-    { name: 'Premium' as const, monthly: 20000, detail: 'Pour un suivi administratif et financier plus complet.', tone: 'violet' },
-    { name: 'Élite' as const, monthly: 30000, detail: 'Pour les établissements qui ont besoin d’un suivi plus approfondi.', tone: 'gold' },
+    { name: 'Essentiel' as const, monthly: 10000, detail: 'Les outils indispensables pour suivre les élèves et les frais scolaires.', tone: 'blue', features: ['Suivi des élèves et des classes', 'Encaissements et frais scolaires', 'Reçus à partager sur WhatsApp'] },
+    { name: 'Premium' as const, monthly: 20000, detail: 'Un suivi administratif et financier plus complet au quotidien.', tone: 'violet', features: ['Tout le contenu Essentiel', 'Suivi des dépenses et des stocks', 'Tableaux de bord et bulletins'], popular: true },
+    { name: 'Élite' as const, monthly: 30000, detail: 'Pour les établissements qui souhaitent un suivi plus approfondi.', tone: 'gold', features: ['Tout le contenu Premium', 'Accompagnement prioritaire', 'Configuration adaptée à votre école'] },
   ];
   const whatsappUrl = (planName: string, amount: number, period: 'mensuel' | 'annuel') => {
     const periodLabel = period === 'mensuel' ? 'mensuel, 1 mois' : 'annuel, 12 mois d’accès pour le prix de 10 mois (2 mois offerts)';
@@ -894,45 +894,80 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
   };
   const adviceUrl = 'https://wa.me/22373369410?text=' + encodeURIComponent("Bonjour Gestilys, je souhaite être conseillé pour choisir une formule. École : " + schoolName + ". E-mail : " + schoolEmail + ". Merci de me guider.");
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-50 px-4 py-8 text-slate-900 sm:py-12" style={{ background: 'linear-gradient(135deg, #f5f8ff 0%, #edf3ff 52%, #ffffff 100%)' }}>
-      <div className="mx-auto max-w-6xl">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-amber-200/30 bg-gradient-to-br from-amber-300 to-yellow-500 text-blue-950 shadow-lg shadow-amber-500/20"><Lock className="h-7 w-7" /></div>
-          <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-blue-900">Gestilys · Abonnement</p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-blue-950 sm:text-5xl">Continuez avec Gestilys</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-700 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-slate-900">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
-          <p className="mt-2 text-xs leading-6 text-slate-600">Vos données restent conservées. Aucun paiement automatique n’est effectué sur cette page.</p>
+    <div className="gestilys-billing min-h-screen overflow-hidden px-4 py-6 text-slate-900 sm:px-6 sm:py-10">
+      <style>{`
+        .gestilys-billing { --gb-navy:#172554; --gb-blue:#1d4ed8; --gb-gold:#f4bd35; position:relative; isolation:isolate; background:radial-gradient(ellipse at 8% 8%,rgba(59,130,246,.17),transparent 34%),radial-gradient(ellipse at 94% 3%,rgba(244,189,53,.23),transparent 30%),linear-gradient(180deg,#f4f7ff 0%,#fff 58%,#f7f9fd 100%); }
+        .gestilys-billing:before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(29,78,216,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.04) 1px,transparent 1px); background-size:32px 32px; mask-image:linear-gradient(to bottom,black,transparent 78%); }
+        .gb-shell { width:min(1120px,100%); margin-inline:auto; }
+        .gb-brand { display:flex; align-items:center; gap:11px; color:var(--gb-navy); font-weight:900; letter-spacing:-.04em; }
+        .gb-brand-mark { display:grid; place-items:center; width:43px; height:43px; border-radius:14px; color:var(--gb-navy); background:linear-gradient(135deg,#f9d56e,#f4bd35); box-shadow:0 8px 22px rgba(244,189,53,.25); }
+        .gb-eyebrow { display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border:1px solid #dbeafe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:11px; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
+        .gb-title { color:#172554; font-size:clamp(32px,5vw,54px); font-weight:900; letter-spacing:-.055em; line-height:1.06; }
+        .gb-title span { color:#1d4ed8; }
+        .gb-card { position:relative; overflow:hidden; border:1px solid #e0e8f5; border-radius:24px; background:rgba(255,255,255,.92); box-shadow:0 16px 42px rgba(23,37,84,.075); transition:transform .2s,box-shadow .2s,border-color .2s; }
+        .gb-card:hover { transform:translateY(-4px); box-shadow:0 24px 55px rgba(23,37,84,.13); }
+        .gb-card:before { content:""; position:absolute; inset:0 0 auto; height:5px; background:linear-gradient(90deg,#60a5fa,#1d4ed8); }
+        .gb-card.violet:before { background:linear-gradient(90deg,#818cf8,#4338ca); }
+        .gb-card.gold:before { background:linear-gradient(90deg,#f9d56e,#e0a800); }
+        .gb-card.popular { border-color:#f0c653; box-shadow:0 20px 48px rgba(217,158,20,.14); }
+        .gb-switch { display:flex; gap:5px; padding:5px; border:1px solid #dce5f2; border-radius:16px; background:rgba(255,255,255,.8); box-shadow:0 8px 24px rgba(23,37,84,.06); }
+        .gb-switch button { border:0; border-radius:11px; padding:11px 17px; font-size:13px; font-weight:850; cursor:pointer; color:#52627a; background:transparent; transition:all .2s; }
+        .gb-switch button.active { color:#172554; background:linear-gradient(135deg,#f9d56e,#f4bd35); box-shadow:0 5px 14px rgba(244,189,53,.22); }
+        .gb-cta { display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:48px; border-radius:14px; padding:12px 16px; color:#172554; background:linear-gradient(135deg,#f9d56e,#f4bd35); box-shadow:0 8px 22px rgba(244,189,53,.22); font-size:13px; font-weight:900; text-decoration:none; transition:transform .18s,box-shadow .18s; }
+        .gb-cta:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(244,189,53,.32); }
+        .gb-cta-secondary { color:white; background:#172554; box-shadow:0 8px 22px rgba(23,37,84,.17); }
+        .gb-cta-secondary:hover { box-shadow:0 12px 28px rgba(23,37,84,.25); }
+        .gb-check { display:grid; place-items:center; width:20px; height:20px; flex:none; border-radius:7px; color:#1d4ed8; background:#eff6ff; }
+        @media (prefers-reduced-motion:reduce) { .gb-card,.gb-cta { transition:none; } .gb-card:hover,.gb-cta:hover { transform:none; } }
+      `}</style>
+      <div className="gb-shell">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div className="gb-brand"><span className="gb-brand-mark"><GraduationCap className="h-6 w-6" /></span><span className="text-2xl">Gestilys<span className="ml-1 text-blue-700">.</span><span className="mt-0.5 block text-[10px] font-extrabold uppercase tracking-[.19em] text-slate-500">La gestion scolaire simplifiée</span></span></div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/85 px-3 py-2 text-xs font-extrabold text-blue-950 shadow-sm"><Lock className="h-4 w-4 text-amber-600" /> Essai gratuit terminé</div>
+        </header>
+
+        <section className="relative mx-auto max-w-3xl py-10 text-center sm:py-14">
+          <div className="pointer-events-none absolute left-1/2 top-12 -z-10 h-44 w-44 -translate-x-1/2 rounded-full bg-blue-200/40 blur-3xl" />
+          <span className="gb-eyebrow"><Sparkles className="h-3.5 w-3.5" /> Votre école, votre espace de gestion</span>
+          <h1 className="gb-title mt-5">Continuez à faire grandir <span>votre école.</span></h1>
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-blue-950">{schoolName}</strong> est terminé. Choisissez la formule adaptée à votre établissement et demandez son activation en quelques échanges sur WhatsApp.</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-bold text-slate-600"><span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-blue-600" /> Vos données sont conservées</span><span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-600" /> Aucun paiement automatique</span></div>
+        </section>
+
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-xs font-extrabold uppercase tracking-[.14em] text-blue-950">Choisissez votre période</p>
+          <div className="gb-switch" role="group" aria-label="Période de facturation">
+            <button type="button" onClick={() => setBillingPeriod('mensuel')} aria-pressed={billingPeriod === 'mensuel'} className={billingPeriod === 'mensuel' ? 'active' : ''}>Mensuel</button>
+            <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={billingPeriod === 'annuel' ? 'active' : ''}>Annuel · 2 mois offerts</button>
+          </div>
+          <p className="text-center text-xs text-slate-500">{billingPeriod === 'annuel' ? 'Payez 10 mois, profitez de 12 mois d’accès.' : 'Un mois d’accès, renouvelable selon vos besoins.'}</p>
         </div>
-        <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-200/70 p-1.5">
-          <button type="button" onClick={() => setBillingPeriod('mensuel')} aria-pressed={billingPeriod === 'mensuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'mensuel' ? 'bg-white text-blue-950 shadow-lg' : 'text-slate-700 hover:bg-white')}>Mensuel</button>
-          <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'annuel' ? 'bg-blue-900 text-white shadow-sm' : 'text-slate-700 hover:bg-white')}>Annuel · 2 mois offerts</button>
-        </div>
-        <div className="mt-6 grid gap-5 md:grid-cols-3">
+
+        <div className="mt-7 grid items-stretch gap-5 md:grid-cols-3">
           {plans.map((plan) => {
             const amount = billingPeriod === 'mensuel' ? plan.monthly : plan.monthly * 10;
-            const tone = plan.tone === 'gold' ? { border: 'border-amber-300', badge: 'bg-amber-100 text-amber-950' } : plan.tone === 'violet' ? { border: 'border-blue-300', badge: 'bg-blue-100 text-blue-950' } : { border: 'border-slate-200', badge: 'bg-sky-100 text-sky-950' };
+            const tone = plan.tone === 'gold' ? { border: 'border-amber-300', badge: 'bg-amber-100 text-amber-950' } : plan.tone === 'violet' ? { border: 'border-indigo-200', badge: 'bg-indigo-50 text-indigo-900' } : { border: 'border-blue-200', badge: 'bg-blue-50 text-blue-900' };
             return (
-              <article key={plan.name} className={'relative flex flex-col rounded-3xl border ' + tone.border + ' bg-white p-5 text-slate-900 shadow-md shadow-slate-200/70 transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-6'}>
-                {plan.name === 'Premium' && <span className="absolute right-4 top-4 rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-amber-950">POPULAIRE</span>}
+              <article key={plan.name} className={'gb-card ' + (plan.tone === 'violet' ? 'violet ' : plan.tone === 'gold' ? 'gold ' : '') + (plan.popular ? 'popular ' : '') + 'flex flex-col p-5 sm:p-6'}>
+                {plan.popular && <span className="absolute right-4 top-4 rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-amber-950">LE PLUS CHOISI</span>}
                 <span className={'inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
-                <p className="mt-5 text-sm leading-6 text-slate-700">{plan.detail}</p>
-                <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-semibold text-slate-600">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
-                {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800">✓ 2 mois offerts · Économie de { (plan.monthly * 2).toLocaleString('fr-FR') } FCFA</div>}
-                <p className="mt-3 text-xs leading-5 text-slate-600">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
-                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200">Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
+                <p className="mt-4 min-h-[50px] pr-2 text-sm leading-6 text-slate-600">{plan.detail}</p>
+                <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight text-blue-950 sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-bold text-slate-500">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
+                {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800">✓ 2 mois offerts · Économie de {(plan.monthly * 2).toLocaleString('fr-FR')} FCFA</div>}
+                <p className="mt-3 text-xs leading-5 text-slate-500">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
+                <ul className="mt-5 flex-1 space-y-3 border-t border-slate-100 pt-5">{plan.features.map(feature => <li key={feature} className="flex items-start gap-2.5 text-xs font-semibold leading-5 text-slate-700"><span className="gb-check mt-0.5"><Check className="h-3 w-3" /></span><span>{feature}</span></li>)}</ul>
+                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className={'gb-cta mt-6 w-full ' + (plan.popular ? 'gb-cta-secondary' : '')}>Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
               </article>
             );
           })}
         </div>
-        <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm sm:p-6">
-          <h2 className="text-lg font-extrabold text-blue-950">Besoin d’un conseil avant de choisir ?</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-700">Notre équipe peut vous aider à identifier la formule adaptée à votre école.</p>
-          <a href={adviceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-blue-900 bg-blue-900 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200"><Phone className="h-4 w-4" /> Demander conseil sur WhatsApp <ArrowRight className="h-4 w-4" /></a>
-        </div>
-        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button onClick={onLogout} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"><LogOut className="h-4 w-4" /> Se déconnecter</button>
-          <p className="text-center text-xs leading-5 text-slate-600">L’activation se fait après échange avec Gestilys et confirmation du paiement.</p>
-        </div>
+
+        <section className="gb-card mt-8 flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:justify-between sm:p-8">
+          <div className="max-w-xl"><span className="gb-eyebrow">Besoin d’un conseil ?</span><h2 className="mt-3 text-xl font-extrabold tracking-tight text-blue-950">On vous aide à choisir.</h2><p className="mt-2 text-sm leading-6 text-slate-600">Expliquez-nous les besoins de votre établissement : nous vous guiderons vers la formule la plus adaptée.</p></div>
+          <a href={adviceUrl} target="_blank" rel="noreferrer" className="gb-cta gb-cta-secondary shrink-0"><Phone className="h-4 w-4" /> Parler à Gestilys <ArrowRight className="h-4 w-4" /></a>
+        </section>
+
+        <footer className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-blue-100 py-6 text-center sm:flex-row sm:text-left"><p className="text-xs font-semibold text-slate-500">© {new Date().getFullYear()} Gestilys · Pensé pour les écoles d’Afrique de l’Ouest</p><button onClick={onLogout} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-extrabold text-blue-950 shadow-sm transition hover:border-blue-300 hover:bg-blue-50"><LogOut className="h-4 w-4" /> Se déconnecter</button></footer>
       </div>
     </div>
   );
