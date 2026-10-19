@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
   LogOut, Lock, AlertTriangle, ArrowRight, Phone,
-  Search, GraduationCap, Check, ShieldCheck,
+  Search, GraduationCap, Check, ShieldCheck, CircleHelp,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { generateMatricule, loadStudents, addStudentDB, recordPayment,
@@ -31,6 +31,7 @@ import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
+import { UserGuide } from './components/UserGuide';
 import { ClassView } from './components/ClassView';
 import { StudentCardsView } from './components/StudentCardsView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
@@ -68,6 +69,8 @@ export default function App() {
 
   const [query, setQuery] = useState('');
   const [view, setView] = useState<AppView>('dashboard');
+  const [guideMode, setGuideMode] = useState<'onboarding' | 'module' | 'help' | null>(null);
+  const [guideView, setGuideView] = useState<AppView>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFeeType, setActiveFeeType] = useState<string>('scolarite');
   const [payOpen, setPayOpen] = useState(false);
@@ -92,6 +95,26 @@ export default function App() {
   const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
 
   const [payError, setPayError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user || !profile?.schoolId || dataLoading) return;
+    const key = 'gestilys-guide-started:' + profile.schoolId;
+    const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+    const isNewAccount = createdAt > 0 && Date.now() - createdAt < 7 * 24 * 60 * 60 * 1000;
+    try {
+      if (isNewAccount && localStorage.getItem(key) !== 'done') setGuideMode('onboarding');
+    } catch { /* If storage is unavailable, the help button remains available. */ }
+  }, [user?.id, user?.created_at, profile?.schoolId, dataLoading]);
+
+  const closeGuide = () => {
+    if (guideMode === 'onboarding' && profile?.schoolId) {
+      try { localStorage.setItem('gestilys-guide-started:' + profile.schoolId, 'done'); } catch { /* ignore storage errors */ }
+    }
+    if (guideMode === 'module' && profile?.schoolId) {
+      try { localStorage.setItem('gestilys-guide-module:' + profile.schoolId + ':' + guideView, 'done'); } catch { /* ignore storage errors */ }
+    }
+    setGuideMode(null);
+  };
 
   // ── Load all school data when user logs in ────────────
   const loadAllData = useCallback(async (schoolId: string) => {
@@ -493,6 +516,21 @@ export default function App() {
   const handleNavigate = (v: AppView) => {
     setView(v);
     setSidebarOpen(false);
+    if (v !== 'dashboard' && v !== 'parametres' && profile?.schoolId) {
+      const key = 'gestilys-guide-module:' + profile.schoolId + ':' + v;
+      try {
+        if (localStorage.getItem(key) !== 'done') {
+          setGuideView(v);
+          setGuideMode('module');
+        }
+      } catch { /* help remains available if browser storage is blocked */ }
+    }
+  };
+
+  const startStudentFromGuide = () => {
+    setView('inscriptions');
+    setSidebarOpen(false);
+    setAddOpen(true);
   };
 
   // ── Render ────────────────────────────────────────────
@@ -604,6 +642,16 @@ export default function App() {
               {query && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-600 text-slate-400">{filtered.length}</span>}
             </div>
 
+            {/* Help stays available after the first-run guide is dismissed. */}
+            <button
+              type="button"
+              onClick={() => { setGuideView(view); setGuideMode('help'); }}
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-extrabold text-blue-900 transition hover:bg-blue-100"
+              title="Ouvrir le mode d’emploi"
+              aria-label="Aide et mode d’emploi"
+            >
+              <CircleHelp className="h-4 w-4" /><span className="hidden sm:inline">Aide</span>
+            </button>
             {/* Right side: quick logout */}
             <button
               onClick={handleLogout}
@@ -824,6 +872,15 @@ export default function App() {
         tranches={feeConfig.tranches}
         trancheKey={trancheReceiptKey}
         paidAmount={trancheReceiptAmount}
+      />
+      <UserGuide
+        open={guideMode !== null}
+        mode={guideMode || 'help'}
+        view={guideView}
+        schoolName={profile?.schoolName || ''}
+        onClose={closeGuide}
+        onNavigate={handleNavigate}
+        onStartStudent={startStudentFromGuide}
       />
       <AddStudentModal
         open={addOpen}
