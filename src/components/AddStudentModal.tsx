@@ -23,7 +23,7 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate: string; birthPlace: string; matricule: string; sexe: 'M' | 'F'; }
 const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', birthDate: '', birthPlace: '', matricule: '', sexe: 'M' };
 
-export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, onGenerateMatricule }: AddStudentModalProps) {
+export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [plans, setPlans] = useState<Record<string, boolean>>({});
 
