@@ -538,7 +538,7 @@ export function AdminPanel({ onExit }: Props) {
 
             {/* ── Pending payments (highlighted section) ── */}
             {pendingPayments.length > 0 && (
-              <section className="mb-6">
+              <section id="admin-paiements" className="mb-6">
                 <div className="mb-4">
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-gold-700">
                     <CreditCard className="h-3 w-3" /> Paiements en attente
