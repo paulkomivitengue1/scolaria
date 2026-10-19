@@ -225,6 +225,9 @@ export function AdminPanel({ onExit }: Props) {
       await adminSetSchoolPaidStatus(code, schoolId, paid, plan, period);
       const refreshedSchools = await adminListSchools(code);
       setSchools(refreshedSchools);
+      setSelectedSchool(current => current?.id === schoolId
+        ? refreshedSchools.find(s => s.id === schoolId) || null
+        : current);
       showToast(paid ? `Paiement confirmé : forfait ${plan} activé` : 'École marquée impayée');
     } catch (err: any) {
       showToast(err.message || 'Impossible de modifier le statut de paiement');
