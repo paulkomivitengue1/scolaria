@@ -113,7 +113,7 @@ export const getFeeAccent = (feeType: string): { wrap: string; text: string; dot
   FEE_TYPE_ACCENTS[feeType] ?? { wrap: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-500' };
 
 // ── Classes ────────────────────────────────────────────
-export const CLASS_LIST = ['Jardin','1ère année','2ème année','3ème année','4ème année','5ème année','6ème année','7ème année','8ème année','9ème année'];
+export const CLASS_LIST = ['Petite section','Moyenne section','Grande section','Jardin','1ère année','2ème année','3ème année','4ème année','5ème année','6ème année','7ème année','8ème année','9ème année'];
 
 // ── Legacy pricing types (kept for backward compat) ────
 export type ClassPricing = Record<ServiceType,number>;
@@ -226,8 +226,8 @@ export type UniformStockMap = Record<string, UniformStockItem>;
 export const uniformAvailable = (i: UniformStockItem) => i.oldStock + i.newStock - i.sold;
 export const uniformRemaining = (i: UniformStockItem) => Math.max(0, uniformAvailable(i));
 
-export type BookClass = 'Jardin'|'1ère année'|'2ème année'|'3ème année'|'4ème année'|'5ème année'|'6ème année'|'7ème année'|'8ème année'|'9ème année';
-export const BOOK_CLASSES: BookClass[] = ['Jardin','1ère année','2ème année','3ème année','4ème année','5ème année','6ème année','7ème année','8ème année','9ème année'];
+export type BookClass = 'Petite section'|'Moyenne section'|'Grande section'|'Jardin'|'1ère année'|'2ème année'|'3ème année'|'4ème année'|'5ème année'|'6ème année'|'7ème année'|'8ème année'|'9ème année';
+export const BOOK_CLASSES: BookClass[] = ['Petite section','Moyenne section','Grande section','Jardin','1ère année','2ème année','3ème année','4ème année','5ème année','6ème année','7ème année','8ème année','9ème année'];
 export const BOOK_SUBJECTS = ['Lecture','Calcul','Écriture','Dictée','Grammaire','Conjugaison','Histoire-Géo','Sciences','Anglais','EPS'] as const;
 export type BookSubject = string;
 
