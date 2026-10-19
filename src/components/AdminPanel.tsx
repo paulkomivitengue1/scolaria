@@ -57,6 +57,7 @@ export function AdminPanel({ onExit }: Props) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [activeModule, setActiveModule] = useState<'dashboard' | 'revenus' | 'tarifs' | 'ecoles' | 'paiements'>('dashboard');
   const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editPlan, setEditPlan] = useState<'Essentiel' | 'Premium' | 'Élite'>('Essentiel');
@@ -356,10 +357,12 @@ export function AdminPanel({ onExit }: Props) {
   return (
     <div className="gestilys-admin min-h-screen bg-canvas bg-grid">
       <style>{`
-        .gestilys-admin .ga-desktop-nav { display:none; }
-        @media(min-width:768px) { .gestilys-admin .ga-desktop-nav { display:flex; } }
-        .gestilys-admin .ga-desktop-nav a { color:#fff; text-decoration:none; font-size:12px; font-weight:800; padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.08); white-space:nowrap; }
-        .gestilys-admin .ga-desktop-nav a:hover { background:rgba(255,255,255,.2); }
+        .gestilys-admin .ga-module-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; max-width:1400px; margin:0 auto; padding:12px 16px; }
+        @media(min-width:768px) { .gestilys-admin .ga-module-menu { grid-template-columns:repeat(5,minmax(0,1fr)); padding:14px 24px; } }
+        .gestilys-admin .ga-module-menu button { color:#172554 !important; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:11px 12px; font-size:13px; font-weight:800; text-align:center; }
+        .gestilys-admin .ga-module-menu button[aria-current="page"] { color:#fff !important; background:linear-gradient(115deg,#172554,#1d4ed8); border-color:#f4bd35; box-shadow:0 5px 14px rgba(23,37,84,.16); }
+        .gestilys-admin main[data-admin-module="dashboard"] section:not([data-admin-module="dashboard"]), .gestilys-admin main[data-admin-module="revenus"] section:not([data-admin-module="revenus"]), .gestilys-admin main[data-admin-module="tarifs"] section:not([data-admin-module="tarifs"]), .gestilys-admin main[data-admin-module="ecoles"] section:not([data-admin-module="ecoles"]), .gestilys-admin main[data-admin-module="paiements"] section:not([data-admin-module="paiements"]) { display:none !important; }
+        .gestilys-admin main[data-admin-module="dashboard"] section[data-admin-module="dashboard"], .gestilys-admin main[data-admin-module="revenus"] section[data-admin-module="revenus"], .gestilys-admin main[data-admin-module="tarifs"] section[data-admin-module="tarifs"], .gestilys-admin main[data-admin-module="ecoles"] section[data-admin-module="ecoles"], .gestilys-admin main[data-admin-module="paiements"] section[data-admin-module="paiements"] { display:block; }
         .gestilys-admin { --ga-navy:#172554; --ga-blue:#1d4ed8; --ga-gold:#f4bd35; position:relative; isolation:isolate; background:radial-gradient(ellipse at 8% 5%,rgba(59,130,246,.14),transparent 32%),radial-gradient(ellipse at 94% 0%,rgba(244,189,53,.18),transparent 27%),linear-gradient(180deg,#f4f7ff 0%,#fff 55%,#f7f9fd 100%); }
         .gestilys-admin:before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(29,78,216,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.035) 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(to bottom,black,transparent 85%); }
         .gestilys-admin header { border-color:rgba(244,189,53,.35); background:linear-gradient(110deg,#172554 0%,#1e3a8a 62%,#1d4ed8 125%); box-shadow:0 12px 34px rgba(23,37,84,.16); }
@@ -368,6 +371,15 @@ export function AdminPanel({ onExit }: Props) {
         .gestilys-admin main .border-slate-200.bg-white { border-color:#e0e8f5; box-shadow:0 12px 32px rgba(23,37,84,.055); }
         .gestilys-admin main .bg-gradient-to-r.from-royal-950 { background:linear-gradient(115deg,#172554 0%,#1e3a8a 72%,#1d4ed8 130%); }
         .gestilys-admin main button:not([class*='text-white']):not([class*='text-emerald']):not([class*='text-red-']):not([class*='text-blue-']):not([class*='text-royal-']) { color:#172554; }
+        .gestilys-admin main button.bg-white, .gestilys-admin main button.bg-white\/10 { color:#172554 !important; }
+        .gestilys-admin main button.bg-white\/10 { color:#fff !important; }
+        .gestilys-admin main button.bg-gradient-to-r.from-royal-800, .gestilys-admin main button.bg-gradient-to-br.from-gold-500 { color:#fff !important; }
+        .gestilys-admin main button.border-white\/20.bg-white\/10 { background:#1e40af; border-color:#93c5fd; color:#fff !important; }
+        .gestilys-admin main .text-slate-400 { color:#475569 !important; }
+        .gestilys-admin main .text-slate-300 { color:#334155 !important; }
+        .gestilys-admin main .text-slate-500 { color:#475569 !important; }
+        .gestilys-admin main .text-slate-600 { color:#334155 !important; }
+        .gestilys-admin main .bg-slate-50 { background:#f1f5f9; }
         .gestilys-admin main button:focus-visible,.gestilys-admin main input:focus-visible,.gestilys-admin main select:focus-visible { outline:3px solid rgba(147,197,253,.9); outline-offset:2px; }
         .gestilys-admin main button { transition:filter .18s,transform .18s,box-shadow .18s; }
         .gestilys-admin main button:hover:not(:disabled) { filter:brightness(1.025); }
@@ -385,9 +397,9 @@ export function AdminPanel({ onExit }: Props) {
               <p className="text-[11px] font-600 text-royal-200">Gestilys · Console d'administration</p>
             </div>
           </div>
-          <nav className="ga-desktop-nav items-center gap-1"><a href="#admin-dashboard">Vue d’ensemble</a><a href="#admin-revenus">Revenus</a><a href="#admin-tarifs">Tarifs</a><a href="#admin-ecoles">Écoles</a><a href="#admin-paiements">Paiements</a></nav>
+          
           <div className="flex items-center gap-2">
-            <button onClick={() => setAdminMenuOpen(v => !v)} aria-label="Ouvrir les rubriques administrateur" aria-expanded={adminMenuOpen} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white sm:hidden"><Menu className="h-5 w-5" /></button>
+            <button onClick={() => setAdminMenuOpen(v => !v)} aria-label="Ouvrir les rubriques administrateur" aria-expanded={adminMenuOpen} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white"><Menu className="h-5 w-5" /></button>
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-700 text-white backdrop-blur transition hover:bg-white/20 active:scale-95 sm:px-3.5 sm:text-sm"
@@ -404,15 +416,15 @@ export function AdminPanel({ onExit }: Props) {
         </div>
       </header>
 
-      {adminMenuOpen && authed && <nav aria-label="Rubriques administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 p-3 shadow-lg backdrop-blur sm:hidden"><div className="grid grid-cols-2 gap-2">{[["#admin-dashboard","Vue d’ensemble"],["#admin-revenus","Revenus"],["#admin-tarifs","Tarifs"],["#admin-ecoles","Écoles"],["#admin-paiements","Paiements"]].map(([href,label])=><a key={href} href={href} onClick={()=>setAdminMenuOpen(false)} className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-center text-sm font-bold text-blue-950">{label}</a>)}</div></nav>}
-      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      {adminMenuOpen && authed && <nav aria-label="Modules administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 shadow-lg backdrop-blur"><div className="ga-module-menu">{[["dashboard","Vue d’ensemble"],["revenus","Revenus"],["tarifs","Tarifs"],["ecoles","Écoles"],["paiements","Paiements"]].map(([module,label])=><button key={module} type="button" aria-current={activeModule===module ? "page" : undefined} onClick={()=>{setActiveModule(module as typeof activeModule);setAdminMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}}>{label}</button>)}</div></nav>}
+      <main data-admin-module={activeModule} className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {dataLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-royal-700" />
           </div>
         ) : (
           <>
-            <section id="admin-dashboard" className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-cardLg">
+            <section id="admin-dashboard" data-admin-module="dashboard" className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-cardLg">
               <div className="flex flex-col gap-4 bg-gradient-to-r from-royal-950 via-royal-900 to-royal-800 p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-700 uppercase tracking-[0.18em] text-royal-200"><Activity className="h-4 w-4" /> Centre de contrôle</div>
@@ -439,7 +451,7 @@ export function AdminPanel({ onExit }: Props) {
             </section>
 
             {/* ── Payment and revenue reporting ── */}
-            <section id="admin-revenus" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+            <section id="admin-revenus" data-admin-module="revenus" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
               <div className="mb-4">
                 <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-emerald-700">
                   <CreditCard className="h-3 w-3" /> Suivi financier
@@ -480,7 +492,7 @@ export function AdminPanel({ onExit }: Props) {
             </section>
 
             {/* ── Business metrics: MRR / ARR / sales ── */}
-            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+            <section data-admin-module="revenus" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
               <div className="mb-4">
                 <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-indigo-700"><TrendingUp className="h-3 w-3" /> Indicateurs business</div>
                 <h2 className="font-display text-lg font-800 tracking-tight text-ink sm:text-xl">Revenus récurrents et activité commerciale</h2>
@@ -507,7 +519,7 @@ export function AdminPanel({ onExit }: Props) {
             </section>
 
             {/* ── Overview: total + status breakdown ── */}
-            <section className="mb-6">
+            <section data-admin-module="dashboard" className="mb-6">
               <div className="mb-4">
                 <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700">
                   <TrendingUp className="h-3 w-3" /> Vue d'ensemble
@@ -539,7 +551,7 @@ export function AdminPanel({ onExit }: Props) {
 
             {/* ── Pending payments (highlighted section) ── */}
             {pendingPayments.length > 0 && (
-              <section id="admin-paiements" className="mb-6">
+              <section id="admin-paiements" data-admin-module="paiements" className="mb-6">
                 <div className="mb-4">
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-gold-700">
                     <CreditCard className="h-3 w-3" /> Paiements en attente
@@ -603,7 +615,7 @@ export function AdminPanel({ onExit }: Props) {
             )}
 
             {/* ── Public pricing controls ── */}
-            <section id="admin-tarifs" className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+            <section id="admin-tarifs" data-admin-module="tarifs" className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-gold-700">
@@ -635,7 +647,7 @@ export function AdminPanel({ onExit }: Props) {
             </section>
 
             {/* ── Clients list ── */}
-            <section id="admin-ecoles" className="mb-8">
+            <section id="admin-ecoles" data-admin-module="ecoles" className="mb-8">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700">
@@ -787,7 +799,7 @@ export function AdminPanel({ onExit }: Props) {
 
             {/* ── Payment history ── */}
             {resolvedPayments.length > 0 && (
-              <section className="mb-8">
+              <section data-admin-module="paiements" className="mb-8">
                 <div className="mb-2 flex items-center gap-2 text-xs font-700 uppercase tracking-wider text-slate-400">
                   <Sparkles className="h-3.5 w-3.5" /> Historique des paiements
                 </div>
