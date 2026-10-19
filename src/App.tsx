@@ -852,43 +852,49 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
   };
   const adviceUrl = 'https://wa.me/22373369410?text=' + encodeURIComponent("Bonjour Gestilys, je souhaite être conseillé pour choisir une formule. École : " + schoolName + ". E-mail : " + schoolEmail + ". Merci de me guider.");
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-950 px-4 py-8 text-slate-900 sm:py-12" style={{ background: 'radial-gradient(ellipse at top left, rgba(37,99,235,.32), transparent 42%), radial-gradient(ellipse at bottom right, rgba(124,58,237,.25), transparent 40%), #080f2a' }}>
+    <div className="min-h-screen overflow-hidden bg-slate-50 px-4 py-8 text-slate-900 sm:py-12" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #edf3f9 55%, #e8eef6 100%)' }}>
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-3xl text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-amber-200/30 bg-gradient-to-br from-amber-300 to-yellow-500 text-blue-950 shadow-lg shadow-amber-500/20"><Lock className="h-7 w-7" /></div>
-          <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-amber-300">Gestilys · Abonnement</p>
+          <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-blue-800">Gestilys · Abonnement</p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Continuez avec Gestilys</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-blue-100 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-white">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
-          <p className="mt-2 text-xs leading-6 text-blue-200">Vos données restent conservées. Aucun paiement automatique n’est effectué sur cette page.</p>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-700 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-white">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
+          <p className="mt-2 text-xs leading-6 text-slate-600">Vos données restent conservées. Aucun paiement automatique n’est effectué sur cette page.</p>
         </div>
-        <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-white/10 bg-white/10 p-1.5 backdrop-blur">
-          <button type="button" onClick={() => setBillingPeriod('mensuel')} aria-pressed={billingPeriod === 'mensuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'mensuel' ? 'bg-white text-blue-950 shadow-lg' : 'text-blue-100 hover:bg-white/10')}>Mensuel</button>
-          <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'annuel' ? 'bg-gradient-to-r from-amber-300 to-yellow-400 text-blue-950 shadow-lg' : 'text-blue-100 hover:bg-white/10')}>Annuel · 2 mois offerts</button>
+        <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-200/70 p-1.5">
+          <button type="button" onClick={() => setBillingPeriod('mensuel')} aria-pressed={billingPeriod === 'mensuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'mensuel' ? 'bg-white text-blue-950 shadow-lg' : 'text-slate-700 hover:bg-white')}>Mensuel</button>
+          <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'annuel' ? 'bg-blue-900 text-white shadow-sm' : 'text-blue-100 hover:bg-white/10')}>Annuel · 2 mois offerts</button>
         </div>
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           {plans.map((plan) => {
             const amount = billingPeriod === 'mensuel' ? plan.monthly : plan.monthly * 10;
-            const tone = plan.tone === 'gold' ? { border: 'border-amber-300/50', badge: 'bg-amber-300/15 text-amber-200' } : plan.tone === 'violet' ? { border: 'border-violet-300/40', badge: 'bg-violet-300/15 text-violet-200' } : { border: 'border-blue-300/40', badge: 'bg-blue-300/15 text-blue-200' };
+            const tone = plan.tone === 'gold' ? { border: 'border-slate-200', badge: 'bg-blue-50 text-blue-900' } : plan.tone === 'violet' ? { border: 'border-slate-200', badge: 'bg-indigo-50 text-indigo-900' } : { border: 'border-slate-200', badge: 'bg-sky-50 text-sky-900' };
             return (
-              <article key={plan.name} className={'relative flex flex-col rounded-3xl border ' + tone.border + ' bg-white/[.07] p-5 text-white shadow-2xl backdrop-blur transition duration-200 hover:-translate-y-1 hover:bg-white/[.10] sm:p-6'}>
-                {plan.name === 'Premium' && <span className="absolute right-4 top-4 rounded-full bg-violet-300/15 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-violet-100">POPULAIRE</span>}
+              <article key={plan.name} className={'relative flex flex-col rounded-3xl border ' + tone.border + ' bg-white p-5 text-slate-900 shadow-md shadow-slate-200/70 transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-6'}>
+                {plan.name === 'Premium' && <span className="absolute right-4 top-4 rounded-full bg-indigo-50 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-indigo-900">POPULAIRE</span>}
                 <span className={'inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
-                <p className="mt-5 text-sm leading-6 text-blue-100">{plan.detail}</p>
-                <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-semibold text-blue-200">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
-                {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-extrabold text-emerald-200">✓ 2 mois offerts · Économie de { (plan.monthly * 2).toLocaleString('fr-FR') } FCFA</div>}
-                <p className="mt-3 text-xs leading-5 text-blue-200">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
-                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 to-yellow-400 px-4 py-3 text-sm font-extrabold text-blue-950 shadow-lg shadow-amber-500/15 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-200/40">Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
+                <p className="mt-5 text-sm leading-6 text-slate-700">{plan.detail}</p>
+                <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-semibold text-slate-600">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
+                {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800">✓ 2 mois offerts · Économie de { (plan.monthly * 2).toLocaleString('fr-FR') } FCFA</div>}
+                <p className="mt-3 text-xs leading-5 text-slate-600">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
+                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200">Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
               </article>
             );
           })}
         </div>
-        <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-white/10 bg-white/[.06] p-5 text-center backdrop-blur sm:p-6">
+        <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm sm:p-6">
           <h2 className="text-lg font-extrabold text-white">Besoin d’un conseil avant de choisir ?</h2>
-          <p className="mt-2 text-sm leading-6 text-blue-100">Notre équipe peut vous aider à identifier la formule adaptée à votre école.</p>
-          <a href={adviceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-emerald-300/40 bg-emerald-400 px-5 py-3 text-sm font-extrabold text-emerald-950 transition hover:bg-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-200/30"><Phone className="h-4 w-4" /> Demander conseil sur WhatsApp <ArrowRight className="h-4 w-4" /></a>
+          <p className="mt-2 text-sm leading-6 text-slate-700">Notre équipe peut vous aider à identifier la formule adaptée à votre école.</p>
+          <a href={adviceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-blue-900 bg-blue-900 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200"><Phone className="h-4 w-4" /> Demander conseil sur WhatsApp <ArrowRight className="h-4 w-4" /></a>
         </div>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button onClick={onLogout} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-blue-100 transition hover:bg-white/10"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+          <button onClick={onLogout} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+          <p className="text-center text-xs leading-5 text-slate-600">L’activation se fait après échange avec Gestilys et confirmation du paiement.</p>
+        </div>
+      </div>
+    </div>
+  );
+}ansition hover:bg-white/10"><LogOut className="h-4 w-4" /> Se déconnecter</button>
           <p className="text-center text-xs leading-5 text-blue-200">L’activation se fait après échange avec Gestilys et confirmation du paiement.</p>
         </div>
       </div>
