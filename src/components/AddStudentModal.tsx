@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { X, UserPlus, GraduationCap, FileText, PartyPopper, Utensils, Bus, Check, Layers } from 'lucide-react';
+import { X, UserPlus, GraduationCap, FileText, PartyPopper, Utensils, Bus, Check, Layers, Settings2, AlertCircle } from 'lucide-react';
 import type { Student, FeeTypeDef, FeeConfigRow, FeeSubscription, TrancheDef } from '../types';
 import { formatFCFA, getFeeTotalForClass, FEE_TYPE_ICONS, emptyTranchePayments, emptySinglePayment } from '../types';
 
 interface AddStudentModalProps {
   open: boolean;
   onClose: () => void;
+  onOpenSettings: () => void;
   onAdd: (s: Student) => void;
   feeTypes: FeeTypeDef[];
   feeConfig: FeeConfigRow[];
@@ -23,7 +24,7 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate: string; birthPlace: string; matricule: string; sexe: 'M' | 'F'; }
 const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', birthDate: '', birthPlace: '', matricule: '', sexe: 'M' };
 
-export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
+export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [plans, setPlans] = useState<Record<string, boolean>>({});
 
@@ -54,6 +55,7 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
 
   const totalForClass = (feeType: string) => form.className ? getFeeTotalForClass(feeConfig, feeType, form.className) : 0;
   const grandTotal = selectedFeeTypes.reduce((sum, f) => sum + totalForClass(f.feeType), 0);
+  const hasConfiguredFees = !!form.className && feeTypes.some(f => totalForClass(f.feeType) > 0);
 
   const submit = () => {
     if (!valid) return;
@@ -98,6 +100,8 @@ export function AddStudentModal({ open, onClose, onAdd, feeTypes, feeConfig, tra
             <Field label="Nom" span={1}><input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} placeholder="Diallo" className={inputCls} /></Field>
           </div>
           <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{classNames.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
+          {classNames.length === 0 && <div className="mt-2 rounded-xl border border-amber-300 bg-amber-50 p-3"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" /><div className="min-w-0"><p className="text-sm font-extrabold text-amber-950">Aucune classe n’est encore configurée</p><p className="mt-1 text-xs leading-5 text-amber-900">Avant l’inscription, créez au moins une classe et configurez les frais de scolarité dans les paramètres.</p><button type="button" onClick={() => { onClose(); onOpenSettings(); }} className="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400"><Settings2 className="h-4 w-4" /> Configurer mon école</button></div></div></div>}
+          {form.className && !hasConfiguredFees && <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" /><div><p className="text-sm font-extrabold text-amber-950">Scolarité non configurée pour cette classe</p><p className="mt-1 text-xs leading-5 text-amber-900">L’inscription reste possible, mais le montant dû sera à zéro tant que les frais ne sont pas renseignés. Configurez les frais par classe dans Paramètres.</p><button type="button" onClick={() => { onClose(); onOpenSettings(); }} className="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400"><Settings2 className="h-4 w-4" /> Configurer la scolarité</button></div></div></div>}
           <Field label="Nom du parent"><input value={form.parentName} onChange={e => setForm({ ...form, parentName: e.target.value })} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
           <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => setForm({ ...form, parentPhone: e.target.value })} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
           <div className="mt-3 grid grid-cols-2 gap-3">
