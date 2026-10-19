@@ -404,7 +404,8 @@ export function AdminPanel({ onExit }: Props) {
         </div>
       </header>
 
-      {adminMenuOpen && authed && <nav aria-label="Rubriques administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 p-3 shadow-lg backdrop-blur sm:hidden"><div className="grid grid-cols-2 gap-2">{[["#admin-dashboard","Vue d’ensemble"],["#admin-revenus","Revenus"],["#admin-tarifs","Tarifs"],["#admin-ecoles","Écoles"],["#admin-paiements","Paiements"]].map(([href,label])=><a key={href} href={href} onClick={()=>setAdminMenuOpen(false)} className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-center text-sm font-bold text-blue-950">{label}</a>)}</div></nav>}\n      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      {adminMenuOpen && authed && <nav aria-label="Rubriques administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 p-3 shadow-lg backdrop-blur sm:hidden"><div className="grid grid-cols-2 gap-2">{[["#admin-dashboard","Vue d’ensemble"],["#admin-revenus","Revenus"],["#admin-tarifs","Tarifs"],["#admin-ecoles","Écoles"],["#admin-paiements","Paiements"]].map(([href,label])=><a key={href} href={href} onClick={()=>setAdminMenuOpen(false)} className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-center text-sm font-bold text-blue-950">{label}</a>)}</div></nav>}
+      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {dataLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-royal-700" />
