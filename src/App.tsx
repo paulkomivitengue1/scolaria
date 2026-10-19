@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
   LogOut, Lock, AlertTriangle, ArrowRight, Phone,
-  Search,
+  Search, GraduationCap, Check, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { generateMatricule, loadStudents, addStudentDB, recordPayment,
