@@ -142,7 +142,7 @@ export async function loadSchoolClasses(schoolId: string): Promise<string[]> {
 }
 
 export async function addSchoolClass(schoolId: string, className: string): Promise<void> {
-  const name = className.trim().replace(/\\s+/g, ' ');
+  const name = className.trim().replace(/\s+/g, ' ');
   if (!name) throw new Error('Le nom de la classe est obligatoire.');
   const supa = getSupabase();
   const { data: existing, error: lookupError } = await supa
