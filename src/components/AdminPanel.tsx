@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, CreditCard, Check, X, Search, BadgeCheck,
   Clock, AlertCircle, Smartphone, ArrowLeft, Sparkles, School, Lock,
   Loader2, LogOut, Users, Phone, TrendingUp, CalendarDays, CalendarRange,
-  Calendar, User, Download, RefreshCw, Filter, Activity,
+  Calendar, User, Download, RefreshCw, Filter, Activity, Menu,
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
@@ -56,6 +56,7 @@ export function AdminPanel({ onExit }: Props) {
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editPlan, setEditPlan] = useState<'Essentiel' | 'Premium' | 'Élite'>('Essentiel');
@@ -355,6 +356,10 @@ export function AdminPanel({ onExit }: Props) {
   return (
     <div className="gestilys-admin min-h-screen bg-canvas bg-grid">
       <style>{`
+        .gestilys-admin .ga-desktop-nav { display:none; }
+        @media(min-width:768px) { .gestilys-admin .ga-desktop-nav { display:flex; } }
+        .gestilys-admin .ga-desktop-nav a { color:#fff; text-decoration:none; font-size:12px; font-weight:800; padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.08); white-space:nowrap; }
+        .gestilys-admin .ga-desktop-nav a:hover { background:rgba(255,255,255,.2); }
         .gestilys-admin { --ga-navy:#172554; --ga-blue:#1d4ed8; --ga-gold:#f4bd35; position:relative; isolation:isolate; background:radial-gradient(ellipse at 8% 5%,rgba(59,130,246,.14),transparent 32%),radial-gradient(ellipse at 94% 0%,rgba(244,189,53,.18),transparent 27%),linear-gradient(180deg,#f4f7ff 0%,#fff 55%,#f7f9fd 100%); }
         .gestilys-admin:before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(29,78,216,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.035) 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(to bottom,black,transparent 85%); }
         .gestilys-admin header { border-color:rgba(244,189,53,.35); background:linear-gradient(110deg,#172554 0%,#1e3a8a 62%,#1d4ed8 125%); box-shadow:0 12px 34px rgba(23,37,84,.16); }
@@ -362,6 +367,7 @@ export function AdminPanel({ onExit }: Props) {
         .gestilys-admin main .shadow-card:hover { box-shadow:0 14px 34px rgba(23,37,84,.09); }
         .gestilys-admin main .border-slate-200.bg-white { border-color:#e0e8f5; box-shadow:0 12px 32px rgba(23,37,84,.055); }
         .gestilys-admin main .bg-gradient-to-r.from-royal-950 { background:linear-gradient(115deg,#172554 0%,#1e3a8a 72%,#1d4ed8 130%); }
+        .gestilys-admin main button:not([class*='text-white']):not([class*='text-emerald']):not([class*='text-red-']):not([class*='text-blue-']):not([class*='text-royal-']) { color:#172554; }
         .gestilys-admin main button:focus-visible,.gestilys-admin main input:focus-visible,.gestilys-admin main select:focus-visible { outline:3px solid rgba(147,197,253,.9); outline-offset:2px; }
         .gestilys-admin main button { transition:filter .18s,transform .18s,box-shadow .18s; }
         .gestilys-admin main button:hover:not(:disabled) { filter:brightness(1.025); }
@@ -396,14 +402,14 @@ export function AdminPanel({ onExit }: Props) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      {adminMenuOpen && authed && <nav aria-label="Rubriques administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 p-3 shadow-lg backdrop-blur sm:hidden"><div className="grid grid-cols-2 gap-2">{[["#admin-dashboard","Vue d’ensemble"],["#admin-revenus","Revenus"],["#admin-tarifs","Tarifs"],["#admin-ecoles","Écoles"],["#admin-paiements","Paiements"]].map(([href,label])=><a key={href} href={href} onClick={()=>setAdminMenuOpen(false)} className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-center text-sm font-bold text-blue-950">{label}</a>)}</div></nav>}\n      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {dataLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-royal-700" />
           </div>
         ) : (
           <>
-            <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-cardLg">
+            <section id="admin-dashboard" className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-cardLg">
               <div className="flex flex-col gap-4 bg-gradient-to-r from-royal-950 via-royal-900 to-royal-800 p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-700 uppercase tracking-[0.18em] text-royal-200"><Activity className="h-4 w-4" /> Centre de contrôle</div>
@@ -430,7 +436,7 @@ export function AdminPanel({ onExit }: Props) {
             </section>
 
             {/* ── Payment and revenue reporting ── */}
-            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+            <section id="admin-revenus" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
               <div className="mb-4">
                 <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-emerald-700">
                   <CreditCard className="h-3 w-3" /> Suivi financier
@@ -594,7 +600,7 @@ export function AdminPanel({ onExit }: Props) {
             )}
 
             {/* ── Public pricing controls ── */}
-            <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+            <section id="admin-tarifs" className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-gold-700">
