@@ -444,12 +444,12 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <p className="gl-lead">Les modules essentiels sont réunis dans un même espace, avec une interface pensée pour les directeurs et les équipes scolaires.</p>
             <div className="gl-feature-grid" style={{ marginTop: 28 }}>
               <article className="gl-feature-card">
-                <div className="gl-feature-icon"><CreditCard size={22} /></div>
+                <div className="gl-feature-icon"><ReceiptText size={22} /></div>
                 <h3>Cartes scolaires</h3>
                 <p>Préparez les cartes des élèves avec photo, logo de l’établissement et informations configurables, puis lancez l’impression.</p>
               </article>
               <article className="gl-feature-card">
-                <div className="gl-feature-icon"><FileText size={22} /></div>
+                <div className="gl-feature-icon"><GraduationCap size={22} /></div>
                 <h3>Bulletins scolaires</h3>
                 <p>Retrouvez le module de bulletins dans l’application pour organiser les informations scolaires des élèves.</p>
               </article>
