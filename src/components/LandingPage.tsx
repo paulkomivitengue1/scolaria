@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
-  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText,
+  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -74,6 +74,7 @@ const DEMO_VIEWS = [
 
 export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'mensuel'|'annuel'>('mensuel');
   const [demoView, setDemoView] = useState<(typeof DEMO_VIEWS)[number]['id']>('overview');
   return (
@@ -82,7 +83,19 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         .gestilys-landing { --g-blue:#172554; --g-blue-2:#1d4ed8; --g-gold:#f4bd35; --g-muted:#64748b; scroll-behavior:smooth; }
         .gestilys-landing * { box-sizing:border-box; }
         .gl-container { width:min(1120px, calc(100% - 40px)); margin-inline:auto; }
-        .gl-nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92); backdrop-filter:blur(16px); border-bottom:1px solid #e8edf5; }
+        .gl-nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.96); backdrop-filter:blur(16px); border-bottom:1px solid #e8edf5; }
+        .gl-menu-toggle { display:none; width:42px; height:42px; flex:none; align-items:center; justify-content:center; border:1px solid #dbe3ef; border-radius:12px; background:white; color:#172554; box-shadow:0 4px 12px rgba(23,37,84,.06); }
+        .gl-mobile-menu { display:none; }
+        @media (max-width:760px) {
+          .gl-nav-inner { min-height:68px !important; justify-content:flex-start !important; gap:10px !important; }
+          .gl-menu-toggle { display:inline-flex; }
+          .gl-nav-brand { margin-right:auto; }
+          .gl-nav-links { display:none !important; }
+          .gl-nav-cta { padding:10px 11px !important; font-size:11px !important; }
+          .gl-mobile-menu { display:block; border-top:1px solid #e8edf5; background:#fff; box-shadow:0 18px 28px rgba(23,37,84,.10); padding:10px 20px 16px; }
+          .gl-mobile-menu a { display:flex; align-items:center; justify-content:space-between; min-height:46px; padding:10px 4px; color:#172554; text-decoration:none; font-size:14px; font-weight:800; border-bottom:1px solid #eef2f7; }
+          .gl-mobile-menu .gl-mobile-cta { justify-content:center; margin-top:12px; border:0; border-radius:12px; background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; }
+        }
         .gl-link { color:#475569; text-decoration:none; font-size:13px; font-weight:700; transition:color .2s; }
         .gl-link:hover { color:#1d4ed8; }
         .gl-btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; border-radius:14px; padding:13px 19px; font-size:14px; font-weight:800; cursor:pointer; border:0; transition:transform .18s, box-shadow .18s, background .18s; }
@@ -255,19 +268,31 @@ export function LandingPage({ onEnter }: LandingPageProps) {
       </style>
 
       <header className="gl-nav">
-        <div className="gl-container" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
-          <a href="#accueil" aria-label="Gestilys, accueil" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+        <div className="gl-container gl-nav-inner" style={{ minHeight:72, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+          <button type="button" className="gl-menu-toggle" aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'} aria-expanded={mobileMenuOpen} aria-controls="gestilys-mobile-menu" onClick={() => setMobileMenuOpen(open => !open)}>
+            {mobileMenuOpen ? <X size={21} /> : <Menu size={21} />}
+          </button>
+          <a className="gl-nav-brand" href="#accueil" aria-label="Gestilys, accueil" onClick={() => setMobileMenuOpen(false)} style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
             <span style={{ width:39, height:39, borderRadius:13, display:'grid', placeItems:'center', background:'#172554', color:'#f9d56e' }}><GraduationCap size={23} /></span>
             <span style={{ color:'#172554', fontWeight:900, fontSize:21, letterSpacing:'-.05em' }}>Gestilys<span style={{ color:'#1d4ed8' }}>.</span><small style={{ display:'block', color:'#64748b', fontSize:9, fontWeight:800, letterSpacing:'.12em', textTransform:'uppercase', marginTop:-3 }}>Gestion scolaire</small></span>
           </a>
           <nav className="gl-nav-links" style={{ display:'flex', alignItems:'center', gap:25 }}>
             <a className="gl-link" href="#fonctionnalites">Fonctionnalités</a>
             <a className="gl-link" href="#demonstration">Aperçu</a>
-            <a className="gl-link" href="#tarifs">Tarif</a>
+            <a className="gl-link" href="#tarifs">Tarifs</a>
             <a className="gl-link" href="#questions">Questions</a>
           </nav>
-          <button className="gl-btn gl-btn-primary" style={{ padding:'11px 15px', fontSize:12, minHeight:44, whiteSpace:'nowrap' }} onClick={onEnter}>Essai gratuit <ArrowRight size={15} /></button>
+          <button className="gl-btn gl-btn-primary gl-nav-cta" style={{ padding:'11px 15px', fontSize:12, minHeight:44, whiteSpace:'nowrap' }} onClick={onEnter}>Essai gratuit <ArrowRight size={15} /></button>
         </div>
+        {mobileMenuOpen && <nav id="gestilys-mobile-menu" className="gl-mobile-menu" aria-label="Navigation principale">
+          <a href="#accueil" onClick={() => setMobileMenuOpen(false)}>Accueil <ArrowRight size={15} /></a>
+          <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)}>Fonctionnalités <ArrowRight size={15} /></a>
+          <a href="#demonstration" onClick={() => setMobileMenuOpen(false)}>Aperçu du logiciel <ArrowRight size={15} /></a>
+          <a href="#tarifs" onClick={() => setMobileMenuOpen(false)}>Formules et tarifs <ArrowRight size={15} /></a>
+          <a href="#questions" onClick={() => setMobileMenuOpen(false)}>Questions fréquentes <ArrowRight size={15} /></a>
+          <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact <ArrowRight size={15} /></a>
+          <button type="button" className="gl-mobile-cta" onClick={() => { setMobileMenuOpen(false); onEnter(); }}>Essai gratuit 14 jours <ArrowRight size={16} /></button>
+        </nav>}
       </header>
 
       <main>
@@ -446,7 +471,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         </section>
       </main>
 
-      <footer className="gl-footer">        <div className="gl-container" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:22 }}>
+      <footer id="contact" className="gl-footer">        <div className="gl-container" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:22 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}><span style={{ width:38,height:38,borderRadius:12,display:'grid',placeItems:'center',background:'rgba(255,255,255,.12)',color:'#f9d56e' }}><GraduationCap size={22}/></span><div><div style={{ fontSize:18,fontWeight:900,color:'white' }}>Gestilys</div><div style={{ fontSize:10,color:'#bfdbfe' }}>La gestion scolaire, plus simplement.</div></div></div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center', fontSize:12 }}>
             <a href="mailto:paulkomivitengue@gmail.com" style={{ color:'#dbeafe',textDecoration:'none',display:'flex',alignItems:'center',gap:6 }}><Mail size={14}/> Nous contacter</a>
