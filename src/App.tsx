@@ -913,7 +913,9 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
         .gb-card.popular:before { height:6px; background:linear-gradient(90deg,#f9d56e,#f4bd35,#fff0b3); }
         .gb-card.popular:hover { box-shadow:0 30px 68px rgba(23,37,84,.28); transform:translateY(-10px); }
         .gb-card.popular .gb-plan-badge { background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; }
-        .gb-card.popular .gb-plan-detail,.gb-card.popular .gb-plan-period,.gb-card.popular .gb-plan-note,.gb-card.popular .gb-plan-features li { color:#dbeafe !important; }
+        .gb-card.popular .gb-plan-detail,.gb-card.popular .gb-plan-period,.gb-card.popular .gb-plan-features li { color:#dbeafe !important; }
+        .gb-card.popular .gb-plan-note { display:block; color:#172554 !important; background:linear-gradient(135deg,#eff6ff,#fff); border:1px solid #bfdbfe; border-radius:10px; padding:9px 10px; font-weight:750; }
+        .gb-card.popular .gb-plan-price { text-shadow:0 2px 12px rgba(0,0,0,.12); }
         .gb-card.popular .gb-plan-price { color:#fff !important; }
         .gb-card.popular .gb-plan-features { border-color:rgba(219,234,254,.2); }
         .gb-card.popular .gb-check { background:rgba(244,189,53,.16); color:#f9d56e; }
