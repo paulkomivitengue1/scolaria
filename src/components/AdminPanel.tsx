@@ -40,6 +40,27 @@ function statusBadge(status: string, trialEndsAt: string) {
   return { label: 'Expiré', cls: 'bg-red-100 text-red-700', icon: AlertCircle };
 }
 
+function buildSchoolWhatsAppUrl(school: AdminSchool): string {
+  const digits = (school.phone || '').replace(/\D/g, '');
+  const phone = digits.length === 8 ? '223' + digits : digits;
+  const firstName = (school.director_name || '').trim();
+  const greeting = firstName ? 'Bonjour ' + firstName + ',' : 'Bonjour,';
+  const status = school.subscription_status;
+  const expired = status !== 'active' && status !== 'suspended' &&
+    (status !== 'trial' || new Date(school.trial_ends_at) <= new Date());
+  let followUp: string;
+  if (status === 'active') {
+    followUp = 'Je prends des nouvelles de votre utilisation de Gestilys. Est-ce que tout fonctionne bien pour votre établissement ? Vos retours m’aideront à améliorer le logiciel.';
+  } else if (status === 'suspended') {
+    followUp = 'Je reste disponible pour échanger avec vous sur votre accès à Gestilys et les prochaines étapes, si vous souhaitez reprendre la discussion.';
+  } else if (expired) {
+    followUp = 'Votre période d’essai de Gestilys est arrivée à son terme. Souhaitez-vous que nous fassions le point sur vos besoins et les forfaits disponibles, sans engagement ?';
+  } else {
+    followUp = 'Votre période d’essai de Gestilys est en cours. Avez-vous pu tester les fonctionnalités principales ? Je peux vous aider à découvrir les outils utiles à votre école et recueillir vos suggestions.';
+  }
+  const message = greeting + ' ' + followUp + ' Cordialement, l’équipe Gestilys.';
+  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message);
+}
 interface Props {
   onExit: () => void;
 }
@@ -877,7 +898,7 @@ export function AdminPanel({ onExit }: Props) {
             </div>
             {selectedSchool.subscription_status !== 'active' && <button type="button" onClick={() => void setSchoolPaidStatus(selectedSchool.id, true, editPlan, editPeriod)} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white disabled:opacity-50">{actionLoading === selectedSchool.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />} Confirmer l’argent reçu et activer ce forfait</button>}
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              {selectedSchool.phone && <a href={`https://wa.me/${selectedSchool.phone.replace(/\\D/g, '')}`} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Contacter sur WhatsApp</a>}
+              {selectedSchool.phone && <a href={buildSchoolWhatsAppUrl(selectedSchool)} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Relancer sur WhatsApp</a>}
               <button type="button" onClick={() => { const s=selectedSchool; setSelectedSchool(null); void setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend'); }} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-800 text-red-700">{selectedSchool.subscription_status === 'suspended' ? 'Rétablir l’accès' : 'Suspendre l’école'}</button>
             </div>
           </div>
