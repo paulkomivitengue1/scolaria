@@ -894,10 +894,4 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
       </div>
     </div>
   );
-}ansition hover:bg-white/10"><LogOut className="h-4 w-4" /> Se déconnecter</button>
-          <p className="text-center text-xs leading-5 text-blue-200">L’activation se fait après échange avec Gestilys et confirmation du paiement.</p>
-        </div>
-      </div>
-    </div>
-  );
 }
