@@ -857,13 +857,13 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
         <div className="mx-auto max-w-3xl text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-amber-200/30 bg-gradient-to-br from-amber-300 to-yellow-500 text-blue-950 shadow-lg shadow-amber-500/20"><Lock className="h-7 w-7" /></div>
           <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-blue-800">Gestilys · Abonnement</p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Continuez avec Gestilys</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-700 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-white">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Continuez avec Gestilys</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-700 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-slate-900">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
           <p className="mt-2 text-xs leading-6 text-slate-600">Vos données restent conservées. Aucun paiement automatique n’est effectué sur cette page.</p>
         </div>
         <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-slate-200/70 p-1.5">
           <button type="button" onClick={() => setBillingPeriod('mensuel')} aria-pressed={billingPeriod === 'mensuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'mensuel' ? 'bg-white text-blue-950 shadow-lg' : 'text-slate-700 hover:bg-white')}>Mensuel</button>
-          <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'annuel' ? 'bg-blue-900 text-white shadow-sm' : 'text-blue-100 hover:bg-white/10')}>Annuel · 2 mois offerts</button>
+          <button type="button" onClick={() => setBillingPeriod('annuel')} aria-pressed={billingPeriod === 'annuel'} className={'min-h-11 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ' + (billingPeriod === 'annuel' ? 'bg-blue-900 text-white shadow-sm' : 'text-slate-700 hover:bg-white')}>Annuel · 2 mois offerts</button>
         </div>
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           {plans.map((plan) => {
