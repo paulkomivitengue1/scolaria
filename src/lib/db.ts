@@ -53,6 +53,22 @@ export async function loadSchoolFeeConfig(schoolId: string): Promise<SchoolFeeCo
     amount: r.amount,
   }));
 
+  // For existing schools, seed the three kindergarten sections in memory from the old
+  // Jardin amounts. This is additive only: existing DB rows and historical student records
+  // are not deleted or rewritten. The new rows are persisted the next time settings are saved.
+  const kindergartenClasses = ['Petite section', 'Moyenne section', 'Grande section'];
+  const jardinRows = feeConfig.filter(r => r.className === 'Jardin');
+  for (const className of kindergartenClasses) {
+    for (const source of jardinRows) {
+      const exists = feeConfig.some(r =>
+        r.feeType === source.feeType &&
+        r.className === className &&
+        r.trancheIndex === source.trancheIndex
+      );
+      if (!exists) feeConfig.push({ ...source, className });
+    }
+  }
+
   // Derive fee types from the config data
   const feeTypeSet = new Set(feeConfig.map(r => r.feeType));
   const feeTypes: FeeTypeDef[] = [];
