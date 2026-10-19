@@ -8,8 +8,9 @@ import {
 import { formatFCFA } from '../types';
 import {
   adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays,
-  type AdminSchool, type AdminManualPayment,
+  adminSavePublicPricing, type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
+import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 
 const DEV_CODE_STORAGE = 'scolaria_admin_code';
 
@@ -60,6 +61,7 @@ export function AdminPanel({ onExit }: Props) {
   const [editPlan, setEditPlan] = useState<'Essentiel' | 'Premium' | 'Élite'>('Essentiel');
   const [editPeriod, setEditPeriod] = useState<'mensuel' | 'annuel'>('mensuel');
   const [trialDays, setTrialDays] = useState('14');
+  const [priceInputs, setPriceInputs] = useState<Record<'Essentiel'|'Premium'|'Élite', string>>({ Essentiel: '10000', Premium: '20000', 'Élite': '30000' });
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -69,9 +71,14 @@ export function AdminPanel({ onExit }: Props) {
   const loadData = useCallback(async (c: string) => {
     setDataLoading(true);
     try {
-      const [s, p] = await Promise.all([adminListSchools(c), adminListPayments(c)]);
+      const [s, p, pricing] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices()]);
       setSchools(s);
       setPayments(p);
+      setPriceInputs({
+        Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
+        Premium: String(pricing.find((plan) => plan.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly),
+        'Élite': String(pricing.find((plan) => plan.name === 'Élite')?.monthly ?? DEFAULT_PLAN_PRICES[2].monthly),
+      });
     } catch (err: any) {
       const message = err?.message || 'Erreur de chargement';
       setAuthError(message);
@@ -155,6 +162,24 @@ export function AdminPanel({ onExit }: Props) {
       showToast(`Forfait ${editPlan} enregistré (${editPeriod})`);
     } catch (err: any) { showToast(err.message || 'Impossible de modifier le forfait'); }
     finally { setActionLoading(null); }
+  };
+
+  const savePublicPricing = async () => {
+    const names = ['Essentiel', 'Premium', 'Élite'] as const;
+    const plans = names.map((name) => ({ name, monthly: Number(priceInputs[name]) }));
+    if (plans.some((plan) => !Number.isInteger(plan.monthly) || plan.monthly < 1000 || plan.monthly > 1000000)) {
+      showToast('Chaque tarif doit être un nombre entier entre 1 000 et 1 000 000 FCFA');
+      return;
+    }
+    setActionLoading('public-pricing');
+    try {
+      await adminSavePublicPricing(code, plans);
+      showToast('Tarifs publics enregistrés. La page des tarifs utilisera ces nouveaux montants.');
+    } catch (err: any) {
+      showToast(err.message || 'Impossible d’enregistrer les tarifs');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const saveTrialDays = async (schoolId: string) => {
@@ -567,6 +592,38 @@ export function AdminPanel({ onExit }: Props) {
                 </div>
               </section>
             )}
+
+            {/* ── Public pricing controls ── */}
+            <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-gold-700">
+                    <CreditCard className="h-3 w-3" /> Offres publiques
+                  </div>
+                  <h2 className="font-display text-xl font-800 tracking-tight text-ink">Modifier les tarifs de Gestilys</h2>
+                  <p className="mt-1 max-w-2xl text-sm text-slate-500">Modifie les prix mensuels ici. Le prix annuel reste calculé automatiquement sur 10 mensualités, pour 12 mois d’accès.</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-700 text-blue-700"><ShieldCheck className="h-3.5 w-3.5" /> Aperçu avant publication à venir</span>
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {(['Essentiel', 'Premium', 'Élite'] as const).map((plan) => (
+                  <label key={plan} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <span className="block text-sm font-800 text-royal-900">{plan}</span>
+                    <span className="mt-2 flex items-center gap-2">
+                      <input type="number" min="1000" max="1000000" step="500" inputMode="numeric" value={priceInputs[plan]} onChange={(e) => setPriceInputs((prev) => ({ ...prev, [plan]: e.target.value }))} className="h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-700 text-ink" aria-label={`Prix mensuel ${plan} en FCFA`} />
+                      <span className="text-xs font-700 text-slate-500">FCFA/mois</span>
+                    </span>
+                    <span className="mt-2 block text-xs text-slate-500">Annuel : {Number(priceInputs[plan] || 0) * 10 > 0 ? (Number(priceInputs[plan]) * 10).toLocaleString('fr-FR') : '—'} FCFA</span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-5 text-slate-500">Les nouveaux tarifs s’affichent sur la page publique après actualisation. Les abonnements déjà payés ne sont pas modifiés par ce réglage.</p>
+                <button type="button" onClick={() => void savePublicPricing()} disabled={actionLoading === 'public-pricing'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-royal-800 to-royal-700 px-4 py-2 text-sm font-800 text-white shadow-card disabled:opacity-60">
+                  {actionLoading === 'public-pricing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer les tarifs
+                </button>
+              </div>
+            </section>
 
             {/* ── Clients list ── */}
             <section className="mb-8">
