@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
-  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, GraduationCap, Menu, X,
+  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
 } from 'lucide-react';
 
 interface LandingPageProps {
