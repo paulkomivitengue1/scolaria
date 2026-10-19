@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
   Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
@@ -76,6 +77,21 @@ export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'mensuel'|'annuel'>('mensuel');
+  const [planPrices, setPlanPrices] = useState<Record<'Essentiel'|'Premium'|'Élite', number>>({
+    Essentiel: 10000, Premium: 20000, 'Élite': 30000,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    loadPublicPlanPrices().then((plans) => {
+      if (cancelled) return;
+      setPlanPrices({
+        Essentiel: plans.find((p) => p.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly,
+        Premium: plans.find((p) => p.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly,
+        'Élite': plans.find((p) => p.name === 'Élite')?.monthly ?? DEFAULT_PLAN_PRICES[2].monthly,
+      });
+    });
+    return () => { cancelled = true; };
+  }, []);
   const [demoView, setDemoView] = useState<(typeof DEMO_VIEWS)[number]['id']>('overview');
   return (
     <div className="gestilys-landing min-h-screen bg-white text-ink">
@@ -430,9 +446,9 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             </div>
             <div className="gl-pricing-grid" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,250px),1fr))',gap:18,alignItems:'stretch'}}>
               {[
-                {name:'Essentiel',desc:'Les outils indispensables pour démarrer la gestion numérique de votre école.',monthly:10000,students:'Jusqu’à 150 élèves',tone:'#e7f2ff',accent:'#2454b8',popular:false,features:['Élèves et classes','Présences et frais scolaires','Reçus de paiement','Assistance au démarrage']},
-                {name:'Premium',desc:'Un suivi administratif et financier plus complet pour votre établissement.',monthly:20000,students:'Jusqu’à 500 élèves',tone:'#fff2c9',accent:'#75500a',popular:true,features:['Tout le forfait Essentiel','Stocks et fournitures','Bulletins et cartes scolaires','Rapports financiers avancés','Assistance prioritaire']},
-                {name:'Élite',desc:'Le contrôle approfondi pour les établissements qui ont besoin de plus.',monthly:30000,students:'Effectif illimité',tone:'#fff0bd',accent:'#713f12',popular:false,features:['Tout le forfait Premium','Personnalisation avancée','Gestion multi-utilisateur avancée','Exports et rapports détaillés','Accompagnement prioritaire']},
+                {name:'Essentiel',desc:'Les outils indispensables pour démarrer la gestion numérique de votre école.',monthly:planPrices.Essentiel,students:'Jusqu’à 150 élèves',tone:'#e7f2ff',accent:'#2454b8',popular:false,features:['Élèves et classes','Présences et frais scolaires','Reçus de paiement','Assistance au démarrage']},
+                {name:'Premium',desc:'Un suivi administratif et financier plus complet pour votre établissement.',monthly:planPrices.Premium,students:'Jusqu’à 500 élèves',tone:'#fff2c9',accent:'#75500a',popular:true,features:['Tout le forfait Essentiel','Stocks et fournitures','Bulletins et cartes scolaires','Rapports financiers avancés','Assistance prioritaire']},
+                {name:'Élite',desc:'Le contrôle approfondi pour les établissements qui ont besoin de plus.',monthly:planPrices['Élite'],students:'Effectif illimité',tone:'#fff0bd',accent:'#713f12',popular:false,features:['Tout le forfait Premium','Personnalisation avancée','Gestion multi-utilisateur avancée','Exports et rapports détaillés','Accompagnement prioritaire']},
               ].map(plan=><article key={plan.name} className={plan.popular?'gl-plan-card gl-plan-popular':'gl-plan-card'} style={{position:'relative',display:'flex',flexDirection:'column',border:plan.name==='Premium'?'2px solid #e2b63f':plan.name==='Élite'?'2px solid #83adf3':'1.5px solid #a9cafa',borderRadius:22,background:plan.name==='Premium'?'linear-gradient(155deg,#fff0b8 0%,#fff9e8 38%,#ffffff 100%)':plan.name==='Élite'?'linear-gradient(155deg,#dceaff 0%,#f2f7ff 42%,#ffffff 100%)':'linear-gradient(155deg,#dceeff 0%,#f3f8ff 42%,#ffffff 100%)',padding:24,boxShadow:plan.name==='Premium'?'0 18px 38px rgba(217,164,33,.22)':plan.name==='Élite'?'0 14px 30px rgba(47,99,206,.14)':'0 12px 26px rgba(47,99,206,.12)',overflow:'hidden'}}>
                 <div aria-hidden="true" style={{position:'absolute',top:0,left:0,right:0,height:5,background:plan.name==='Premium'?'linear-gradient(90deg,#f9d56e,#d9a421,#f9d56e)':plan.name==='Élite'?'linear-gradient(90deg,#9bc5ff,#2f63ce)':'linear-gradient(90deg,#c5e1ff,#4b83e8)'}} />
                 {plan.popular&&<span className="gl-plan-badge" style={{position:'absolute',right:16,top:18,borderRadius:999,background:'linear-gradient(135deg,#ffe9a3,#f9d56e)',color:'#713f12',border:'1px solid #e0b642',fontSize:10,fontWeight:900,padding:'7px 10px',boxShadow:'0 4px 12px rgba(217,164,33,.22)'}}>✦ RECOMMANDÉ</span>}
