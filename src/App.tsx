@@ -885,6 +885,7 @@ export default function App() {
       <AddStudentModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
+        onOpenSettings={() => { setAddOpen(false); handleNavigate('parametres'); }}
         onAdd={addStudent}
         feeTypes={feeConfig.feeTypes}
         feeConfig={feeConfig.feeConfig}
