@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
-  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
+  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, GraduationCap, Menu, X,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -444,7 +444,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <p className="gl-lead">Les modules essentiels sont réunis dans un même espace, avec une interface pensée pour les directeurs et les équipes scolaires.</p>
             <div className="gl-feature-grid" style={{ marginTop: 28 }}>
               <article className="gl-feature-card">
-                <div className="gl-feature-icon"><ReceiptText size={22} /></div>
+                <div className="gl-feature-icon"><GraduationCap size={22} /></div>
                 <h3>Cartes scolaires</h3>
                 <p>Préparez les cartes des élèves avec photo, logo de l’établissement et informations configurables, puis lancez l’impression.</p>
               </article>
