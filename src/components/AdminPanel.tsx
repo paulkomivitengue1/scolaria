@@ -432,7 +432,7 @@ export function AdminPanel({ onExit }: Props) {
                   <p className="mt-1 text-sm text-royal-100">Vue opérationnelle des écoles, abonnements et paiements.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => loadData(code)} disabled={dataLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm font-700 text-white transition hover:bg-white/20 disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${dataLoading ? 'animate-spin' : ''}`} /> Actualiser</button>
+                  <button onClick={() => loadData(code)} disabled={dataLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold-500 bg-gold-400 px-3.5 py-2.5 text-sm font-800 text-royal-950 shadow-card transition hover:bg-gold-300 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${dataLoading ? 'animate-spin' : ''}`} /> Actualiser</button>
                   <button onClick={exportSchoolsCsv} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2.5 text-sm font-800 text-royal-900 transition hover:bg-royal-50"><Download className="h-4 w-4" /> Exporter CSV</button>
                 </div>
               </div>
@@ -640,7 +640,7 @@ export function AdminPanel({ onExit }: Props) {
               </div>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs leading-5 text-slate-500">Les nouveaux tarifs s’affichent sur la page publique après actualisation. Les abonnements déjà payés ne sont pas modifiés par ce réglage.</p>
-                <button type="button" onClick={() => void savePublicPricing()} disabled={actionLoading === 'public-pricing'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-royal-800 to-royal-700 px-4 py-2 text-sm font-800 text-white shadow-card disabled:opacity-60">
+                <button type="button" onClick={() => void savePublicPricing()} disabled={actionLoading === 'public-pricing'} style={{ background: "linear-gradient(115deg, #172554 0%, #1d4ed8 100%)", color: "#ffffff" }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-800 px-4 py-2 text-sm font-800 text-white shadow-card disabled:opacity-60">
                   {actionLoading === 'public-pricing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer les tarifs
                 </button>
               </div>
