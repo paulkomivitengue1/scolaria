@@ -909,7 +909,15 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
         .gb-card:before { content:""; position:absolute; inset:0 0 auto; height:5px; background:linear-gradient(90deg,#60a5fa,#1d4ed8); }
         .gb-card.violet:before { background:linear-gradient(90deg,#818cf8,#4338ca); }
         .gb-card.gold:before { background:linear-gradient(90deg,#f9d56e,#e0a800); }
-        .gb-card.popular { border-color:#f0c653; box-shadow:0 20px 48px rgba(217,158,20,.14); }
+        .gb-card.popular { border-color:#f0c653; background:linear-gradient(155deg,#172554 0%,#1e3a8a 68%,#1d4ed8 130%); box-shadow:0 24px 58px rgba(23,37,84,.23); color:#fff; transform:translateY(-7px); }
+        .gb-card.popular:before { height:6px; background:linear-gradient(90deg,#f9d56e,#f4bd35,#fff0b3); }
+        .gb-card.popular:hover { box-shadow:0 30px 68px rgba(23,37,84,.28); transform:translateY(-10px); }
+        .gb-card.popular .gb-plan-badge { background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; }
+        .gb-card.popular .gb-plan-detail,.gb-card.popular .gb-plan-period,.gb-card.popular .gb-plan-note,.gb-card.popular .gb-plan-features li { color:#dbeafe !important; }
+        .gb-card.popular .gb-plan-price { color:#fff !important; }
+        .gb-card.popular .gb-plan-features { border-color:rgba(219,234,254,.2); }
+        .gb-card.popular .gb-check { background:rgba(244,189,53,.16); color:#f9d56e; }
+        @media (max-width:767px) { .gb-card.popular { transform:none; } .gb-card.popular:hover { transform:translateY(-3px); } }
         .gb-switch { display:flex; gap:5px; padding:5px; border:1px solid #dce5f2; border-radius:16px; background:rgba(255,255,255,.8); box-shadow:0 8px 24px rgba(23,37,84,.06); }
         .gb-switch button { border:0; border-radius:11px; padding:11px 17px; font-size:13px; font-weight:850; cursor:pointer; color:#52627a; background:transparent; transition:all .2s; }
         .gb-switch button.active { color:#172554; background:linear-gradient(135deg,#f9d56e,#f4bd35); box-shadow:0 5px 14px rgba(244,189,53,.22); }
@@ -950,13 +958,13 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
             return (
               <article key={plan.name} className={'gb-card ' + (plan.tone === 'violet' ? 'violet ' : plan.tone === 'gold' ? 'gold ' : '') + (plan.popular ? 'popular ' : '') + 'flex flex-col p-5 sm:p-6'}>
                 {plan.popular && <span className="absolute right-4 top-4 rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-amber-950">LE PLUS CHOISI</span>}
-                <span className={'inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
-                <p className="mt-4 min-h-[50px] pr-2 text-sm leading-6 text-slate-600">{plan.detail}</p>
-                <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight text-blue-950 sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-bold text-slate-500">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
+                <span className={'gb-plan-badge inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
+                <p className="gb-plan-detail mt-4 min-h-[50px] pr-2 text-sm leading-6 text-slate-600">{plan.detail}</p>
+                <div className="mt-5 flex items-end gap-2"><strong className="gb-plan-price text-3xl font-extrabold tracking-tight text-blue-950 sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="gb-plan-period pb-1 text-xs font-bold text-slate-500">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
                 {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800">✓ 2 mois offerts · Économie de {(plan.monthly * 2).toLocaleString('fr-FR')} FCFA</div>}
-                <p className="mt-3 text-xs leading-5 text-slate-500">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
-                <ul className="mt-5 flex-1 space-y-3 border-t border-slate-100 pt-5">{plan.features.map(feature => <li key={feature} className="flex items-start gap-2.5 text-xs font-semibold leading-5 text-slate-700"><span className="gb-check mt-0.5"><Check className="h-3 w-3" /></span><span>{feature}</span></li>)}</ul>
-                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className={'gb-cta mt-6 w-full ' + (plan.popular ? 'gb-cta-secondary' : '')}>Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
+                <p className="gb-plan-note mt-3 text-xs leading-5 text-slate-500">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
+                <ul className="gb-plan-features mt-5 flex-1 space-y-3 border-t border-slate-100 pt-5">{plan.features.map(feature => <li key={feature} className="flex items-start gap-2.5 text-xs font-semibold leading-5 text-slate-700"><span className="gb-check mt-0.5"><Check className="h-3 w-3" /></span><span>{feature}</span></li>)}</ul>
+                <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className="gb-cta mt-6 w-full">Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
               </article>
             );
           })}
