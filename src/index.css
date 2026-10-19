@@ -244,18 +244,25 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
   }
 }
 
-/* Gestilys admin: enforce accessible contrast for low-contrast icon/action controls.
-   Preserve intentionally white labels on dark/brand buttons. */
-.gestilys-admin button:not(.text-white) { color: #172554 !important; }
+/* Gestilys admin: accessible contrast for pale labels and icon-only controls.
+   Keep semantic red/green actions and intentional white-on-brand buttons intact. */
 .gestilys-admin button.text-slate-300,
 .gestilys-admin button.text-slate-400,
 .gestilys-admin button.text-slate-500,
 .gestilys-admin button.text-gray-300,
 .gestilys-admin button.text-gray-400,
 .gestilys-admin button.text-gray-500 { color: #334155 !important; }
-.gestilys-admin button:not(.text-white):disabled { color: #475569 !important; opacity: .78; }
-.gestilys-admin button:not(.text-white):focus-visible {
+.gestilys-admin button[aria-label]:not(.text-white),
+.gestilys-admin button[title]:not(.text-white) { color: #334155; }
+.gestilys-admin button[aria-label]:not(.text-white) svg,
+.gestilys-admin button[title]:not(.text-white) svg { color: currentColor; opacity: 1; }
+.gestilys-admin button.text-slate-300:disabled,
+.gestilys-admin button.text-slate-400:disabled,
+.gestilys-admin button.text-slate-500:disabled,
+.gestilys-admin button.text-gray-300:disabled,
+.gestilys-admin button.text-gray-400:disabled,
+.gestilys-admin button.text-gray-500:disabled { color: #475569 !important; opacity: .85; }
+.gestilys-admin button:focus-visible {
   outline: 3px solid #f4bd35 !important;
   outline-offset: 2px;
 }
-.gestilys-admin button:not(.text-white) svg { color: currentColor; opacity: 1; }
