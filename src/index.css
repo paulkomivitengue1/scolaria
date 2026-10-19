@@ -243,3 +243,19 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
     margin: 0 !important;
   }
 }
+
+/* Gestilys admin: enforce accessible contrast for low-contrast icon/action controls.
+   Preserve intentionally white labels on dark/brand buttons. */
+.gestilys-admin button:not(.text-white) { color: #172554 !important; }
+.gestilys-admin button.text-slate-300,
+.gestilys-admin button.text-slate-400,
+.gestilys-admin button.text-slate-500,
+.gestilys-admin button.text-gray-300,
+.gestilys-admin button.text-gray-400,
+.gestilys-admin button.text-gray-500 { color: #334155 !important; }
+.gestilys-admin button:not(.text-white):disabled { color: #475569 !important; opacity: .78; }
+.gestilys-admin button:not(.text-white):focus-visible {
+  outline: 3px solid #f4bd35 !important;
+  outline-offset: 2px;
+}
+.gestilys-admin button:not(.text-white) svg { color: currentColor; opacity: 1; }
