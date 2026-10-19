@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X, Pencil, FileText, PartyPopper, Utensils, Bus, Check, Layers, GraduationCap } from 'lucide-react';
 import type { Student, FeeTypeDef, FeeConfigRow, FeeSubscription, TrancheDef } from '../types';
-import { CLASS_LIST, formatFCFA, getFeeTotalForClass, FEE_TYPE_ICONS } from '../types';
+import { CLASS_LIST, LEGACY_CLASS_NAMES, formatFCFA, getFeeTotalForClass, FEE_TYPE_ICONS } from '../types';
 
 interface Props {
   student: Student | null;
@@ -113,7 +113,7 @@ export function EditStudentModal({ student, open, onClose, onSave, feeTypes, fee
             <Field label="Prénom" span={2}><input value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} placeholder="Awa" className={inputCls} /></Field>
             <Field label="Nom" span={1}><input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} placeholder="Diallo" className={inputCls} /></Field>
           </div>
-          <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{CLASS_LIST.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
+          <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{[...CLASS_LIST, ...(LEGACY_CLASS_NAMES.includes(form.className) ? [form.className] : [])].map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
           <Field label="Nom du parent"><input value={form.parentName} onChange={e => setForm({ ...form, parentName: e.target.value })} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
           <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => setForm({ ...form, parentPhone: e.target.value })} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
           <div className="mt-3 grid grid-cols-2 gap-3">
