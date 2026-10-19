@@ -125,6 +125,52 @@ export async function saveFeeConfig(schoolId: string, feeConfig: FeeConfigRow[])
   if (error) throw error;
 }
 
+// ── Custom school classes ───────────────────────────────
+
+export async function loadSchoolClasses(schoolId: string): Promise<string[]> {
+  const { data, error } = await getSupabase()
+    .from('classes')
+    .select('name')
+    .eq('school_id', schoolId)
+    .eq('is_active', true)
+    .order('name');
+  if (error) throw error;
+  const names = (data || []).map(row => String(row.name).trim()).filter(Boolean);
+  // Fallback for a school created before the class catalogue was seeded.
+  if (names.length === 0) return [...CLASS_LIST];
+  return names;
+}
+
+export async function addSchoolClass(schoolId: string, className: string): Promise<void> {
+  const name = className.trim().replace(/\\s+/g, ' ');
+  if (!name) throw new Error('Le nom de la classe est obligatoire.');
+  const supa = getSupabase();
+  const { data: existing, error: lookupError } = await supa
+    .from('classes').select('id,name,is_active').eq('school_id', schoolId);
+  if (lookupError) throw lookupError;
+  const match = (existing || []).find(row => String(row.name).trim().toLocaleLowerCase() === name.toLocaleLowerCase());
+  if (match) {
+    if (!match.is_active) {
+      const { error } = await supa.from('classes').update({ is_active: true }).eq('id', match.id).eq('school_id', schoolId);
+      if (error) throw error;
+    } else {
+      throw new Error('Cette classe existe déjà.');
+    }
+    return;
+  }
+  const level = /section/i.test(name) ? 'maternelle' : /lycée|terminale|seconde|première/i.test(name) ? 'lycée' : 'fondamental';
+  const { error } = await supa.from('classes').insert({ school_id: schoolId, name, level, is_active: true });
+  if (error) throw error;
+}
+
+export async function setSchoolClassActive(schoolId: string, className: string, active: boolean): Promise<void> {
+  const { error } = await getSupabase().from('classes')
+    .update({ is_active: active })
+    .eq('school_id', schoolId)
+    .eq('name', className);
+  if (error) throw error;
+}
+
 // ── Students ────────────────────────────────────────────
 
 export async function loadCurrentAcademicYear(schoolId: string): Promise<string> {
