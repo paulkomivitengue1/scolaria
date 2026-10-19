@@ -1,3 +1,4 @@
+// Public pricing is fetched through the Edge Function; no direct database client is needed here.
 export type GestilysPlanName = 'Essentiel' | 'Premium' | 'Élite';
 export interface PublicPlanPrice { name: GestilysPlanName; monthly: number; }
 export const DEFAULT_PLAN_PRICES: PublicPlanPrice[] = [
