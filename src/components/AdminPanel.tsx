@@ -385,7 +385,9 @@ export function AdminPanel({ onExit }: Props) {
               <p className="text-[11px] font-600 text-royal-200">Gestilys · Console d'administration</p>
             </div>
           </div>
+          <nav className="ga-desktop-nav items-center gap-1"><a href="#admin-dashboard">Vue d’ensemble</a><a href="#admin-revenus">Revenus</a><a href="#admin-tarifs">Tarifs</a><a href="#admin-ecoles">Écoles</a><a href="#admin-paiements">Paiements</a></nav>
           <div className="flex items-center gap-2">
+            <button onClick={() => setAdminMenuOpen(v => !v)} aria-label="Ouvrir les rubriques administrateur" aria-expanded={adminMenuOpen} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white sm:hidden"><Menu className="h-5 w-5" /></button>
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-700 text-white backdrop-blur transition hover:bg-white/20 active:scale-95 sm:px-3.5 sm:text-sm"
@@ -632,7 +634,7 @@ export function AdminPanel({ onExit }: Props) {
             </section>
 
             {/* ── Clients list ── */}
-            <section className="mb-8">
+            <section id="admin-ecoles" className="mb-8">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700">
