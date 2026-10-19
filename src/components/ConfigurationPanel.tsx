@@ -179,7 +179,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
     if (newMode === 'tranche') {
       // Was single, now tranche: replace single rows with per-tranche rows
       nextRows = nextRows.filter(r => r.feeType !== feeType);
-      for (const cls of CLASS_LIST) {
+      for (const cls of classNames) {
         for (const t of tranches) {
           nextRows.push({ feeType, className: cls, paymentMode: 'tranche', trancheIndex: t.index, amount: 0 });
         }
@@ -187,7 +187,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
     } else {
       // Was tranche, now single: keep only one row per class (sum of tranches or first tranche)
       nextRows = nextRows.filter(r => r.feeType !== feeType);
-      for (const cls of CLASS_LIST) {
+      for (const cls of classNames) {
         const total = getFeeTotalForClass(configRows, feeType, cls);
         nextRows.push({ feeType, className: cls, paymentMode: 'single', trancheIndex: null, amount: total });
       }
