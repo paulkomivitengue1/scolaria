@@ -516,7 +516,7 @@ export default function App() {
   const handleNavigate = (v: AppView) => {
     setView(v);
     setSidebarOpen(false);
-    if (v !== 'dashboard' && v !== 'parametres' && profile?.schoolId) {
+    if (v !== 'dashboard' && guideMode !== 'onboarding' && profile?.schoolId) {
       const key = 'gestilys-guide-module:' + profile.schoolId + ':' + v;
       try {
         if (localStorage.getItem(key) !== 'done') {
