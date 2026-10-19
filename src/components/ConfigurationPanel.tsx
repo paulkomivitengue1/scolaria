@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Settings2, RotateCcw, Check, Search, AlertCircle, School, CalendarClock, Sparkles, ArrowRight, Loader2, Plus, Trash2, Layers, FileText, PartyPopper, Utensils, Bus, GraduationCap, X, ClipboardList, Upload, Image as ImageIcon } from 'lucide-react';
 import type { SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, UniformStockItem, BookStockItem, SupplyStockItem, GradePeriod } from '../types';
 import { ImageCropper } from './ImageCropper';
-import { CLASS_LIST, formatFCFA, getFeeTotalForClass, uniformRemaining, bookRemaining, FEE_TYPE_ICONS, getFeeAccent } from '../types';
+import { formatFCFA, getFeeTotalForClass, uniformRemaining, bookRemaining, FEE_TYPE_ICONS, getFeeAccent } from '../types';
 
 interface ConfigPanelProps {
   feeConfig: SchoolFeeConfig;
@@ -19,6 +19,9 @@ interface ConfigPanelProps {
   onYearEnd: (nextYear: string) => Promise<void>;
   gradePeriods: GradePeriod[];
   onSaveGradePeriods: (periods: GradePeriod[]) => Promise<void>;
+  classNames: string[];
+  onAddClass: (name: string) => Promise<void>;
+  onRemoveClass: (name: string) => Promise<void>;
 }
 
 const FEE_ICONS: Record<string, typeof GraduationCap> = {
@@ -27,7 +30,7 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
-export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, schoolLogo, onSchoolLogoChange, uniforms, books, supplies, currentAcademicYear, onYearEnd, gradePeriods, onSaveGradePeriods }: ConfigPanelProps) {
+export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, schoolName, onSchoolNameChange, schoolLogo, onSchoolLogoChange, uniforms, books, supplies, currentAcademicYear, onYearEnd, gradePeriods, onSaveGradePeriods, classNames, onAddClass, onRemoveClass }: ConfigPanelProps) {
   const [tranches, setTranches] = useState<TrancheDef[]>(feeConfig.tranches);
   const [feeTypes, setFeeTypes] = useState<FeeTypeDef[]>(feeConfig.feeTypes);
   const [configRows, setConfigRows] = useState<FeeConfigRow[]>(feeConfig.feeConfig);
@@ -46,6 +49,8 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
   const [showAddFee, setShowAddFee] = useState(false);
   const [periods, setPeriods] = useState<GradePeriod[]>(gradePeriods);
   const [periodStatus, setPeriodStatus] = useState<SaveState>('idle');
+  const [newClassName, setNewClassName] = useState('');
+  const [classBusy, setClassBusy] = useState(false);
 
   const configRef = useRef(feeConfig);
   const schoolRef = useRef(schoolName);
@@ -141,7 +146,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
     const nextTypes = [...feeTypes, newDef];
     // Create fee_config rows for all classes with amount 0
     const newRows = [...configRows];
-    for (const cls of CLASS_LIST) {
+    for (const cls of classNames) {
       newRows.push({ feeType: name, className: cls, paymentMode: 'single', trancheIndex: null, amount: 0 });
     }
     setFeeTypes(nextTypes);
@@ -254,7 +259,7 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
     setSchoolStatus('idle');
   };
 
-  const classes = CLASS_LIST.filter(c => c.toLowerCase().includes(filter.trim().toLowerCase()));
+  const classes = classNames.filter(c => c.toLowerCase().includes(filter.trim().toLowerCase()));
   const activeFt = feeTypes.find(f => f.feeType === activeFeeType) ?? feeTypes[0];
 
   return (
@@ -429,6 +434,25 @@ export function ConfigurationPanel({ feeConfig, onSaveFeeConfig, onReset, school
             </button>
           </div>
         )}
+      </div>
+
+      {/* School-specific class catalogue */}
+      <div className="rounded-2.5xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-royal-50 text-royal-700"><School className="h-5 w-5" /></span>
+          <div><h3 className="font-display text-lg font-700 text-ink">Classes de votre école</h3>
+            <p className="text-sm text-slate-500">Ajoutez des classes ou groupes comme « 5ème année A » et « 5ème année B ». Les tarifs se règlent ensuite séparément ci-dessous.</p></div>
+        </div>
+        <form className="flex flex-col gap-2 sm:flex-row" onSubmit={async e => { e.preventDefault(); const name = newClassName.trim(); if (!name || classBusy) return; setClassBusy(true); try { await onAddClass(name); setNewClassName(''); } catch (err) { window.alert(err instanceof Error ? err.message : 'Impossible d’ajouter cette classe.'); } finally { setClassBusy(false); } }}>
+          <input value={newClassName} onChange={e => setNewClassName(e.target.value)} maxLength={60} placeholder="Ex. 5ème année A, Jardin 2, Terminale D…" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none focus:border-royal-500 focus:ring-2 focus:ring-royal-500/20" />
+          <button type="submit" disabled={!newClassName.trim() || classBusy} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 px-4 text-sm font-700 text-white shadow-gold disabled:opacity-50"><Plus className="h-4 w-4" />{classBusy ? 'Enregistrement…' : 'Ajouter la classe'}</button>
+        </form>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {classNames.map(cls => <span key={cls} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-600 text-slate-700">{cls}
+            <button type="button" aria-label={`Retirer ${cls}`} title="Retirer des choix pour les nouvelles inscriptions" onClick={async () => { if (classBusy) return; if (!window.confirm(`Retirer « ${cls} » des classes disponibles ? Les anciens dossiers d’élèves seront conservés.`)) return; setClassBusy(true); try { await onRemoveClass(cls); } catch (err) { window.alert(err instanceof Error ? err.message : 'Impossible de retirer cette classe.'); } finally { setClassBusy(false); } }} className="grid h-6 w-6 place-items-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"><X className="h-3.5 w-3.5" /></button>
+          </span>)}
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-slate-500">Retirer une classe la masque des nouvelles inscriptions sans effacer les anciens élèves ni leurs paiements. Vous pouvez la réactiver en l’ajoutant à nouveau avec le même nom.</p>
       </div>
 
       {/* Class filter */}
