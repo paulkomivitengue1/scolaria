@@ -266,3 +266,80 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
   outline: 3px solid #f4bd35 !important;
   outline-offset: 2px;
 }
+
+
+/* Gestilys design system — align every application module with the landing page.
+   Improve contrast first, then add the navy/blue/gold identity without flattening
+   semantic success, warning, danger, or primary-action colors. */
+:root {
+  --gestilys-navy: #172554;
+  --gestilys-blue: #1d4ed8;
+  --gestilys-gold: #f4bd35;
+  --gestilys-ink: #172554;
+  --gestilys-muted: #475569;
+}
+body {
+  color: var(--gestilys-ink);
+  background-color: #f3f7ff;
+}
+/* Text that was too pale to read on white or grey surfaces */
+.text-slate-300, .text-slate-400, .text-gray-300, .text-gray-400,
+.text-zinc-300, .text-zinc-400, .text-neutral-400 {
+  color: #475569 !important;
+}
+.text-slate-500, .text-gray-500, .text-zinc-500, .text-neutral-500 {
+  color: #475569;
+}
+.placeholder\:text-slate-400::placeholder,
+input::placeholder, textarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+/* Give module workspaces a light blue canvas rather than flat grey */
+.bg-slate-50, .bg-gray-50, .bg-zinc-50 {
+  background-color: #f3f7ff;
+}
+.bg-white {
+  --tw-bg-opacity: 1;
+}
+/* Consistent readable controls and keyboard focus */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select, textarea {
+  color: #172554;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus, textarea:focus {
+  border-color: #3b82f6 !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.16);
+}
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 3px solid #f4bd35;
+  outline-offset: 2px;
+}
+/* Cards and module panels: white surfaces with a visible blue edge and depth */
+.rounded-xl.border.border-slate-100,
+.rounded-2xl.border.border-slate-100,
+.rounded-3xl.border.border-slate-100,
+.rounded-xl.border.border-gray-100,
+.rounded-2xl.border.border-gray-100 {
+  border-color: #dbeafe !important;
+  box-shadow: 0 8px 24px rgba(23,37,84,.055);
+}
+.border-slate-200, .border-gray-200 {
+  border-color: #d7e3f5;
+}
+/* Make subtle icons and labels readable across module cards */
+button.text-slate-300, button.text-slate-400,
+button.text-gray-300, button.text-gray-400,
+[role="button"].text-slate-300, [role="button"].text-slate-400 {
+  color: #334155 !important;
+}
+button.text-slate-300 svg, button.text-slate-400 svg,
+button.text-gray-300 svg, button.text-gray-400 svg {
+  opacity: 1;
+}
+/* Module headings echo the landing page's navy typography */
+h1, h2, h3 {
+  color: inherit;
+}
