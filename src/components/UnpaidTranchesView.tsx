@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  AlertCircle, ChevronDown, Users, Wallet, TrendingDown, Filter, MessageCircle,
+  AlertCircle, ChevronDown, Users, Wallet, TrendingDown, Filter, MessageCircle, Download,
 } from 'lucide-react';
 import type {
   Student, SchoolFeeConfig,
@@ -53,6 +53,35 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
   const totalPaid = rows.reduce((s, r) => s + r.paid, 0);
 
   const trancheLabel = tranches.find(t => t.index === selectedTranche)?.label ?? `Tranche ${selectedTranche}`;
+
+  const exportCsv = () => {
+    const escapeCell = (value: string | number) => {
+      // Neutralize spreadsheet formulas before quoting CSV cells.
+      const safe = String(value ?? '').replace(/^[=+@]/, "'  const trancheLabel = tranches.find(t => t.index === selectedTranche)?.label ?? `Tranche ${selectedTranche}`;
+").replace(/\r?\n/g, ' ');
+      return '"' + safe.replace(/"/g, '""') + '"';
+    };
+    const columns = ['Élève', 'Classe', 'Téléphone parent', 'Tranche', 'Montant attendu (FCFA)', 'Montant payé (FCFA)', 'Reste à payer (FCFA)'];
+    const dataRows = rows.map(({ student, expected, paid, remaining }) => [
+      `${student.firstName} ${student.lastName}`,
+      student.className,
+      student.parentPhone || '',
+      trancheLabel,
+      expected,
+      paid,
+      remaining,
+    ]);
+    const csv = [columns, ...dataRows].map(row => row.map(escapeCell).join(';')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gestilys-impayes-${selectedTranche}${classFilter !== 'all' ? '-' + classFilter.replace(/[^a-zA-Z0-9_-]/g, '-') : ''}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   const openReminder = (student: Student, remaining: number) => {
     const phone = (student.parentPhone || '').replace(/\D/g, '');
     if (!phone) { window.alert('Aucun numéro de téléphone du parent n’est enregistré pour cet élève.'); return; }
@@ -111,6 +140,15 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
             <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           </div>
         </div>
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={rows.length === 0}
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-royal-200 bg-white px-4 py-2 text-sm font-700 text-royal-700 shadow-sm transition hover:bg-royal-50 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
+        >
+          <Download className="h-4 w-4" />
+          Exporter les impayés
+        </button>
       </div>
 
       {/* Summary cards */}
