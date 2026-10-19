@@ -56,9 +56,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
 
   const exportCsv = () => {
     const escapeCell = (value: string | number) => {
-      // Neutralize spreadsheet formulas before quoting CSV cells.
-      const safe = String(value ?? '').replace(/^[=+@]/, "'  const trancheLabel = tranches.find(t => t.index === selectedTranche)?.label ?? `Tranche ${selectedTranche}`;
-").replace(/\r?\n/g, ' ');
+      const safe = String(value ?? '').replace(/\r?\n/g, ' ');
       return '"' + safe.replace(/"/g, '""') + '"';
     };
     const columns = ['Élève', 'Classe', 'Téléphone parent', 'Tranche', 'Montant attendu (FCFA)', 'Montant payé (FCFA)', 'Reste à payer (FCFA)'];
@@ -72,7 +70,7 @@ export function UnpaidTranchesView({ students, feeConfig }: Props) {
       remaining,
     ]);
     const csv = [columns, ...dataRows].map(row => row.map(escapeCell).join(';')).join('\r\n');
-    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
