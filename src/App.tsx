@@ -14,6 +14,7 @@ import { generateMatricule, loadStudents, addStudentDB, recordPayment,
   updateStudentDB, deleteStudentDB,
   loadTeachers, addTeacherDB, updateTeacherDB, deleteTeacherDB,
   loadSalaryPayments, paySalaryDB, unpaySalaryDB,
+  loadSchoolClasses, addSchoolClass, setSchoolClassActive,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
 import { AuthPage } from './components/AuthPage';
@@ -59,6 +60,7 @@ export default function App() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [salaryPayments, setSalaryPayments] = useState<SalaryPayment[]>([]);
   const [feeConfig, setFeeConfig] = useState<SchoolFeeConfig>(EMPTY_FEE_CONFIG);
+  const [classNames, setClassNames] = useState<string[]>([]);
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
   const [schoolLogo, setSchoolLogo] = useState('');
@@ -95,9 +97,10 @@ export default function App() {
   const loadAllData = useCallback(async (schoolId: string) => {
     setDataLoading(true);
     try {
-      const [schoolConfig, academicYear] = await Promise.all([loadSchoolFeeConfig(schoolId), loadCurrentAcademicYear(schoolId)]);
+      const [schoolConfig, academicYear, schoolClasses] = await Promise.all([loadSchoolFeeConfig(schoolId), loadCurrentAcademicYear(schoolId), loadSchoolClasses(schoolId)]);
       setCurrentAcademicYear(academicYear);
       setFeeConfig(schoolConfig);
+      setClassNames(schoolClasses);
 
       const results = await Promise.allSettled([
         loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
@@ -145,6 +148,7 @@ export default function App() {
       loadAllData(profile.schoolId);
     } else if (!user) {
       setStudents([]);
+      setClassNames([]);
       setUniforms([]);
       setBooks([]);
       setSupplies([]);
@@ -420,6 +424,39 @@ export default function App() {
     } catch (err) {
       console.error('Failed to save fee config:', err);
     }
+  };
+
+  const handleAddSchoolClass = async (name: string) => {
+    if (!profile?.schoolId) throw new Error('École non identifiée. Reconnecte-toi puis réessaie.');
+    const normalized = name.trim().replace(/\\s+/g, ' ');
+    if (!normalized) throw new Error('Entre le nom de la classe.');
+    if (classNames.some(c => c.toLocaleLowerCase() === normalized.toLocaleLowerCase())) {
+      throw new Error('Cette classe est déjà disponible.');
+    }
+    await addSchoolClass(profile.schoolId, normalized);
+    const additions: FeeConfigRow[] = [];
+    for (const feeType of feeConfig.feeTypes) {
+      if (feeType.paymentMode === 'tranche') {
+        for (const tranche of feeConfig.tranches) additions.push({
+          feeType: feeType.feeType, className: normalized, paymentMode: 'tranche',
+          trancheIndex: tranche.index, amount: 0,
+        });
+      } else {
+        additions.push({ feeType: feeType.feeType, className: normalized, paymentMode: 'single', trancheIndex: null, amount: 0 });
+      }
+    }
+    const nextRows = [...feeConfig.feeConfig.filter(row => row.className !== normalized), ...additions];
+    setClassNames(prev => [...prev, normalized].sort((x, y) => x.localeCompare(y, 'fr')));
+    setFeeConfig(prev => ({ ...prev, feeConfig: nextRows }));
+    try { await saveFeeConfig(profile.schoolId, nextRows); }
+    catch (err) { console.error('Class added, but initial fee rows could not be saved:', err); throw new Error('Classe créée, mais les tarifs initiaux n’ont pas pu être enregistrés. Recharge les paramètres.'); }
+  };
+
+  const handleRemoveSchoolClass = async (name: string) => {
+    if (!profile?.schoolId) throw new Error('École non identifiée. Reconnecte-toi puis réessaie.');
+    if (classNames.length <= 1) throw new Error('L’école doit conserver au moins une classe disponible.');
+    await setSchoolClassActive(profile.schoolId, name, false);
+    setClassNames(prev => prev.filter(c => c !== name));
   };
 
   const handleResetFeeConfig = () => {
@@ -729,6 +766,9 @@ export default function App() {
 
               {view === 'parametres' && <ConfigurationPanel
                 feeConfig={feeConfig}
+                classNames={classNames}
+                onAddClass={handleAddSchoolClass}
+                onRemoveClass={handleRemoveSchoolClass}
                 onSaveFeeConfig={handleFeeConfigSave}
                 onReset={handleResetFeeConfig}
                 schoolName={profile.schoolName}
@@ -794,6 +834,7 @@ export default function App() {
         tranches={feeConfig.tranches}
         schoolName={profile?.schoolName || ''}
         schoolId={profile?.schoolId || ''}
+        classNames={classNames}
         onGenerateMatricule={generateMatricule}      />
       <EditStudentModal
         student={editStudent}
@@ -803,6 +844,7 @@ export default function App() {
         feeTypes={feeConfig.feeTypes}
         feeConfig={feeConfig.feeConfig}
         tranches={feeConfig.tranches}
+        classNames={classNames}
       />
       <DeleteConfirmModal
         student={deleteStudent}
