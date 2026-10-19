@@ -38,7 +38,7 @@ export interface AdminManualPayment {
   payment_period_end?: string | null;
 }
 
-async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'suspend' | 'restore', paid?: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel', trialDays?: number) {
+async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'suspend' | 'restore', paid?: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel', trialDays?: number, plans?: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[]) {
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
@@ -46,7 +46,7 @@ async function adminFetch(code: string, action: string, paymentId?: string, scho
       'Content-Type': 'application/json',
       Authorization: `Bearer ${key}`,
     },
-    body: JSON.stringify({ code, action, paymentId, schoolId, status, paid, plan, billingPeriod, trialDays }),
+    body: JSON.stringify({ code, action, paymentId, schoolId, status, paid, plan, billingPeriod, trialDays, plans }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
@@ -85,4 +85,8 @@ export async function adminSetSchoolPlan(code: string, schoolId: string, plan: '
 
 export async function adminSetTrialDays(code: string, schoolId: string, trialDays: number): Promise<void> {
   await adminFetch(code, 'set_trial_end', undefined, schoolId, undefined, undefined, undefined, undefined, trialDays);
+}
+
+export async function adminSavePublicPricing(code: string, plans: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[]): Promise<void> {
+  await adminFetch(code, 'save_public_pricing', undefined, undefined, undefined, undefined, undefined, undefined, undefined, plans);
 }
