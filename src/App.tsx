@@ -852,12 +852,12 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
   };
   const adviceUrl = 'https://wa.me/22373369410?text=' + encodeURIComponent("Bonjour Gestilys, je souhaite être conseillé pour choisir une formule. École : " + schoolName + ". E-mail : " + schoolEmail + ". Merci de me guider.");
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-50 px-4 py-8 text-slate-900 sm:py-12" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #edf3f9 55%, #e8eef6 100%)' }}>
+    <div className="min-h-screen overflow-hidden bg-slate-50 px-4 py-8 text-slate-900 sm:py-12" style={{ background: 'linear-gradient(135deg, #f5f8ff 0%, #edf3ff 52%, #ffffff 100%)' }}>
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-3xl text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-amber-200/30 bg-gradient-to-br from-amber-300 to-yellow-500 text-blue-950 shadow-lg shadow-amber-500/20"><Lock className="h-7 w-7" /></div>
-          <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-blue-800">Gestilys · Abonnement</p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">Continuez avec Gestilys</h1>
+          <p className="mt-5 text-xs font-extrabold uppercase tracking-[.22em] text-blue-900">Gestilys · Abonnement</p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-blue-950 sm:text-5xl">Continuez avec Gestilys</h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-700 sm:text-base">L’essai gratuit de 14 jours de <strong className="text-slate-900">{schoolName}</strong> est terminé. Choisissez votre formule et votre période de paiement pour demander l’activation.</p>
           <p className="mt-2 text-xs leading-6 text-slate-600">Vos données restent conservées. Aucun paiement automatique n’est effectué sur cette page.</p>
         </div>
@@ -868,10 +868,10 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           {plans.map((plan) => {
             const amount = billingPeriod === 'mensuel' ? plan.monthly : plan.monthly * 10;
-            const tone = plan.tone === 'gold' ? { border: 'border-slate-200', badge: 'bg-blue-50 text-blue-900' } : plan.tone === 'violet' ? { border: 'border-slate-200', badge: 'bg-indigo-50 text-indigo-900' } : { border: 'border-slate-200', badge: 'bg-sky-50 text-sky-900' };
+            const tone = plan.tone === 'gold' ? { border: 'border-amber-300', badge: 'bg-amber-100 text-amber-950' } : plan.tone === 'violet' ? { border: 'border-blue-300', badge: 'bg-blue-100 text-blue-950' } : { border: 'border-slate-200', badge: 'bg-sky-100 text-sky-950' };
             return (
               <article key={plan.name} className={'relative flex flex-col rounded-3xl border ' + tone.border + ' bg-white p-5 text-slate-900 shadow-md shadow-slate-200/70 transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-6'}>
-                {plan.name === 'Premium' && <span className="absolute right-4 top-4 rounded-full bg-indigo-50 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-indigo-900">POPULAIRE</span>}
+                {plan.name === 'Premium' && <span className="absolute right-4 top-4 rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-amber-950">POPULAIRE</span>}
                 <span className={'inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
                 <p className="mt-5 text-sm leading-6 text-slate-700">{plan.detail}</p>
                 <div className="mt-5 flex items-end gap-2"><strong className="text-3xl font-extrabold tracking-tight sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="pb-1 text-xs font-semibold text-slate-600">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
@@ -883,7 +883,7 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
           })}
         </div>
         <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm sm:p-6">
-          <h2 className="text-lg font-extrabold text-white">Besoin d’un conseil avant de choisir ?</h2>
+          <h2 className="text-lg font-extrabold text-blue-950">Besoin d’un conseil avant de choisir ?</h2>
           <p className="mt-2 text-sm leading-6 text-slate-700">Notre équipe peut vous aider à identifier la formule adaptée à votre école.</p>
           <a href={adviceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-blue-900 bg-blue-900 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-200"><Phone className="h-4 w-4" /> Demander conseil sur WhatsApp <ArrowRight className="h-4 w-4" /></a>
         </div>
