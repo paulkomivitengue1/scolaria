@@ -912,8 +912,10 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
         .gb-card.popular { border-color:#f0c653; background:linear-gradient(155deg,#172554 0%,#1e3a8a 68%,#1d4ed8 130%); box-shadow:0 24px 58px rgba(23,37,84,.23); color:#fff; transform:translateY(-7px); }
         .gb-card.popular:before { height:6px; background:linear-gradient(90deg,#f9d56e,#f4bd35,#fff0b3); }
         .gb-card.popular:hover { box-shadow:0 30px 68px rgba(23,37,84,.28); transform:translateY(-10px); }
-        .gb-card.popular .gb-plan-badge { background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; }
+        .gb-card.popular .gb-plan-badge { display:inline-flex; align-items:center; justify-content:center; background:#f4bd35 !important; color:#172554 !important; border:1px solid #f4bd35 !important; box-shadow:0 4px 12px rgba(244,189,53,.2); }
         .gb-card.popular .gb-plan-detail,.gb-card.popular .gb-plan-period,.gb-card.popular .gb-plan-features li { color:#dbeafe !important; }
+        .gb-card.popular .gb-plan-savings { display:block; color:#065f46 !important; background:#d1fae5 !important; border:1px solid #6ee7b7 !important; border-radius:12px; padding:10px 12px; font-weight:850; line-height:1.5; opacity:1 !important; text-shadow:none !important; }
+        .gb-card.popular .gb-plan-popular-label { display:inline-flex; align-items:center; justify-content:center; min-height:30px; padding:7px 12px; background:#f4bd35 !important; color:#172554 !important; border:1px solid #f4bd35 !important; border-radius:999px; font-size:10px; font-weight:900; line-height:1.1; letter-spacing:.06em; white-space:nowrap; box-shadow:0 5px 14px rgba(244,189,53,.24); }
         .gb-card.popular .gb-plan-note { display:block; color:#172554 !important; background:linear-gradient(135deg,#eff6ff,#fff); border:1px solid #bfdbfe; border-radius:10px; padding:9px 10px; font-weight:750; }
         .gb-card.popular .gb-plan-price { text-shadow:0 2px 12px rgba(0,0,0,.12); }
         .gb-card.popular .gb-plan-price { color:#fff !important; }
@@ -959,11 +961,11 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
             const tone = plan.tone === 'gold' ? { border: 'border-amber-300', badge: 'bg-amber-100 text-amber-950' } : plan.tone === 'violet' ? { border: 'border-indigo-200', badge: 'bg-indigo-50 text-indigo-900' } : { border: 'border-blue-200', badge: 'bg-blue-50 text-blue-900' };
             return (
               <article key={plan.name} className={'gb-card ' + (plan.tone === 'violet' ? 'violet ' : plan.tone === 'gold' ? 'gold ' : '') + (plan.popular ? 'popular ' : '') + 'flex flex-col p-5 sm:p-6'}>
-                {plan.popular && <span className="absolute right-4 top-4 rounded-full border border-amber-300 bg-amber-100 px-3 py-1.5 text-[10px] font-extrabold tracking-wider text-amber-950">LE PLUS CHOISI</span>}
+                {plan.popular && <span className="gb-plan-popular-label absolute right-4 top-4 z-10">LE PLUS CHOISI</span>}
                 <span className={'gb-plan-badge inline-flex w-fit rounded-full px-3 py-1.5 text-[11px] font-extrabold ' + tone.badge}>{plan.name}</span>
                 <p className="gb-plan-detail mt-4 min-h-[50px] pr-2 text-sm leading-6 text-slate-600">{plan.detail}</p>
                 <div className="mt-5 flex items-end gap-2"><strong className="gb-plan-price text-3xl font-extrabold tracking-tight text-blue-950 sm:text-4xl">{amount.toLocaleString('fr-FR')}</strong><span className="gb-plan-period pb-1 text-xs font-bold text-slate-500">FCFA / {billingPeriod === 'mensuel' ? 'mois' : 'an'}</span></div>
-                {billingPeriod === 'annuel' && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800">✓ 2 mois offerts · Économie de {(plan.monthly * 2).toLocaleString('fr-FR')} FCFA</div>}
+                {billingPeriod === 'annuel' && <div className="gb-plan-savings mt-3 text-xs">✓ 2 mois offerts · Économie de {(plan.monthly * 2).toLocaleString('fr-FR')} FCFA</div>}
                 <p className="gb-plan-note mt-3 text-xs leading-5 text-slate-500">{billingPeriod === 'annuel' ? '12 mois d’accès, prix équivalent à 10 mensualités.' : 'Paiement pour un mois d’accès.'}</p>
                 <ul className="gb-plan-features mt-5 flex-1 space-y-3 border-t border-slate-100 pt-5">{plan.features.map(feature => <li key={feature} className="flex items-start gap-2.5 text-xs font-semibold leading-5 text-slate-700"><span className="gb-check mt-0.5"><Check className="h-3 w-3" /></span><span>{feature}</span></li>)}</ul>
                 <a href={whatsappUrl(plan.name, amount, billingPeriod)} target="_blank" rel="noreferrer" className="gb-cta mt-6 w-full">Choisir cette formule <ArrowRight className="h-4 w-4" /></a>
