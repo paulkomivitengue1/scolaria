@@ -12,7 +12,7 @@ const P: Record<string,ClassPricing> = {
   '8ème année':  {scolarite:270000,cantine:126000,transport:81000},
   '9ème année':  {scolarite:315000,cantine:126000,transport:81000},
 };
-export const DEFAULT_PRICING: PricingConfig = Object.fromEntries(CLASS_LIST.map(c => [c, {...P[c]}])) as PricingConfig;
+export const DEFAULT_PRICING: PricingConfig = Object.fromEntries(CLASS_LIST.map(c => [c, {...(P[c] ?? P['Jardin'])}])) as PricingConfig;
 export const STUDENTS: never[] = [];
 
 const uid = (p: string) => `${p}_${Math.random().toString(36).slice(2, 9)}`;
