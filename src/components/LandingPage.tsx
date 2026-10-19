@@ -84,17 +84,16 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         .gestilys-landing * { box-sizing:border-box; }
         .gl-container { width:min(1120px, calc(100% - 40px)); margin-inline:auto; }
         .gl-nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.96); backdrop-filter:blur(16px); border-bottom:1px solid #e8edf5; }
-        .gl-menu-toggle { display:none; width:42px; height:42px; flex:none; align-items:center; justify-content:center; border:1px solid #dbe3ef; border-radius:12px; background:white; color:#172554; box-shadow:0 4px 12px rgba(23,37,84,.06); }
-        .gl-mobile-menu { display:none; }
-        @media (max-width:760px) {
+        .gl-menu-toggle { display:inline-flex; width:42px; height:42px; flex:none; align-items:center; justify-content:center; border:1px solid #dbe3ef; border-radius:12px; background:white; color:#172554; box-shadow:0 4px 12px rgba(23,37,84,.06); }
+        .gl-mobile-menu { display:block; border-top:1px solid #e8edf5; background:#fff; box-shadow:0 18px 28px rgba(23,37,84,.10); padding:10px 20px 16px; }
+        .gl-mobile-menu a { display:flex; align-items:center; justify-content:space-between; min-height:46px; padding:10px 4px; color:#172554; text-decoration:none; font-size:14px; font-weight:800; border-bottom:1px solid #eef2f7; }
+        .gl-mobile-menu .gl-mobile-cta { display:flex; width:100%; align-items:center; gap:8px; justify-content:center; min-height:46px; margin-top:12px; border:0; border-radius:12px; background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; font-size:14px; font-weight:900; }
+        @media (max-width:900px) {
           .gl-nav-inner { min-height:68px !important; justify-content:flex-start !important; gap:10px !important; }
           .gl-menu-toggle { display:inline-flex; }
           .gl-nav-brand { margin-right:auto; }
           .gl-nav-links { display:none !important; }
           .gl-nav-cta { padding:10px 11px !important; font-size:11px !important; }
-          .gl-mobile-menu { display:block; border-top:1px solid #e8edf5; background:#fff; box-shadow:0 18px 28px rgba(23,37,84,.10); padding:10px 20px 16px; }
-          .gl-mobile-menu a { display:flex; align-items:center; justify-content:space-between; min-height:46px; padding:10px 4px; color:#172554; text-decoration:none; font-size:14px; font-weight:800; border-bottom:1px solid #eef2f7; }
-          .gl-mobile-menu .gl-mobile-cta { justify-content:center; margin-top:12px; border:0; border-radius:12px; background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; }
         }
         .gl-link { color:#475569; text-decoration:none; font-size:13px; font-weight:700; transition:color .2s; }
         .gl-link:hover { color:#1d4ed8; }
