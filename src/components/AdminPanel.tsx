@@ -328,7 +328,21 @@ export function AdminPanel({ onExit }: Props) {
   const newThisYear = schools.filter((s) => new Date(s.created_at) >= yearStart).length;
 
   return (
-    <div className="min-h-screen bg-canvas bg-grid">
+    <div className="gestilys-admin min-h-screen bg-canvas bg-grid">
+      <style>{`
+        .gestilys-admin { --ga-navy:#172554; --ga-blue:#1d4ed8; --ga-gold:#f4bd35; position:relative; isolation:isolate; background:radial-gradient(ellipse at 8% 5%,rgba(59,130,246,.14),transparent 32%),radial-gradient(ellipse at 94% 0%,rgba(244,189,53,.18),transparent 27%),linear-gradient(180deg,#f4f7ff 0%,#fff 55%,#f7f9fd 100%); }
+        .gestilys-admin:before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(29,78,216,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.035) 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(to bottom,black,transparent 85%); }
+        .gestilys-admin header { border-color:rgba(244,189,53,.35); background:linear-gradient(110deg,#172554 0%,#1e3a8a 62%,#1d4ed8 125%); box-shadow:0 12px 34px rgba(23,37,84,.16); }
+        .gestilys-admin main section > .rounded-3xl, .gestilys-admin main section > .rounded-2xl, .gestilys-admin main .shadow-card, .gestilys-admin main .shadow-cardLg { transition:box-shadow .2s,border-color .2s,transform .2s; }
+        .gestilys-admin main .shadow-card:hover { box-shadow:0 14px 34px rgba(23,37,84,.09); }
+        .gestilys-admin main .border-slate-200.bg-white { border-color:#e0e8f5; box-shadow:0 12px 32px rgba(23,37,84,.055); }
+        .gestilys-admin main .bg-gradient-to-r.from-royal-950 { background:linear-gradient(115deg,#172554 0%,#1e3a8a 72%,#1d4ed8 130%); }
+        .gestilys-admin main button:focus-visible,.gestilys-admin main input:focus-visible,.gestilys-admin main select:focus-visible { outline:3px solid rgba(147,197,253,.9); outline-offset:2px; }
+        .gestilys-admin main button { transition:filter .18s,transform .18s,box-shadow .18s; }
+        .gestilys-admin main button:hover:not(:disabled) { filter:brightness(1.025); }
+        .gestilys-admin main button:active:not(:disabled) { transform:translateY(1px); }
+        @media (prefers-reduced-motion:reduce) { .gestilys-admin main section > *, .gestilys-admin main button { transition:none !important; } }
+      `}</style>
       <header className="sticky top-0 z-30 border-b border-royal-200 bg-gradient-to-r from-royal-900 via-royal-800 to-royal-900 shadow-cardLg">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
