@@ -1,116 +1,78 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
-
+const corsHeaders = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const DEV_CODE = Deno.env.get("ADMIN_DEV_CODE");
-
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
-
-interface ActionBody {
-  code?: string;
-  action: "list_schools" | "list_payments" | "validate_payment" | "reject_payment" | "set_school_status" | "set_school_paid_status";
-  paymentId?: string;
-  schoolId?: string;
-  status?: "suspend" | "restore";
-  paid?: boolean;
-}
-
+const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+type Plan = "Essentiel" | "Premium" | "Élite";
+type Period = "mensuel" | "annuel";
+interface Body { code?: string; action: string; paymentId?: string; schoolId?: string; status?: "suspend"|"restore"; paid?: boolean; plan?: Plan; billingPeriod?: Period; trialDays?: number; plans?: {name: Plan; monthly: number}[]; }
+const prices: Record<Plan, number> = {Essentiel:10000, Premium:20000, "Élite":30000};
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
+ if(req.method==="OPTIONS") return new Response(null,{status:200,headers:corsHeaders});
+ const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
+ if(!DEV_CODE) return respond({error:"Configuration administrateur manquante"},500);
+ try {
+  const b:Body=await req.json();
+  if(b.action==="get_public_pricing") {
+   const {data,error}=await supabase.from("gestilys_public_settings").select("plans,updated_at").eq("id",1).single();
+   if(error)throw error;
+   return respond({data});
   }
-
-  if (!DEV_CODE) {
-    return new Response(
-      JSON.stringify({ error: "Configuration administrateur manquante" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  if(b.action==="get_public_trial_days") {
+   const {data,error}=await supabase.from("gestilys_public_settings").select("trial_days").eq("id",1).single();
+   if(error)throw error;
+   return respond({data:{trial_days:Number(data.trial_days)||14}});
   }
-
-  try {
-    const body: ActionBody = await req.json();
-    const { code, action, paymentId, schoolId, status, paid } = body;
-
-    if (code !== DEV_CODE) {
-      return new Response(
-        JSON.stringify({ error: "Code développeur invalide" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    switch (action) {
-      case "list_schools": {
-        const { data, error } = await supabase.rpc("admin_list_schools");
-        if (error) throw error;
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "list_payments": {
-        const { data, error } = await supabase.rpc("admin_list_manual_payments");
-        if (error) throw error;
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "validate_payment": {
-        if (!paymentId) throw new Error("paymentId requis");
-        const { error } = await supabase.rpc("admin_validate_payment", {
-          p_payment_id: paymentId,
-        });
-        if (error) throw error;
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "reject_payment": {
-        if (!paymentId) throw new Error("paymentId requis");
-        const { error } = await supabase.rpc("admin_reject_payment", {
-          p_payment_id: paymentId,
-        });
-        if (error) throw error;
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "set_school_status": {
-        if (!schoolId) throw new Error("schoolId requis");
-        if (status !== "suspend" && status !== "restore") throw new Error("Statut requis invalide");
-        const { error } = await supabase.rpc("admin_set_school_status", {
-          p_school_id: schoolId,
-          p_status: status,
-        });
-        if (error) throw error;
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "set_school_paid_status": {
-        if (!schoolId || typeof paid !== "boolean") throw new Error("École et statut de paiement requis");
-        const { error } = await supabase.from("schools").update({ subscription_status: paid ? "active" : "expired" }).eq("id", schoolId);
-        if (error) throw error;
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      default:
-        return new Response(
-          JSON.stringify({ error: "Action inconnue" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-    }
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Erreur interne" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  if(b.code!==DEV_CODE) return respond({error:"Code développeur invalide"},401);
+  const {action,paymentId,schoolId}=b;
+  switch(action) {
+   case "save_trial_days": {
+    if(!Number.isInteger(b.trialDays)||b.trialDays!<0||b.trialDays!>365)throw new Error("Durée d’essai invalide (0 à 365 jours).");
+    const {data:current,error:readError}=await supabase.from("gestilys_public_settings").select("plans").eq("id",1).maybeSingle();
+    if(readError)throw readError;
+    const currentPlans=current?.plans ?? Object.entries(prices).map(([name,monthly])=>({name,monthly}));
+    const {error}=await supabase.from("gestilys_public_settings").upsert({id:1,plans:currentPlans,trial_days:b.trialDays,updated_at:new Date().toISOString()});
+    if(error)throw error;
+    return respond({ok:true,trial_days:b.trialDays});
+   }
+   case "save_public_pricing": {
+    if(!Array.isArray(b.plans)||b.plans.length!==3)throw new Error("Les trois formules sont obligatoires.");
+    const expected:Plan[]=["Essentiel","Premium","Élite"];
+    const normalized=b.plans.map((p,i)=>{
+     if(!p||p.name!==expected[i]||!Number.isInteger(p.monthly)||p.monthly<1000||p.monthly>1000000)throw new Error("Vérifiez les trois tarifs : chaque prix doit être un nombre entier entre 1 000 et 1 000 000 FCFA.");
+     return {name:p.name,monthly:p.monthly};
+    });
+    const {error}=await supabase.from("gestilys_public_settings").upsert({id:1,plans:normalized,updated_at:new Date().toISOString()});
+    if(error)throw error;
+    return respond({ok:true,plans:normalized});
+   }
+   case "list_schools": {const {data,error}=await supabase.rpc("admin_list_schools");if(error)throw error;return respond({data});}
+   case "list_payments": {const {data,error}=await supabase.rpc("admin_list_manual_payments");if(error)throw error;return respond({data});}
+   case "validate_payment": {if(!paymentId)throw new Error("Identifiant de paiement requis");const {error}=await supabase.rpc("admin_validate_payment",{p_payment_id:paymentId});if(error)throw error;return respond({ok:true});}
+   case "reject_payment": {if(!paymentId)throw new Error("Identifiant de paiement requis");const {error}=await supabase.rpc("admin_reject_payment",{p_payment_id:paymentId});if(error)throw error;return respond({ok:true});}
+   case "set_school_status": {if(!schoolId||!["suspend","restore"].includes(b.status||""))throw new Error("École et statut requis");const {error}=await supabase.rpc("admin_set_school_status",{p_school_id:schoolId,p_status:b.status});if(error)throw error;return respond({ok:true});}
+   case "set_school_paid_status": {
+    if(!schoolId||typeof b.paid!=="boolean")throw new Error("École et statut requis");
+    if(!b.paid){const {error}=await supabase.from("schools").update({subscription_status:"expired"}).eq("id",schoolId);if(error)throw error;return respond({ok:true});}
+    if(!b.plan||!prices[b.plan]||!["mensuel","annuel"].includes(b.billingPeriod||""))throw new Error("Choisissez le forfait réellement payé et sa période.");
+    const amount=b.billingPeriod==="annuel"?prices[b.plan]*10:prices[b.plan];
+    const {data:school,error:schoolError}=await supabase.from("schools").select("name").eq("id",schoolId).single();if(schoolError)throw schoolError;
+    const now=new Date();const end=new Date(now);if(b.billingPeriod==="annuel")end.setFullYear(end.getFullYear()+1);else end.setMonth(end.getMonth()+1);end.setDate(end.getDate()-1);
+    const {error:paymentError}=await supabase.from("manual_payments").insert({school_id:schoolId,school_name:school.name,provider:"Paiement manuel",sender:"Confirmé par administrateur",amount,status:"valide",received_at:now.toISOString(),billing_period:b.billingPeriod,plan:b.plan,payment_period_start:now.toISOString().slice(0,10),payment_period_end:end.toISOString().slice(0,10)});
+    if(paymentError)throw paymentError;
+    const {error}=await supabase.from("schools").update({subscription_status:"active",plan:b.plan,billing_period:b.billingPeriod,subscription_amount:amount,last_paid_at:now.toISOString(),subscription_started_at:now.toISOString(),trial_ends_at:end.toISOString()}).eq("id",schoolId);if(error)throw error;
+    return respond({ok:true,amount});
+   }
+   case "set_school_plan": {
+    if(!schoolId||!b.plan||!prices[b.plan]||!["mensuel","annuel"].includes(b.billingPeriod||""))throw new Error("École, forfait et période requis");
+    const amount=b.billingPeriod==="annuel"?prices[b.plan]*10:prices[b.plan];
+    const {error}=await supabase.from("schools").update({plan:b.plan,billing_period:b.billingPeriod,subscription_amount:amount}).eq("id",schoolId);if(error)throw error;return respond({ok:true,amount});
+   }
+   case "set_trial_end": {
+    if(!schoolId||!Number.isInteger(b.trialDays)||b.trialDays!<0||b.trialDays!>365)throw new Error("Durée d’essai invalide (0 à 365 jours)");
+    const end=new Date(Date.now()+b.trialDays!*86400000).toISOString();
+    const {error}=await supabase.from("schools").update({trial_ends_at:end,subscription_status:"trial"}).eq("id",schoolId);if(error)throw error;return respond({ok:true,trial_ends_at:end});
+   }
+   default:return respond({error:"Action inconnue"},400);
   }
+ } catch(err) {return respond({error:err instanceof Error?err.message:"Erreur interne"},500);}
 });
