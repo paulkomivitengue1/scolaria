@@ -7,6 +7,24 @@ export const DEFAULT_PLAN_PRICES: PublicPlanPrice[] = [
   { name: 'Élite', monthly: 30000 },
 ];
 
+export async function loadPublicTrialDays(): Promise<number> {
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scolaria-admin`;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ action: 'get_public_trial_days' }),
+    });
+    if (!response.ok) return 14;
+    const result = await response.json();
+    const days = result?.data?.trial_days;
+    return Number.isInteger(days) && days >= 0 && days <= 365 ? days : 14;
+  } catch {
+    return 14;
+  }
+}
+
 export async function loadPublicPlanPrices(): Promise<PublicPlanPrice[]> {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scolaria-admin`;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
