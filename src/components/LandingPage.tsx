@@ -232,52 +232,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           .gl-stat-value { font-size:12px; }
         }
 
-        /* Pricing: sober, high-contrast and deliberately free of gradients */
-        #tarifs { background:#f7f8fa !important; }
-        #tarifs .gl-kicker { color:#475569 !important; }
-        #tarifs .gl-h2 { color:#111827 !important; max-width:760px; }
-        #tarifs .gl-sub { color:#4b5563 !important; max-width:700px; }
-        #tarifs .gl-pricing-toggle {
-          background:#e5e7eb !important; border:1px solid #d1d5db !important; border-radius:12px !important; padding:4px !important;
-        }
-        #tarifs .gl-pricing-toggle button {
-          border-radius:9px !important; min-height:42px; padding:10px 16px !important; color:#374151 !important;
-          box-shadow:none !important; border:1px solid transparent !important; background:transparent !important;
-        }
-        #tarifs .gl-pricing-toggle button[aria-pressed="true"] {
-          background:#fff !important; color:#111827 !important; border-color:#d1d5db !important;
-        }
-        #tarifs .gl-pricing-grid { gap:16px !important; }
-        #tarifs article {
-          border:1px solid #d1d5db !important; border-radius:16px !important; background:#fff !important;
-          padding:26px !important; box-shadow:0 2px 8px rgba(17,24,39,.035) !important; transition:border-color .18s ease, box-shadow .18s ease !important;
-        }
-        #tarifs article:hover { border-color:#9ca3af !important; box-shadow:0 8px 22px rgba(17,24,39,.07) !important; }
-        #tarifs article.gl-plan-popular { border:2px solid #172554 !important; padding:25px !important; }
-        #tarifs article .gl-plan-badge { background:#172554 !important; color:#fff !important; border-radius:6px !important; letter-spacing:.04em; }
-        #tarifs article > span:first-of-type { background:#f3f4f6 !important; color:#374151 !important; border-radius:7px !important; }
-        #tarifs article h3 { color:#111827 !important; font-size:22px !important; letter-spacing:-.025em; }
-        #tarifs article p { color:#4b5563 !important; }
-        #tarifs article > div[style*="marginTop:20"] { color:#111827 !important; }
-        #tarifs article > div[style*="marginTop:20"] strong { color:#111827 !important; font-size:34px !important; letter-spacing:-.045em !important; }
-        #tarifs article > div[style*="marginTop:20"] span { color:#4b5563 !important; }
-        #tarifs article ul { color:#374151 !important; padding:0; list-style:none; }
-        #tarifs article ul li { line-height:1.55; }
-        #tarifs article ul li svg { color:#374151 !important; flex-shrink:0; }
-        #tarifs article .gl-btn-primary, #tarifs .gl-btn-secondary {
-          background:#172554 !important; color:#fff !important; border:1px solid #172554 !important;
-          border-radius:10px !important; box-shadow:none !important; text-decoration:none !important;
-          font-weight:800 !important; min-height:48px; transition:background .18s ease,border-color .18s ease !important;
-        }
-        #tarifs article .gl-btn-primary:hover, #tarifs .gl-btn-secondary:hover { background:#263b69 !important; border-color:#263b69 !important; transform:none !important; }
-        #tarifs a, #tarifs a:visited { text-decoration:none !important; }
-        #tarifs a:focus-visible, #tarifs button:focus-visible { outline:3px solid #64748b !important; outline-offset:3px !important; }
-        @media (max-width:640px) {
-          #tarifs article { padding:22px !important; }
-          #tarifs article.gl-plan-popular { padding:21px !important; }
-          #tarifs article > div[style*="marginTop:20"] strong { font-size:31px !important; }
-          #tarifs .gl-pricing-toggle button { padding:9px 12px !important; font-size:12px !important; }
-        }
+
 
       `}
       </style>
