@@ -90,3 +90,7 @@ export async function adminSetTrialDays(code: string, schoolId: string, trialDay
 export async function adminSavePublicPricing(code: string, plans: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[]): Promise<void> {
   await adminFetch(code, 'save_public_pricing', undefined, undefined, undefined, undefined, undefined, undefined, undefined, plans);
 }
+
+export async function adminSavePublicTrialDays(code: string, trialDays: number): Promise<void> {
+  await adminFetch(code, 'save_trial_days', undefined, undefined, undefined, undefined, undefined, undefined, trialDays);
+}
