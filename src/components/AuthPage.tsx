@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { loadPublicTrialDays } from '../lib/publicPricing';
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, School, UserCircle, Phone,
   Sparkles, ShieldCheck, AlertCircle,
@@ -22,6 +23,13 @@ export function AuthPage({ onBack }: AuthPageProps) {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trialDays, setTrialDays] = useState(14);
+
+  useEffect(() => {
+    let active = true;
+    loadPublicTrialDays().then((days) => { if (active) setTrialDays(days); });
+    return () => { active = false; };
+  }, []);
 
   const inputBase = 'h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-ink outline-none transition focus:border-royal-400 focus:ring-4';
   const inputPass = 'h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-ink outline-none transition focus:border-royal-400 focus:ring-4';
@@ -144,7 +152,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
 
               {mode === 'signup' && (
                 <p className="text-xs leading-relaxed text-slate-400">
-                  Le mot de passe doit contenir au moins 6 caractères. Votre école bénéficie d'un essai gratuit de 14 jours.
+                  Le mot de passe doit contenir au moins 6 caractères. {trialDays === 0 ? 'Aucun essai gratuit n’est proposé actuellement.' : `Votre école bénéficie d’un essai gratuit de ${trialDays} jour${trialDays > 1 ? 's' : ''}.`}
                 </p>
               )}
 
