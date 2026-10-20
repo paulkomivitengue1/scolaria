@@ -8,9 +8,9 @@ import {
 import { formatFCFA } from '../types';
 import {
   adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays,
-  adminSavePublicPricing, type AdminSchool, type AdminManualPayment,
+  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
-import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
+import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 
 const DEV_CODE_STORAGE = 'scolaria_admin_code';
 
@@ -84,6 +84,7 @@ export function AdminPanel({ onExit }: Props) {
   const [editPlan, setEditPlan] = useState<'Essentiel' | 'Premium' | 'Élite'>('Essentiel');
   const [editPeriod, setEditPeriod] = useState<'mensuel' | 'annuel'>('mensuel');
   const [trialDays, setTrialDays] = useState('14');
+  const [publicTrialDays, setPublicTrialDays] = useState('14');
   const [priceInputs, setPriceInputs] = useState<Record<'Essentiel'|'Premium'|'Élite', string>>({ Essentiel: '10000', Premium: '20000', 'Élite': '30000' });
 
   const showToast = (msg: string) => {
@@ -94,9 +95,10 @@ export function AdminPanel({ onExit }: Props) {
   const loadData = useCallback(async (c: string) => {
     setDataLoading(true);
     try {
-      const [s, p, pricing] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices()]);
+      const [s, p, pricing, trialDuration] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays()]);
       setSchools(s);
       setPayments(p);
+      setPublicTrialDays(String(trialDuration));
       setPriceInputs({
         Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
         Premium: String(pricing.find((plan) => plan.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly),
@@ -200,6 +202,24 @@ export function AdminPanel({ onExit }: Props) {
       showToast('Tarifs publics enregistrés. La page des tarifs utilisera ces nouveaux montants.');
     } catch (err: any) {
       showToast(err.message || 'Impossible d’enregistrer les tarifs');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const savePublicTrialDuration = async () => {
+    const days = Number(publicTrialDays);
+    if (!Number.isInteger(days) || days < 0 || days > 365) {
+      showToast('Choisis une durée entre 0 et 365 jours');
+      return;
+    }
+    setActionLoading('public-trial-days');
+    try {
+      await adminSavePublicTrialDays(code, days);
+      setPublicTrialDays(String(days));
+      showToast(`Durée d’essai publique enregistrée : ${days} jour(s). Les nouvelles inscriptions utiliseront ce réglage.`);
+    } catch (err: any) {
+      showToast(err.message || 'Impossible d’enregistrer la durée d’essai');
     } finally {
       setActionLoading(null);
     }
@@ -667,6 +687,24 @@ export function AdminPanel({ onExit }: Props) {
                 <button type="button" onClick={() => void savePublicPricing()} disabled={actionLoading === 'public-pricing'} style={{ background: "linear-gradient(115deg, #172554 0%, #1d4ed8 100%)", color: "#ffffff" }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-800 px-4 py-2 text-sm font-800 text-white shadow-card disabled:opacity-60">
                   {actionLoading === 'public-pricing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer les tarifs
                 </button>
+              </div>
+              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-amber-700"><Clock className="h-5 w-5" /></span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-800 text-amber-950">Durée de l’essai gratuit</h3>
+                    <p className="mt-1 text-xs leading-5 text-amber-900">Cette durée sera appliquée aux nouvelles écoles qui s’inscrivent. La landing page affichera automatiquement la même valeur. Les essais déjà en cours ne seront pas modifiés.</p>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-700 text-amber-950">
+                        <span className="shrink-0">Nombre de jours</span>
+                        <input aria-label="Durée globale de l’essai gratuit en jours" type="number" min="0" max="365" step="1" inputMode="numeric" value={publicTrialDays} onChange={e => setPublicTrialDays(e.target.value)} className="h-11 min-w-0 w-full rounded-lg border border-amber-300 bg-white px-3 text-sm font-700 text-slate-900" />
+                      </label>
+                      <button type="button" onClick={() => void savePublicTrialDuration()} disabled={actionLoading === 'public-trial-days'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-800 text-amber-950 disabled:opacity-60">
+                        {actionLoading === 'public-trial-days' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer la durée
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
