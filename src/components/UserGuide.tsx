@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, CheckCircle2, ChevronRight, GraduationCap, HelpCircle, Settings2, Users, Wallet, X, Sparkles, Trophy, RotateCcw, IdCard, ClipboardList } from 'lucide-react';
+import { BookOpen, CheckCircle2, ChevronRight, GraduationCap, Settings2, Users, Wallet, X, Sparkles, Trophy, RotateCcw, IdCard, ClipboardList } from 'lucide-react';
 import type { AppView } from '../types';
 
 interface GuideProps {
