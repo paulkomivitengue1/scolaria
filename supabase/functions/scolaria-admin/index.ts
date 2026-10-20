@@ -20,7 +20,7 @@ Deno.serve(async (req: Request) => {
   if(b.action==="get_public_trial_days") {
    const {data,error}=await supabase.from("gestilys_public_settings").select("trial_days").eq("id",1).single();
    if(error)throw error;
-   return respond({data:{trial_days:Number(data.trial_days)||14}});
+   const days=Number(data.trial_days);return respond({data:{trial_days:Number.isInteger(days)&&days>=0&&days<=365?days:14}});
   }
   if(b.code!==DEV_CODE) return respond({error:"Code développeur invalide"},401);
   const {action,paymentId,schoolId}=b;
