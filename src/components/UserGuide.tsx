@@ -12,7 +12,7 @@ interface GuideProps {
   mode: 'onboarding' | 'module' | 'help';
   view: AppView;
   schoolName: string;
-  schoolId: string;
+  schoolId?: string;
   onClose: () => void;
   onNavigate: (view: AppView) => void;
   onStartStudent: () => void;
@@ -57,6 +57,7 @@ const QUESTS = [
 const STORAGE_KEY = 'gestilys-guide-progress:';
 
 export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onNavigate, onStartStudent }: GuideProps) {
+  const progressKey = STORAGE_KEY + (schoolId || schoolName.trim().toLocaleLowerCase('fr') || 'default-school');
   const [stepIndex, setStepIndex] = useState(0);
   const [completed, setCompleted] = useState<number[]>([]);
   const [loadedSchoolId, setLoadedSchoolId] = useState<string | null>(null);
@@ -64,21 +65,20 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
   const [selectedArticleView, setSelectedArticleView] = useState<AppView | null>(null);
 
   useEffect(() => {
-    if (!schoolId) return;
     try {
-      const saved = localStorage.getItem(STORAGE_KEY + schoolId);
+      const saved = localStorage.getItem(progressKey);
       const parsed: unknown = saved ? JSON.parse(saved) : [];
       setCompleted(Array.isArray(parsed) ? parsed.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < QUESTS.length) : []);
     } catch {
       setCompleted([]);
     }
-    setLoadedSchoolId(schoolId);
-  }, [schoolId]);
+    setLoadedSchoolId(progressKey);
+  }, [progressKey]);
 
   useEffect(() => {
-    if (!schoolId || loadedSchoolId !== schoolId) return;
-    try { localStorage.setItem(STORAGE_KEY + schoolId, JSON.stringify(completed)); } catch { /* Help remains available if storage is blocked. */ }
-  }, [completed, schoolId, loadedSchoolId]);
+    if (loadedSchoolId !== progressKey) return;
+    try { localStorage.setItem(progressKey, JSON.stringify(completed)); } catch { /* Help remains available if storage is blocked. */ }
+  }, [completed, progressKey, loadedSchoolId]);
 
   useEffect(() => {
     if (open) {
