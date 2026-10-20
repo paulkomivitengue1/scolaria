@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
+import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
   Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
@@ -77,6 +77,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'mensuel'|'annuel'>('mensuel');
+  const [trialDays, setTrialDays] = useState(14);
   const [planPrices, setPlanPrices] = useState<Record<'Essentiel'|'Premium'|'Élite', number>>({
     Essentiel: 10000, Premium: 20000, 'Élite': 30000,
   });
@@ -89,6 +90,13 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         Premium: plans.find((p) => p.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly,
         'Élite': plans.find((p) => p.name === 'Élite')?.monthly ?? DEFAULT_PLAN_PRICES[2].monthly,
       });
+    });
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    loadPublicTrialDays().then((days) => {
+      if (!cancelled) setTrialDays(days);
     });
     return () => { cancelled = true; };
   }, []);
@@ -263,7 +271,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <a href="#tarifs" onClick={() => setMobileMenuOpen(false)}>Formules et tarifs <ArrowRight size={15} /></a>
           <a href="#questions" onClick={() => setMobileMenuOpen(false)}>Questions fréquentes <ArrowRight size={15} /></a>
           <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact <ArrowRight size={15} /></a>
-          <button type="button" className="gl-mobile-cta" onClick={() => { setMobileMenuOpen(false); onEnter(); }}>Essai gratuit 14 jours <ArrowRight size={16} /></button>
+          <button type="button" className="gl-mobile-cta" onClick={() => { setMobileMenuOpen(false); onEnter(); }}>Essai gratuit {trialDays} jours <ArrowRight size={16} /></button>
         </nav>}
       </header>
 
@@ -275,7 +283,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
               <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
               <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
-                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Essai gratuit 14 jours <ArrowRight size={17} /></button>
+                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Essai gratuit {trialDays} jours <ArrowRight size={17} /></button>
                 <a href="#demonstration" className="gl-btn" style={{ border:'1px solid #dbe3ef', color:'#172554', textDecoration:'none', background:'white' }}>Voir l’aperçu</a>
               </div>
               <div className="gl-trust">
