@@ -384,6 +384,12 @@ export function AdminPanel({ onExit }: Props) {
   const trialCount = schools.filter((s) => s.subscription_status === 'trial' && new Date(s.trial_ends_at) > new Date()).length;
   const paidCount = schools.filter((s) => s.subscription_status === 'active').length;
   const expiredCount = schools.filter(s => s.subscription_status === 'expired' || (s.subscription_status === 'trial' && new Date(s.trial_ends_at) <= new Date())).length;
+  const trialFollowUpSchools = schools
+    .filter((s) => s.subscription_status === 'trial')
+    .map((s) => ({ ...s, daysLeft: Math.ceil((new Date(s.trial_ends_at).getTime() - now.getTime()) / 86400000) }))
+    .filter((s) => s.daysLeft <= 7)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 6);
   const activeTrialConversion = schools.length ? Math.round((paidCount / schools.length) * 100) : 0;
   const paymentProviderStats = (['Orange Money', 'Wave', 'Moov Money'] as const).map(provider => ({
     provider,
@@ -492,6 +498,47 @@ export function AdminPanel({ onExit }: Props) {
                   <div className="mt-1 text-[11px] text-slate-400">{item.detail}</div>
                 </div>)}
               </div>
+            </section>
+
+            {/* ── Trial conversion and follow-up ── */}
+            <section data-admin-module="dashboard" className="mb-6 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-4 shadow-card sm:p-5">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-800 uppercase tracking-wider text-amber-800"><CalendarDays className="h-3 w-3" /> Priorité commerciale</div>
+                  <h2 className="font-display text-lg font-800 tracking-tight text-ink sm:text-xl">Essais gratuits à relancer</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">Les essais qui expirent dans les 7 jours et ceux déjà terminés apparaissent ici. Contacte les directeurs au bon moment, sans message automatique.</p>
+                </div>
+                <button type="button" onClick={() => { setActiveModule('ecoles'); setStatusFilter('trial'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white px-3.5 py-2.5 text-sm font-700 text-amber-900 hover:bg-amber-100">Voir les écoles <ArrowLeft className="h-4 w-4 rotate-180" /></button>
+              </div>
+              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-amber-200 bg-white p-3"><p className="text-xs font-700 text-slate-600">Essais en cours</p><p className="mt-1 text-2xl font-800 text-amber-700">{trialCount}</p></div>
+                <div className="rounded-xl border border-red-200 bg-white p-3"><p className="text-xs font-700 text-slate-600">Essais expirés</p><p className="mt-1 text-2xl font-800 text-red-700">{expiredCount}</p></div>
+                <div className="rounded-xl border border-emerald-200 bg-white p-3"><p className="text-xs font-700 text-slate-600">Écoles payantes</p><p className="mt-1 text-2xl font-800 text-emerald-700">{paidCount}</p></div>
+                <div className="rounded-xl border border-indigo-200 bg-white p-3"><p className="text-xs font-700 text-slate-600">Taux payant global</p><p className="mt-1 text-2xl font-800 text-indigo-700">{activeTrialConversion}%</p></div>
+              </div>
+              {trialFollowUpSchools.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-amber-300 bg-white/80 px-4 py-6 text-center">
+                  <Check className="mx-auto h-6 w-6 text-emerald-600" />
+                  <p className="mt-2 text-sm font-700 text-slate-800">Aucun essai à relancer en urgence</p>
+                  <p className="mt-1 text-xs text-slate-500">Les essais arrivant à échéance apparaîtront automatiquement ici.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {trialFollowUpSchools.map((school) => (
+                    <div key={school.id} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${school.daysLeft < 0 ? 'bg-red-100 text-red-700' : school.daysLeft <= 2 ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-800'}`}><School className="h-5 w-5" /></span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-800 text-ink">{school.name}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">{school.director_name || 'Directeur non renseigné'}{school.city ? ` · ${school.city}` : ''}</p>
+                          <p className={`mt-1 text-xs font-800 ${school.daysLeft < 0 ? 'text-red-700' : school.daysLeft <= 2 ? 'text-orange-700' : 'text-amber-800'}`}>{school.daysLeft < 0 ? `Essai expiré depuis ${Math.abs(school.daysLeft)} jour(s)` : school.daysLeft === 0 ? 'Fin de l’essai aujourd’hui' : `Fin de l’essai dans ${school.daysLeft} jour(s)`} · {formatDate(school.trial_ends_at)}</p>
+                        </div>
+                      </div>
+                      {school.phone ? <a href={buildSchoolWhatsAppUrl(school)} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-800 text-white transition hover:bg-emerald-700"><Phone className="h-4 w-4" /> Relancer sur WhatsApp</a> : <span className="text-xs font-600 text-slate-500">Téléphone manquant</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* ── Payment and revenue reporting ── */}
