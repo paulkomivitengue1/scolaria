@@ -52,16 +52,16 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request);
+      const update = fetch(request).then(async (response) => {
+        if (response && response.ok) await cache.put(request, response.clone());
+        return response;
+      });
       if (cached) {
-        event.waitUntil(fetch(request).then((response) => {
-          if (response && response.ok) return cache.put(request, response.clone());
-        }).catch(() => {}));
+        event.waitUntil(update.then(() => undefined).catch(() => undefined));
         return cached;
       }
       try {
-        const response = await fetch(request);
-        if (response && response.ok) await cache.put(request, response.clone());
-        return response;
+        return await update;
       } catch {
         return new Response('', { status: 503, statusText: 'Offline' });
       }
