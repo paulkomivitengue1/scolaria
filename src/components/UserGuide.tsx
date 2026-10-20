@@ -126,9 +126,9 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center overflow-y-auto overscroll-contain bg-[#0b1537]/90 p-0 backdrop-blur-md sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="relative my-auto max-h-[95dvh] min-h-0 w-full max-w-3xl touch-pan-y overscroll-contain overflow-y-auto rounded-t-3xl border-2 border-white bg-gradient-to-br from-[#eff6ff] via-[#f5f3ff] to-[#fff7ed] shadow-[0_24px_90px_rgba(30,64,175,.35)] sm:rounded-3xl">
-        <header className="relative overflow-hidden bg-gradient-to-br from-[#172554] via-[#1d4ed8] to-[#2563eb] px-5 pb-6 pt-5 text-white sm:px-8 sm:pt-7">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden overscroll-contain bg-[#07132f]/95 p-2 backdrop-blur-sm sm:p-5" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="relative my-0 max-h-[92dvh] min-h-0 w-full max-w-3xl touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border-2 border-[#2563eb] bg-[#f4f7ff] shadow-[0_24px_90px_rgba(7,19,47,.65)] sm:max-h-[90dvh] sm:rounded-3xl">
+        <header className="relative overflow-hidden bg-[#173a8a] px-5 pb-6 pt-5 text-white sm:px-8 sm:pt-7">
           <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full border-[28px] border-[#f4bd35]/25" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -141,7 +141,7 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
           {isQuest && <div className="relative mt-5"><div className="flex items-center justify-between gap-3 text-xs font-extrabold"><span>VOTRE PROGRESSION</span><span>{completed.length}/{QUESTS.length} étapes · {progress}%</span></div><div className="mt-2 h-3 overflow-hidden rounded-full border border-white/30 bg-[#10204c]"><div className="h-full rounded-full bg-gradient-to-r from-[#f4bd35] to-[#ffe7a0] transition-all" style={{ width: progress + '%' }} /></div></div>}
         </header>
 
-        <main className="relative space-y-5 bg-gradient-to-br from-[#eff6ff] via-[#f5f3ff] to-[#fff7ed] p-4 sm:p-7">
+        <main className="relative space-y-5 bg-[#f4f7ff] p-4 sm:p-7">
           {isQuest ? <>
             <div className="grid grid-cols-6 gap-2">{QUESTS.map((quest, i) => <button key={quest.title} type="button" onClick={() => setStepIndex(i)} aria-label={'Étape ' + (i + 1) + ': ' + quest.title} className={'flex min-h-12 items-center justify-center rounded-xl border-2 px-1 text-sm font-black transition ' + (i === stepIndex ? 'border-[#172554] bg-[#172554] text-white shadow-md' : completed.includes(i) ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-blue-200 bg-white text-[#243b7a] hover:border-blue-500')}><span>{completed.includes(i) ? '✓' : String(i + 1).padStart(2, '0')}</span></button>)}</div>
             <section className="rounded-2xl border-2 border-[#93c5fd] bg-gradient-to-br from-white via-[#eff6ff] to-[#e0e7ff] p-5 shadow-[0_12px_32px_rgba(37,99,235,.16)] sm:p-6">
