@@ -343,3 +343,189 @@ button.text-gray-300 svg, button.text-gray-400 svg {
 h1, h2, h3 {
   color: inherit;
 }
+
+
+/* Help centre: deliberately scoped CSS. This project ships a hand-maintained utility
+   stylesheet rather than Tailwind's generated utilities, so the dialog must not rely
+   on arbitrary Tailwind classes for its opacity, sizing, contrast or scrolling. */
+.gestilys-help-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: 12px !important;
+  background: rgba(7, 19, 47, .96) !important;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+.gestilys-help-dialog {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(100%, 760px) !important;
+  max-height: 92vh !important;
+  max-height: 92dvh !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: #f4f7ff !important;
+  color: #172554 !important;
+  border: 2px solid #93c5fd !important;
+  border-radius: 24px !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .48) !important;
+}
+.gestilys-help-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5 !important;
+  flex: 0 0 auto !important;
+  padding: 22px 22px 20px !important;
+  overflow: hidden !important;
+  background: linear-gradient(125deg, #172554 0%, #1d4ed8 58%, #4338ca 100%) !important;
+  color: #fff !important;
+}
+.gestilys-help-header h2 { color: #fff !important; font-size: 22px; line-height: 1.25; font-weight: 800; }
+.gestilys-help-header p { color: #eaf2ff !important; }
+.gestilys-help-header p:first-child { color: #ffe08a !important; }
+.gestilys-help-header button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  flex: 0 0 auto !important;
+  border: 1px solid rgba(255,255,255,.55) !important;
+  border-radius: 12px !important;
+  background: #0f1f4c !important;
+  color: #fff !important;
+}
+.gestilys-help-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+  flex: 1 0 auto !important;
+  padding: 20px !important;
+  background: #f4f7ff !important;
+  color: #172554 !important;
+}
+.gestilys-help-main h3,
+.gestilys-help-main strong { color: #172554 !important; }
+.gestilys-help-main p { color: #334155 !important; line-height: 1.6; }
+.gestilys-help-main .grid-cols-6 {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+.gestilys-help-main button {
+  box-sizing: border-box !important;
+  min-height: 42px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 750;
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.gestilys-help-main button:focus-visible {
+  outline: 3px solid #f4bd35 !important;
+  outline-offset: 2px;
+}
+.gestilys-help-main button:disabled { cursor: not-allowed; opacity: .45; }
+.gestilys-help-main section {
+  padding: 20px !important;
+  border: 1px solid #c7d7f5 !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: 0 10px 28px rgba(23, 37, 84, .08) !important;
+}
+.gestilys-help-main section > div:nth-child(2) {
+  border-left: 4px solid #f4bd35 !important;
+  border-radius: 12px !important;
+  background: #fff7d6 !important;
+  padding: 14px !important;
+}
+.gestilys-help-main section > div:nth-child(2) p:first-child { color: #713f12 !important; font-weight: 800; }
+.gestilys-help-main section > div:nth-child(2) p:last-child { color: #57360a !important; }
+.gestilys-help-main .gestilys-help-primary {
+  border: 1px solid #e4a817 !important;
+  background: linear-gradient(110deg, #ffe08a, #f4bd35) !important;
+  color: #172554 !important;
+  box-shadow: 0 5px 14px rgba(180, 120, 0, .2) !important;
+}
+.gestilys-help-main .gestilys-help-primary-blue {
+  border: 1px solid #172554 !important;
+  background: #172554 !important;
+  color: #fff !important;
+}
+.gestilys-help-main .gestilys-help-success {
+  border: 1px solid #047857 !important;
+  background: #059669 !important;
+  color: #fff !important;
+}
+.gestilys-help-main .gestilys-help-module-card {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-height: 112px !important;
+  padding: 16px !important;
+  text-align: left !important;
+  border: 1px solid #bfdbfe !important;
+  border-left: 5px solid #6366f1 !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #fff 0%, #eff6ff 58%, #ede9fe 100%) !important;
+  color: #172554 !important;
+  box-shadow: 0 7px 20px rgba(79, 70, 229, .12) !important;
+}
+.gestilys-help-main .gestilys-help-module-card:hover {
+  transform: translateY(-2px);
+  border-color: #6366f1 !important;
+  box-shadow: 0 12px 28px rgba(79, 70, 229, .2) !important;
+}
+.gestilys-help-main .gestilys-help-module-card strong { display: block; color: #172554 !important; font-size: 14px; }
+.gestilys-help-main .gestilys-help-module-card span { min-width: 0; }
+.gestilys-help-main .gestilys-help-module-card span span { display: block; color: #475569 !important; font-size: 12px; }
+.gestilys-help-main label { display: block !important; color: #172554 !important; font-weight: 800; }
+.gestilys-help-main label > span:last-child {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 48px !important;
+  margin-top: 8px;
+  padding: 0 12px !important;
+  border: 2px solid #93c5fd !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+.gestilys-help-main input {
+  min-width: 0;
+  width: 100%;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  outline: none !important;
+  background: #fff !important;
+  color: #172554 !important;
+  box-shadow: none !important;
+}
+.gestilys-help-main input::placeholder { color: #64748b !important; opacity: 1 !important; }
+.gestilys-help-main footer { border-top: 1px solid #dbeafe !important; padding-top: 16px !important; }
+.gestilys-help-main footer button,
+.gestilys-help-main > button:not(.gestilys-help-module-card) {
+  border: 1px solid #cbd5e1 !important;
+  background: #fff !important;
+  color: #172554 !important;
+  padding: 10px 14px !important;
+}
+@media (max-width: 639px) {
+  .gestilys-help-overlay { padding: 8px !important; }
+  .gestilys-help-dialog { max-height: 94vh !important; max-height: 94dvh !important; border-radius: 18px !important; }
+  .gestilys-help-header { padding: 16px !important; }
+  .gestilys-help-header h2 { font-size: 19px; }
+  .gestilys-help-main { padding: 14px !important; gap: 14px !important; }
+  .gestilys-help-main section { padding: 15px !important; }
+  .gestilys-help-main .gestilys-help-module-card { min-height: 100px !important; padding: 12px !important; }
+}
