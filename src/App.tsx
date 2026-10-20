@@ -680,7 +680,9 @@ export default function App() {
                   outstanding={outstanding}
                   recoveryRate={recoveryRate}
                   stockSales={stockSales}
-                  totalExpenses={totalExpenses}                  onNavigate={handleNavigate}
+                  totalExpenses={totalExpenses}
+                  onNavigate={handleNavigate}
+                  onStartStudent={startStudentFromGuide}
                 />
               )}
 
