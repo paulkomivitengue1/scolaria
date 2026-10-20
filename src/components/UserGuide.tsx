@@ -63,6 +63,7 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
   const [loadedSchoolId, setLoadedSchoolId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedArticleView, setSelectedArticleView] = useState<AppView | null>(null);
+  const [showQuest, setShowQuest] = useState(false);
 
   useEffect(() => {
     try {
@@ -84,6 +85,7 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
     if (open) {
       setSearch('');
       setSelectedArticleView(null);
+      setShowQuest(mode === 'onboarding');
       if (mode === 'onboarding') setStepIndex(0);
     }
   }, [open, mode]);
@@ -103,7 +105,7 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
   const activeQuest = QUESTS[Math.min(stepIndex, QUESTS.length - 1)];
   const ActiveIcon = activeQuest.icon;
   const progress = Math.round(completed.length / QUESTS.length * 100);
-  const isQuest = mode === 'onboarding';
+  const isQuest = mode === 'onboarding' || showQuest;
   const title = isQuest ? 'Bien démarrer avec Gestilys' : mode === 'module' ? (ARTICLES.find(a => a.view === view)?.title || 'Mode d’emploi') : 'Centre d’aide Gestilys';
   const intro = isQuest
     ? 'Un parcours pratique pour préparer votre espace. Vous pouvez le quitter et revenir plus tard : votre progression est conservée pour cet établissement.'
@@ -159,7 +161,7 @@ export function UserGuide({ open, mode, view, schoolName, schoolId, onClose, onN
             <section className="rounded-2xl border-2 border-blue-200 bg-white p-5 sm:p-6"><div className="flex items-start gap-3"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700"><selectedArticle.icon className="h-6 w-6" /></span><div><p className="text-xs font-black uppercase tracking-wider text-blue-700">{selectedArticle.category}</p><h3 className="mt-1 text-lg font-black text-[#172554]">{selectedArticle.title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{selectedArticle.intro}</p></div></div><div className="mt-5 space-y-3">{selectedArticle.steps.map((step, i) => <div key={step} className="flex gap-3 rounded-xl border border-blue-100 bg-[#f8faff] p-4"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#172554] text-sm font-black text-white">{i + 1}</span><p className="pt-1 text-sm leading-6 text-slate-700">{step}</p></div>)}</div><button type="button" onClick={() => navigateTo(selectedArticle.view)} className={actionClass + ' mt-5 w-full bg-gradient-to-r from-[#f9d56e] to-[#f4bd35] text-[#172554]'}>Ouvrir {selectedArticle.title} <ChevronRight className="h-4 w-4" /></button></section>
           </> : <>
             <label className="block"><span className="mb-2 block text-sm font-extrabold text-[#172554]">Que souhaitez-vous faire ?</span><span className="flex min-h-12 items-center gap-3 rounded-xl border-2 border-blue-200 bg-white px-3 focus-within:border-blue-600"><Search className="h-5 w-5 shrink-0 text-blue-700" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ex. inscrire un élève, imprimer une carte…" className="min-w-0 flex-1 bg-transparent py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400" /></span></label>
-            <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-[#172554]">Vous débutez sur Gestilys ?</p><p className="mt-1 text-sm text-slate-600">Suivez les étapes de préparation, sans devoir tout apprendre d’un coup.</p></div><button type="button" onClick={() => { setStepIndex(0); setSelectedArticleView(null); onClose(); }} className={actionClass + ' shrink-0 bg-gradient-to-r from-[#f9d56e] to-[#f4bd35] text-[#172554]'}><Sparkles className="h-4 w-4" /> Parcours guidé</button></div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-[#172554]">Vous débutez sur Gestilys ?</p><p className="mt-1 text-sm text-slate-600">Suivez les étapes de préparation, sans devoir tout apprendre d’un coup.</p></div><button type="button" onClick={() => { setStepIndex(0); setSelectedArticleView(null); setShowQuest(true); }} className={actionClass + ' shrink-0 bg-gradient-to-r from-[#f9d56e] to-[#f4bd35] text-[#172554]'}><Sparkles className="h-4 w-4" /> Parcours guidé</button></div>
             <div className="flex items-center justify-between gap-3"><h3 className="text-base font-black text-[#172554]">Guides par module</h3><span className="text-xs font-bold text-slate-500">{filteredArticles.length} rubrique(s)</span></div>
             {filteredArticles.length ? <div className="grid gap-3 sm:grid-cols-2">{filteredArticles.map(article => { const Icon = article.icon; return <button key={article.view} type="button" onClick={() => setSelectedArticleView(article.view)} className="flex min-h-[108px] items-start gap-3 rounded-2xl border-2 border-blue-100 bg-white p-4 text-left shadow-sm transition hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><strong className="block text-sm font-black text-[#172554]">{article.title}</strong><span className="mt-1 block text-xs leading-5 text-slate-600">{article.short}</span><span className="mt-2 block text-[10px] font-extrabold uppercase tracking-wide text-blue-700">{article.category}</span></span><ChevronRight className="mt-1 h-4 w-4 shrink-0 text-blue-700" /></button>; })}</div> : <div className="rounded-2xl border-2 border-dashed border-blue-200 bg-white p-6 text-center"><Search className="mx-auto h-7 w-7 text-slate-400" /><p className="mt-2 font-bold text-[#172554]">Aucune rubrique trouvée</p><p className="mt-1 text-sm text-slate-600">Essayez un autre mot, par exemple « élève », « frais », « stock » ou « carte ».</p></div>}
             <section className="rounded-2xl border border-amber-200 bg-[#fff8df] p-4"><p className="font-black text-[#713f12]">Conseil de sécurité</p><p className="mt-1 text-sm leading-6 text-[#57360a]">Avant d’enregistrer une opération financière ou de modifier des dossiers, vérifiez l’élève, le montant et les informations. Pour découvrir Gestilys, privilégiez des données fictives.</p></section>
