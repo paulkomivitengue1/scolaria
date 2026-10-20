@@ -32,6 +32,14 @@ class InitErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.error('Gestilys: service worker registration failed', error);
+    });
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <InitErrorBoundary>
