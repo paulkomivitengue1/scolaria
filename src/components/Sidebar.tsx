@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck, Lock,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -11,6 +11,7 @@ interface Props {
   open: boolean;
   onToggle: () => void;
   schoolName: string;
+  lockedViews?: AppView[];
 }
 
 interface NavItem {
@@ -54,7 +55,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName }: Props) {
+export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, lockedViews = [] }: Props) {
   return (
     <>
       {/* Mobile overlay backdrop */}
@@ -99,7 +100,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           {SECTIONS.map((section) => (
             <div key={section.title} className="mb-5">
-              <p className="mb-2 px-3 text-[10px] font-700 uppercase tracking-wider text-slate-400">{section.title}</p>
+              <p className="mb-2 px-3 text-[10px] font-800 uppercase tracking-wider text-blue-700">{section.title}</p>
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
@@ -110,12 +111,13 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
                       onClick={() => onNavigate(item.view)}
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
                         isActive
-                          ? 'bg-royal-50 text-royal-700'
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? 'bg-gradient-to-r from-blue-700 to-royal-800 text-white shadow-md shadow-blue-900/15'
+                          : 'text-slate-700 hover:bg-blue-50 hover:text-blue-800'
                       }`}
                     >
                       <Icon className="h-4.5 w-4.5 shrink-0" />
                       <span className="truncate">{item.label}</span>
+                      {lockedViews.includes(item.view) && <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-amber-600" aria-label="Formule supérieure requise" />}
                     </button>
                   );
                 })}
@@ -156,7 +158,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
       {!open && (
         <button
           onClick={onToggle}
-          className="fixed left-3 top-3 z-50 grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 lg:hidden"
+          className="fixed left-3 top-3 z-50 grid h-10 w-10 place-items-center rounded-xl border border-blue-200 bg-gradient-to-br from-blue-700 to-royal-800 text-white shadow-lg shadow-blue-900/20 transition hover:brightness-110 lg:hidden"
           aria-label="Ouvrir le menu"
         >
           <Menu className="h-5 w-5" />
