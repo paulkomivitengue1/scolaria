@@ -32,6 +32,7 @@ const SECTIONS: NavSection[] = [
     title: 'Pilotage',
     items: [
       { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+      { view: 'direction', label: 'Espace de direction', icon: ShieldCheck },
       { view: 'statistiques', label: 'Statistiques', icon: BarChart3 },
     ],
   },
