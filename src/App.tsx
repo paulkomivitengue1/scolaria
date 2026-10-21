@@ -32,6 +32,7 @@ import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
 import { UserGuide } from './components/UserGuide';
+import { DirectionHub, type ImportedStudentRow } from './components/DirectionHub';
 import { ClassView } from './components/ClassView';
 import { StudentCardsView } from './components/StudentCardsView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
@@ -263,9 +264,19 @@ export default function App() {
     setReceiptOpen(true);
   };
 
+  const getStudentLimit = () => {
+    if (profile?.subscriptionStatus !== 'active') return Number.POSITIVE_INFINITY;
+    const plan = (profile.plan || 'Essentiel').trim().toLocaleLowerCase('fr');
+    if (plan === 'élite' || plan === 'elite') return Number.POSITIVE_INFINITY;
+    if (plan === 'premium') return 500;
+    return 150;
+  };
+
   const addStudent = async (st: Student) => {
-    if (isEssentielPaid && students.length >= 150) {
-      setPayError('La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.');
+    if (students.length >= getStudentLimit()) {
+      setPayError(getStudentLimit() === 150
+        ? 'La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.'
+        : 'La formule Premium est limitée à 500 élèves. Passez à Élite pour inscrire davantage d’élèves.');
       setView('dashboard');
       return;
     }
@@ -277,6 +288,37 @@ export default function App() {
     } catch (err: any) {
       console.error('Failed to add student:', err);
     }
+  };
+
+  const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
+    if (!profile?.schoolId) throw new Error('École non identifiée.');
+    if (students.length >= getStudentLimit()) throw new Error(getStudentLimit() === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
+    const existing = new Set(students.map(st => `${st.firstName}|${st.lastName}|${st.className}`.toLocaleLowerCase('fr')));
+    let imported = 0;
+    for (const row of rows) {
+      if (students.length + imported >= getStudentLimit()) break;
+      const duplicateKey = `${row.firstName}|${row.lastName}|${row.className}`.toLocaleLowerCase('fr');
+      if (existing.has(duplicateKey)) continue;
+      const fees = feeConfig.feeTypes.map(ft => {
+        const matching = feeConfig.feeConfig.filter(config => config.feeType === ft.feeType && config.className === row.className);
+        const payments: Record<string, { paid: number }> = {};
+        if (ft.paymentMode === 'single') payments.single = { paid: 0 };
+        else for (const tranche of feeConfig.tranches) payments[String(tranche.index)] = { paid: 0 };
+        return { feeType: ft.feeType, paymentMode: ft.paymentMode, payments, totalExpected: matching.reduce((sum, config) => sum + Number(config.amount || 0), 0) };
+      });
+      const student: Omit<Student, 'id'> = {
+        firstName: row.firstName.trim(), lastName: row.lastName.trim(), className: row.className.trim(),
+        parentName: row.parentName.trim(), parentPhone: row.parentPhone.trim(),
+        birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees,
+        matricule: await generateMatricule(profile.schoolId, profile.schoolName), sexe: row.sexe,
+      };
+      const id = await addStudentDB(profile.schoolId, student);
+      setStudents(prev => [{ ...student, id }, ...prev]);
+      existing.add(duplicateKey);
+      imported++;
+    }
+    if (imported === 0) throw new Error('Aucun nouvel élève importé : vérifiez les doublons et la limite de votre forfait.');
+    return imported;
   };
 
   const openEdit = (s: Student) => {
@@ -820,6 +862,19 @@ export default function App() {
                   />
                 </div>
               </>)}
+
+              {view === 'direction' && <DirectionHub
+                schoolId={profile.schoolId}
+                schoolName={profile.schoolName}
+                students={students}
+                classNames={classNames}
+                teachers={teachers}
+                expenses={expenses}
+                salaryPayments={salaryPayments}
+                premium={isPremium}
+                onImportStudents={handleBulkImportStudents}
+                onNavigate={handleNavigate}
+              />}
 
               {view === 'cartes' && <StudentCardsView students={students} schoolId={profile.schoolId} schoolName={profile.schoolName} schoolLogo={schoolLogo} onSchoolLogoChange={handleSchoolLogoChange} />}
 

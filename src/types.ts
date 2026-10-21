@@ -1,4 +1,4 @@
-export type AppView = 'dashboard' | 'statistiques' | 'inscriptions' | 'paiements' | 'cahier' | 'classes' | 'cartes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'enseignants' | 'parametres';
+export type AppView = 'dashboard' | 'direction' | 'statistiques' | 'inscriptions' | 'paiements' | 'cahier' | 'classes' | 'cartes' | 'bulletins' | 'stocks' | 'impayes' | 'depenses' | 'enseignants' | 'parametres';
 
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 

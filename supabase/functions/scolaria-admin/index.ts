@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
   if (!mobileDevice || authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
    return respond({error:"Accès administrateur réservé au compte autorisé."},403);
   }
-  if(b.code!==DEV_CODE) return respond({error:"Code développeur invalide"},401);
+  if(String(b.code ?? '').trim() !== String(DEV_CODE ?? '').trim()) return respond({error:"Code développeur invalide"},401);
   const {action,paymentId,schoolId}=b;
   switch(action) {
    case "save_trial_days": {
