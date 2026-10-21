@@ -155,7 +155,12 @@ export function AdminPanel({ onExit }: Props) {
       const refreshedSchools = await adminListSchools(code);
       setSchools(refreshedSchools);
       const activated = refreshedSchools.find(s => s.id === payment.school_id);
-      showToast(`${payment.school_name} — forfait ${activated?.plan || 'activé'} confirmé`);
+      setSelectedSchool(current => current?.id === payment.school_id ? (activated || current) : current);
+      if (activated?.subscription_status === 'active') {
+        showToast(`${payment.school_name} — abonnement ${activated.plan || ''} actif et confirmé`);
+      } else {
+        showToast(`Paiement validé, mais le compte de ${payment.school_name} n’est pas actif. Vérifiez son statut et actualisez la console.`);
+      }
     } catch (err: any) {
       showToast(err.message || 'Erreur validation');
     } finally {
