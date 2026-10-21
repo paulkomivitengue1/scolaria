@@ -4,6 +4,8 @@
    to read/write data that school-account RLS blocks.
    ──────────────────────────────────────────────────────── */
 
+import { getSupabase } from './supabase';
+
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scolaria-admin`;
 
 export interface AdminSchool {
@@ -44,12 +46,14 @@ export interface AdminManualPayment {
 }
 
 async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'suspend' | 'restore', paid?: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel', trialDays?: number, plans?: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[]) {
+  const { data: { session } } = await getSupabase().auth.getSession();
+  const token = session?.access_token;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${token || key}`,
     },
     body: JSON.stringify({ code, action, paymentId, schoolId, status, paid, plan, billingPeriod, trialDays, plans }),
   });
