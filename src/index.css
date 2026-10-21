@@ -529,3 +529,79 @@ h1, h2, h3 {
   .gestilys-help-main section { padding: 15px !important; }
   .gestilys-help-main .gestilys-help-module-card { min-height: 100px !important; padding: 12px !important; }
 }
+
+
+/* Gestilys navigation — opaque, high-contrast brand colors on mobile and desktop. */
+.gestilys-sidebar {
+  background: linear-gradient(180deg,#eff6ff 0%,#ffffff 44%,#fff8e6 100%) !important;
+  color: #172554 !important;
+  border-right: 1px solid #cbdcf8 !important;
+  box-shadow: 10px 0 34px rgba(23,37,84,.13);
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.gestilys-sidebar-header {
+  background: linear-gradient(105deg,#172554 0%,#1e40af 100%) !important;
+  border-bottom: 2px solid #f4bd35 !important;
+  color: #fff !important;
+}
+.gestilys-sidebar-logo {
+  background: linear-gradient(135deg,#f4bd35 0%,#e9a900 100%) !important;
+  color: #172554 !important;
+  box-shadow: 0 4px 12px rgba(244,189,53,.3);
+}
+.gestilys-sidebar-brand { color:#fff !important; }
+.gestilys-sidebar-school { color:#dbeafe !important; }
+.gestilys-sidebar-close { color:#fff !important; background:rgba(255,255,255,.12) !important; }
+.gestilys-sidebar-close:hover { background:rgba(255,255,255,.22) !important; }
+.gestilys-sidebar-nav {
+  background:linear-gradient(180deg,#f5f8ff 0%,#fff 62%,#fffaf0 100%) !important;
+  min-height:0;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#9bb8ee #edf3ff;
+}
+.gestilys-sidebar-section-title { color:#1d4ed8 !important; }
+.gestilys-sidebar-link {
+  color:#172554 !important;
+  background:#fff !important;
+  border:1px solid #dbe7fb !important;
+  box-shadow:0 1px 2px rgba(23,37,84,.035);
+  min-height:42px;
+}
+.gestilys-sidebar-link:hover {
+  background:#fff2c9 !important;
+  border-color:#f4bd35 !important;
+  color:#172554 !important;
+}
+.gestilys-sidebar-link.is-active {
+  color:#fff !important;
+  background:linear-gradient(110deg,#172554 0%,#1d4ed8 100%) !important;
+  border-color:#f4bd35 !important;
+  box-shadow:0 5px 14px rgba(23,37,84,.18);
+}
+.gestilys-sidebar-footer {
+  background:#fff !important;
+  border-top:2px solid #f4bd35 !important;
+  box-shadow:0 -6px 18px rgba(23,37,84,.055);
+}
+.gestilys-admin-entry {
+  color:#172554 !important;
+  background:linear-gradient(105deg,#f4bd35 0%,#ffdf73 52%,#f4bd35 100%) !important;
+  border:1px solid #d49a00 !important;
+  min-height:44px;
+}
+.gestilys-admin-entry:hover { filter:brightness(1.035); box-shadow:0 6px 16px rgba(212,154,0,.22); }
+.gestilys-hamburger {
+  color:#172554 !important;
+  background:#fff !important;
+  border:2px solid #f4bd35 !important;
+  box-shadow:0 5px 16px rgba(23,37,84,.18) !important;
+}
+.gestilys-hamburger svg { color:#172554 !important; opacity:1 !important; }
+@media (max-width:1023px) {
+  .gestilys-sidebar { width:min(84vw,320px); }
+}
