@@ -69,27 +69,27 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-blue-200 bg-gradient-to-b from-blue-50 via-white to-amber-50 transition-transform lg:translate-x-0 ${
+        className={`gestilys-sidebar fixed left-0 top-0 z-50 flex h-screen w-64 flex-col transition-transform lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo header */}
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-5">
+        <div className="gestilys-sidebar-header flex h-16 shrink-0 items-center justify-between px-5">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 text-white shadow-card">
+            <span className="gestilys-sidebar-logo grid h-9 w-9 place-items-center rounded-xl text-white shadow-card">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#f5c518" />
                 <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#f5c518" />
               </svg>
             </span>
             <div className="leading-tight">
-              <h1 className="font-display text-base font-800 tracking-tight text-ink">Gestilys</h1>
-              <p className="text-[10px] font-600 text-slate-400 truncate max-w-[140px]">{schoolName}</p>
+              <h1 className="gestilys-sidebar-brand font-display text-base font-800 tracking-tight">Gestilys</h1>
+              <p className="gestilys-sidebar-school text-[10px] font-600 truncate max-w-[140px]">{schoolName}</p>
             </div>
           </div>
           <button
             onClick={onToggle}
-            className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 lg:hidden"
+            className="gestilys-sidebar-close grid h-8 w-8 place-items-center rounded-lg transition lg:hidden"
             aria-label="Fermer le menu"
           >
             <X className="h-4.5 w-4.5" />
@@ -97,11 +97,11 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <nav className="gestilys-sidebar-nav flex-1 overflow-y-auto px-3 py-4">
           {SECTIONS.map((section) => (
             <div key={section.title} className="mb-5">
-              <p className="mb-2 px-3 text-[10px] font-700 uppercase tracking-wider text-slate-400">{section.title}</p>
-              <div className="space-y-1">
+              <p className="gestilys-sidebar-section-title mb-2 px-3 text-[10px] font-700 uppercase tracking-wider">{section.title}</p>
+              <div className="gestilys-sidebar-links space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = item.view === current;
@@ -109,11 +109,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
                     <button
                       key={`${section.title}-${item.label}`}
                       onClick={() => onNavigate(item.view)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
-                        isActive
-                          ? 'bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md'
-                          : 'text-blue-950 hover:bg-amber-100 hover:text-blue-950'
-                      }`}
+                      className={`gestilys-sidebar-link flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${isActive ? 'is-active' : ''}`}
                     >
                       <Icon className="h-4.5 w-4.5 shrink-0" />
                       <span className="truncate">{item.label}</span>
@@ -126,11 +122,11 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
         </nav>
 
         {/* Bottom: administration + settings + logout */}
-        <div className="shrink-0 border-t border-slate-200 px-3 py-3">
+        <div className="gestilys-sidebar-footer shrink-0 px-3 py-3">
           {showAdminEntry && (
             <button
               onClick={() => { window.location.hash = '/scolaria-admin'; onToggle(); }}
-              className="mb-2 flex w-full items-center gap-3 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400 px-3 py-2.5 text-sm font-extrabold text-blue-950 shadow-md transition hover:brightness-105"
+              className="gestilys-admin-entry mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-extrabold shadow-md transition hover:brightness-105"
             >
               <ShieldCheck className="h-4.5 w-4.5 shrink-0" />
               <span>Mon panneau admin</span>
@@ -138,16 +134,14 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
           )}
           <button
             onClick={() => onNavigate('parametres')}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
-              current === 'parametres' ? 'bg-royal-50 text-royal-700' : 'text-slate-600 hover:bg-slate-50'
-            }`}
+            className={`gestilys-sidebar-link flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${current === 'parametres' ? 'is-active' : ''}`}
           >
             <Settings2 className="h-4.5 w-4.5 shrink-0" />
             <span>Paramètres</span>
           </button>
           <button
             onClick={onLogout}
-            className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 text-slate-600 transition hover:bg-slate-50"
+            className="gestilys-sidebar-link mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition"
           >
             <LogOut className="h-4.5 w-4.5 shrink-0" />
             <span>Déconnexion</span>
@@ -159,7 +153,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
       {!open && (
         <button
           onClick={onToggle}
-          className="fixed left-3 top-3 z-50 grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 lg:hidden"
+          className="gestilys-hamburger fixed left-3 top-3 z-50 grid h-10 w-10 place-items-center rounded-xl shadow-md transition lg:hidden"
           aria-label="Ouvrir le menu"
         >
           <Menu className="h-5 w-5" />

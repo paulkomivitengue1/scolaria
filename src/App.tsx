@@ -533,7 +533,13 @@ export default function App() {
     setAddOpen(true);
   };
 
-  const isAuthorizedAdmin = user?.email?.trim().toLowerCase() === 'paulkomivitengue@gmail.com' && typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const isAdminEmail = (user?.email || '').trim().toLowerCase() === 'paulkomivitengue@gmail.com';
+  const isMobileDevice = typeof navigator !== 'undefined' && (
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+    Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile) ||
+    (navigator.maxTouchPoints > 0 && typeof window !== 'undefined' && window.innerWidth < 900)
+  );
+  const isAuthorizedAdmin = isAdminEmail && isMobileDevice;
 
   useEffect(() => {
     if (loading || !isAdminPanel || isAuthorizedAdmin) return;
@@ -581,6 +587,20 @@ export default function App() {
           </p>
           {!loading && (
             <>
+              {isAuthorizedAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAdminPanel(true);
+                    window.location.hash = '/scolaria-admin';
+                  }}
+                  className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-amber-500 bg-gradient-to-r from-amber-300 to-yellow-400 px-4 py-3 font-extrabold text-blue-950 shadow-md"
+                  style={{ background: 'linear-gradient(105deg,#f4bd35,#ffdf73)', color: '#172554', border: '1px solid #d49a00' }}
+                >
+                  <ShieldCheck className="h-5 w-5" />
+                  Ouvrir mon panneau administrateur
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => window.location.reload()}
