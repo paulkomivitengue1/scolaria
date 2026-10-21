@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
   LogOut, Lock, AlertTriangle, ArrowRight, Phone,
-  Search, GraduationCap, Check, ShieldCheck, CircleHelp,
+  Search, GraduationCap, Check, ShieldCheck, CircleHelp, FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import { generateMatricule, loadStudents, addStudentDB, recordPayment,
@@ -25,6 +25,7 @@ import { CahierGrid } from './components/CahierGrid';
 import { PaymentModal } from './components/PaymentModal';
 import { WhatsAppReceipt } from './components/WhatsAppReceipt';
 import { AddStudentModal } from './components/AddStudentModal';
+import { BulkStudentImport, type ImportedStudentRow } from './components/BulkStudentImport';
 import { EditStudentModal } from './components/EditStudentModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
@@ -38,7 +39,7 @@ import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
 import { TeachersView } from './components/TeachersView';
 import type { Student, UniformStockItem, BookStockItem, SupplyStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription, Teacher, SalaryPayment } from './types';
-import { studentExpected, studentCollected, DEFAULT_FEE_TYPES, formatFCFA } from './types';
+import { studentExpected, studentCollected, DEFAULT_FEE_TYPES, formatFCFA, getFeeTotalForClass, emptyTranchePayments, emptySinglePayment } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
   tranches: [{ index: 1, label: 'Tranche 1' }, { index: 2, label: 'Tranche 2' }, { index: 3, label: 'Tranche 3' }],
@@ -88,6 +89,7 @@ export default function App() {
   const [trancheReceiptAmount, setTrancheReceiptAmount] = useState(0);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editStudentId, setEditStudentId] = useState<string | null>(null);
@@ -274,6 +276,13 @@ export default function App() {
 
   const addStudent = async (st: Student) => {
     if (!profile?.schoolId) return;
+    const plan = (profile.plan || 'Essentiel').toLocaleLowerCase();
+    const isEssentiel = plan.includes('essentiel') || plan.includes('10');
+    const isTrial = profile?.subscriptionStatus === 'trial';
+    if (isEssentiel && !isTrial && students.length >= 150) {
+      setPayError('Le forfait Essentiel est limité à 150 élèves. Pour inscrire davantage d’élèves, passez à Premium ou Élite.');
+      return;
+    }
     try {
       const dbId = await addStudentDB(profile.schoolId, st);
       setStudents(p => [{ ...st, id: dbId }, ...p]);
@@ -281,6 +290,51 @@ export default function App() {
     } catch (err: any) {
       console.error('Failed to add student:', err);
     }
+  };
+
+  const handleBulkImport = async (rows: ImportedStudentRow[]) => {
+    if (!profile?.schoolId) throw new Error('École non identifiée.');
+    const plan = (profile.plan || 'Essentiel').toLocaleLowerCase();
+    const isEssentiel = plan.includes('essentiel') || plan.includes('10');
+    const isTrial = profile?.subscriptionStatus === 'trial';
+    if (isEssentiel && !isTrial && students.length + rows.length > 150) {
+      throw new Error(`Le forfait Essentiel est limité à 150 élèves. Il reste ${Math.max(0, 150 - students.length)} place(s), mais le fichier contient ${rows.length} élèves. Passez à Premium ou Élite pour dépasser cette limite.`);
+    }
+    let nextStudents: Student[] = [];
+    let failures = 0;
+    for (const row of rows) {
+      try {
+        const matricule = row.matricule || await generateMatricule(profile.schoolId, profile.schoolName);
+        const fees: FeeSubscription[] = feeConfig.feeTypes
+          .filter(f => f.feeType === 'scolarite')
+          .map(f => ({
+            feeType: f.feeType,
+            paymentMode: f.paymentMode,
+            payments: f.paymentMode === 'tranche' ? emptyTranchePayments(feeConfig.tranches.length) : emptySinglePayment(),
+            totalExpected: getFeeTotalForClass(feeConfig.feeConfig, f.feeType, row.className),
+          }));
+        const student: Student = {
+          id: `import-${Date.now()}-${nextStudents.length}`,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          className: row.className,
+          parentName: row.parentName,
+          parentPhone: row.parentPhone,
+          birthDate: row.birthDate,
+          birthPlace: row.birthPlace,
+          matricule,
+          sexe: row.sexe,
+          fees,
+        };
+        const dbId = await addStudentDB(profile.schoolId, student);
+        nextStudents.push({ ...student, id: dbId });
+      } catch (error) {
+        failures++;
+        console.error('Échec de l’importation d’un élève :', error);
+      }
+    }
+    if (nextStudents.length) setStudents(prev => [...nextStudents.reverse(), ...prev]);
+    if (failures) throw new Error(`${nextStudents.length} élève(s) importé(s), ${failures} échec(s). Vérifiez les données et réessayez pour les élèves non importés.`);
   };
 
   const openEdit = (s: Student) => {
@@ -514,6 +568,15 @@ export default function App() {
   };
 
   const handleNavigate = (v: AppView) => {
+    const plan = (profile?.plan || 'Essentiel').toLocaleLowerCase();
+    const premiumViews: AppView[] = ['statistiques', 'bulletins', 'stocks', 'depenses'];
+    const hasPremium = plan.includes('premium') || plan.includes('élite') || plan.includes('elite') || plan.includes('30');
+    const isTrial = profile?.subscriptionStatus === 'trial';
+    if (premiumViews.includes(v) && !hasPremium && !isTrial) {
+      setPayError('Ce module est inclus dans Premium (20 000 FCFA/mois) et Élite (30 000 FCFA/mois). Votre forfait actuel : Essentiel.');
+      setSidebarOpen(false);
+      return;
+    }
     setView(v);
     setSidebarOpen(false);
     if (v !== 'dashboard' && guideMode !== 'onboarding' && profile?.schoolId) {
@@ -719,7 +782,7 @@ export default function App() {
                 <section className="animate-fadeIn space-y-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div><div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-teal-700"><UserPlus className="h-3 w-3" /> Scolarité</div><h1 className="font-display text-2xl font-800 tracking-tight text-ink sm:text-3xl">Inscriptions et élèves</h1><p className="mt-1 text-sm text-slate-500">Retrouvez les dossiers des élèves et ajoutez rapidement une inscription.</p></div>
-                    <button onClick={() => setAddOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-3 text-sm font-700 text-white shadow-cardLg"><UserPlus className="h-4 w-4" /> Inscrire un élève</button>
+                    <div className="flex flex-wrap gap-2"><button onClick={() => setBulkImportOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-extrabold text-blue-900 shadow-sm hover:bg-blue-100"><FileSpreadsheet className="h-4 w-4" /> Importer Excel</button><button onClick={() => setAddOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-3 text-sm font-700 text-white shadow-cardLg"><UserPlus className="h-4 w-4" /> Inscrire un élève</button></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-teal-700">Total inscrits</p><p className="mt-1 font-display text-2xl font-800 text-ink">{students.length}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-slate-500">Résultats filtrés</p><p className="mt-1 font-display text-2xl font-800 text-ink">{filtered.length}</p></div></div>
                   <div className="space-y-3">
@@ -884,6 +947,7 @@ export default function App() {
         onNavigate={handleNavigate}
         onStartStudent={startStudentFromGuide}
       />
+      <BulkStudentImport open={bulkImportOpen} classNames={classNames} onClose={() => setBulkImportOpen(false)} onImport={handleBulkImport} />
       <AddStudentModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
