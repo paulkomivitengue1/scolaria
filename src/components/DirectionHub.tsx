@@ -257,7 +257,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   };
 
   return (
-    <section className="space-y-5">
+    <section className="gestilys-direction-hub space-y-5">
       <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-blue-950 via-blue-900 to-blue-700 p-5 text-white shadow-lg sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div><div className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-300/50 bg-amber-300/15 px-3 py-1 text-xs font-extrabold text-amber-200"><ShieldCheck className="h-4 w-4" /> ESPACE DE DIRECTION</div><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Pilotez votre école</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">Finance, présence, communication avec les familles et suivi de l’équipe réunis dans un espace clair pour la direction de {schoolName}.</p></div>
