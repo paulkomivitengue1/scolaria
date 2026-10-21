@@ -544,11 +544,6 @@ export default function App() {
   };
 
   const isAdminEmail = (user?.email || '').trim().toLowerCase() === 'paulkomivitengue@gmail.com';
-  const isMobileDevice = typeof navigator !== 'undefined' && (
-    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
-    Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile) ||
-    (navigator.maxTouchPoints > 0 && typeof window !== 'undefined' && window.innerWidth < 900)
-  );
   // The signed-in admin account controls visibility in the app. Device user-agent
   // detection is not reliable for installed PWAs, so it must not hide the entry.
   // The Supabase admin function still independently checks the account and device.
