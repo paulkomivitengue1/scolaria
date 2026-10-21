@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
-  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X,
+  Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X, CalendarCheck, MessageCircle,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -31,14 +31,26 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Élèves et classes',
-    desc: 'Retrouvez les informations des élèves et organisez votre suivi par classe depuis un seul espace.',
+    desc: 'Retrouvez les dossiers des élèves et importez une liste préparée dans Excel en quelques étapes.',
     tone: 'violet',
   },
   {
     icon: TrendingUp,
     title: 'Vue d’ensemble financière',
-    desc: 'Consultez les encaissements et les dépenses pour mieux comprendre la situation de votre établissement.',
+    desc: 'Suivez les frais, les dépenses, les salaires et les mouvements complémentaires de caisse sans mélanger les montants.',
     tone: 'blue',
+  },
+  {
+    icon: CalendarCheck,
+    title: 'Présences et suivi de l’équipe',
+    desc: 'Tenez un registre des présences et suivez les tâches de la direction avec leurs responsables et échéances.',
+    tone: 'violet',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Communication avec les parents',
+    desc: 'Préparez des messages clairs, puis relisez-les et envoyez-les directement dans WhatsApp.',
+    tone: 'gold',
   },
   {
     icon: Smartphone,
@@ -60,6 +72,10 @@ const FAQ = [
   {
     q: 'Les parents doivent-ils créer un compte ?',
     a: 'Non. Vous pouvez partager un reçu par WhatsApp avec les parents, sans leur demander d’installer Gestilys.',
+  },
+  {
+    q: 'Puis-je importer mes élèves depuis Excel ?',
+    a: 'Oui. Enregistrez votre tableau Excel au format CSV UTF-8, vérifiez les colonnes Prénom, Nom et Classe, puis contrôlez l’aperçu avant de confirmer l’import.',
   },
   {
     q: 'Puis-je voir Gestilys avant de m’engager ?',
