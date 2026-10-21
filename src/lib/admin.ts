@@ -26,6 +26,10 @@ export interface AdminSchool {
   last_device?: string | null;
   last_browser?: string | null;
   last_os?: string | null;
+  last_seen_at?: string | null;
+  last_device?: string | null;
+  last_browser?: string | null;
+  last_os?: string | null;
 }
 
 export interface AdminManualPayment {
