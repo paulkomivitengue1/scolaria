@@ -49,9 +49,8 @@ const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
 export default function App() {
   const { user, profile, loading, isTrialExpired, signOut, refreshProfile } = useAuth();
 
-  const [isAdminPanel, setIsAdminPanel] = useState(() =>
-    typeof window !== 'undefined' && window.location.hash.replace('#', '') === '/scolaria-admin'
-  );
+  // The admin panel is opened from the authenticated in-app menu, not by a public URL.
+  const [isAdminPanel, setIsAdminPanel] = useState(false);
 
   const [students, setStudents] = useState<Student[]>([]);
   const [uniforms, setUniforms] = useState<UniformStockItem[]>([]);
@@ -189,14 +188,6 @@ export default function App() {
     loadSchoolLogo(profile.schoolId).then(logo => { if (!cancelled) setSchoolLogo(logo); }).catch(err => console.error('Failed to load school logo:', err));
     return () => { cancelled = true; };
   }, [profile?.schoolId]);
-
-  useEffect(() => {
-    const onHash = () => {
-      if (window.location.hash.replace('#', '') === '/scolaria-admin') setIsAdminPanel(true);
-    };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -559,7 +550,6 @@ export default function App() {
 
   useEffect(() => {
     if (loading || !isAdminPanel || isAuthorizedAdmin) return;
-    if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
     setIsAdminPanel(false);
   }, [loading, isAdminPanel, isAuthorizedAdmin]);
 
@@ -574,10 +564,7 @@ export default function App() {
   }
 
   if (isAdminPanel && isAuthorizedAdmin) {
-    return <AdminPanel onExit={() => {
-      if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
-      setIsAdminPanel(false);
-    }} />;
+    return <AdminPanel onExit={() => setIsAdminPanel(false)} />;
   }
 
   if (!user) {
@@ -606,10 +593,7 @@ export default function App() {
               {isAuthorizedAdmin && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsAdminPanel(true);
-                    window.location.hash = '/scolaria-admin';
-                  }}
+                  onClick={() => setIsAdminPanel(true)}
                   className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-amber-500 bg-gradient-to-r from-amber-300 to-yellow-400 px-4 py-3 font-extrabold text-blue-950 shadow-md"
                   style={{ background: 'linear-gradient(105deg,#f4bd35,#ffdf73)', color: '#172554', border: '1px solid #d49a00' }}
                 >
@@ -668,7 +652,6 @@ export default function App() {
         onOpenAdmin={() => {
           setSidebarOpen(false);
           setIsAdminPanel(true);
-          if (window.location.hash !== '#/scolaria-admin') window.location.hash = '/scolaria-admin';
         }}
       />
 
