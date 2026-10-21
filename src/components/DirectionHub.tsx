@@ -130,12 +130,18 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const [cashDate, setCashDate] = useState(today());
   const [cashCategory, setCashCategory] = useState('Autre');
   const [attendanceStudent, setAttendanceStudent] = useState('');
+  const [attendancePersonType, setAttendancePersonType] = useState<'student' | 'teacher'>('student');
   const [attendanceStatus, setAttendanceStatus] = useState<'present' | 'absent' | 'late'>('present');
   const [attendanceDate, setAttendanceDate] = useState(today());
   const [taskTitle, setTaskTitle] = useState('');
   const [taskOwner, setTaskOwner] = useState('Direction');
   const [taskDue, setTaskDue] = useState(today());
   const [taskStatus, setTaskStatus] = useState<'à faire' | 'en cours' | 'terminée'>('à faire');
+  const [payrollTeacherId, setPayrollTeacherId] = useState('');
+  const [payrollAdjustmentType, setPayrollAdjustmentType] = useState<'advance' | 'deduction'>('advance');
+  const [payrollAmount, setPayrollAmount] = useState('');
+  const [payrollDate, setPayrollDate] = useState(today());
+  const [payrollNote, setPayrollNote] = useState('');
   const [messageStudent, setMessageStudent] = useState('');
   const [messageText, setMessageText] = useState('Bonjour, nous vous contactons au sujet de la scolarité de votre enfant. Merci de prendre contact avec l’administration de l’école.');
   const [importPreview, setImportPreview] = useState<ImportedStudentRow[]>([]);
@@ -181,7 +187,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   };
   const cashRows = operations.filter(op => op.kind === 'cash');
   const attendanceRows = operations.filter(op => op.kind === 'attendance');
-  const taskRows = operations.filter(op => op.kind === 'task');
+  const taskRows = operations.filter(op => op.kind === 'task' && op.details.recordType !== 'payroll_adjustment');
+  const payrollRows = operations.filter(op => op.kind === 'task' && op.details.recordType === 'payroll_adjustment');
   const messageRows = operations.filter(op => op.kind === 'announcement');
   const cashIncome = cashRows.filter(op => op.details.direction === 'income').reduce((sum, op) => sum + Number(op.amount || 0), 0);
   const cashExpense = cashRows.filter(op => op.details.direction === 'expense').reduce((sum, op) => sum + Number(op.amount || 0), 0);
@@ -192,6 +199,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const presentToday = attendanceRows.filter(op => op.occurred_on === today() && op.details.status === 'present').length;
   const currentStudent = students.find(student => student.id === messageStudent);
   const selectedAttendanceStudent = students.find(student => student.id === attendanceStudent);
+  const selectedAttendanceTeacher = teachers.find(teacher => teacher.id === attendanceStudent);
+  const selectedAttendancePerson = attendancePersonType === 'student' ? selectedAttendanceStudent : selectedAttendanceTeacher;
+  const selectedPayrollTeacher = teachers.find(teacher => teacher.id === payrollTeacherId);
   const whatsappUrl = currentStudent?.parentPhone
     ? 'https://wa.me/' + (() => { const digits = currentStudent.parentPhone.replace(/\D/g, ''); return digits.length === 8 ? '223' + digits : digits; })() + '?text=' + encodeURIComponent(messageText)
     : '';
@@ -296,18 +306,56 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       </div>}
 
       {!loading && tab === 'attendance' && <div className="grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
-        <form className={panelClass} onSubmit={async event => { event.preventDefault(); if (!selectedAttendanceStudent) { setNotice('Choisissez un élève.'); return; } const title = selectedAttendanceStudent.firstName + ' ' + selectedAttendanceStudent.lastName; const existing = attendanceRows.find(row => row.occurred_on === attendanceDate && row.details.studentId === selectedAttendanceStudent.id); setSaving(true); setNotice(''); try { if (existing) { const { data, error } = await getSupabase().from('school_operations').update({ title, details: { studentId: selectedAttendanceStudent.id, studentName: title, className: selectedAttendanceStudent.className, status: attendanceStatus } }).eq('id', existing.id).eq('school_id', schoolId).select('id,school_id,kind,title,amount,occurred_on,details,created_at').single(); if (error) throw error; setOperations(prev => prev.map(row => row.id === existing.id ? data as Operation : row)); } else { await createOperation('attendance', title, 0, attendanceDate, { studentId: selectedAttendanceStudent.id, studentName: title, className: selectedAttendanceStudent.className, status: attendanceStatus }); } setNotice('Présence enregistrée pour ' + title + '.'); } catch (error) { setNotice(error instanceof Error ? error.message : 'Enregistrement impossible.'); } finally { setSaving(false); } }}>
-          <h2 className="text-lg font-black text-blue-950">Faire l’appel</h2><p className="mt-1 text-sm text-slate-700">Choisissez l’élève et enregistrez son statut pour la date voulue.</p>
+        <form className={panelClass} onSubmit={async event => {
+          event.preventDefault();
+          const person = selectedAttendancePerson;
+          if (!person) { setNotice('Choisissez un élève ou un membre du personnel.'); return; }
+          const title = person.firstName + ' ' + person.lastName;
+          const personId = attendancePersonType === 'student' ? selectedAttendanceStudent?.id : selectedAttendanceTeacher?.id;
+          if (!personId) { setNotice('La personne sélectionnée est introuvable.'); return; }
+          const existing = attendanceRows.find(row => row.occurred_on === attendanceDate
+            && (row.details.personType || 'student') === attendancePersonType
+            && (attendancePersonType === 'student' ? row.details.studentId : row.details.teacherId) === personId);
+          const details = {
+            personType: attendancePersonType,
+            studentId: attendancePersonType === 'student' ? personId : null,
+            teacherId: attendancePersonType === 'teacher' ? personId : null,
+            personName: title,
+            studentName: attendancePersonType === 'student' ? title : null,
+            className: attendancePersonType === 'student' ? selectedAttendanceStudent?.className || '' : 'Personnel',
+            status: attendanceStatus,
+          };
+          setSaving(true); setNotice('');
+          try {
+            if (existing) {
+              const { data, error } = await getSupabase().from('school_operations').update({ title, details })
+                .eq('id', existing.id).eq('school_id', schoolId)
+                .select('id,school_id,kind,title,amount,occurred_on,details,created_at').single();
+              if (error) throw error;
+              setOperations(prev => prev.map(row => row.id === existing.id ? data as Operation : row));
+            } else {
+              await createOperation('attendance', title, 0, attendanceDate, details);
+            }
+            setNotice('Présence enregistrée pour ' + title + '.');
+          } catch (error) {
+            setNotice(error instanceof Error ? error.message : 'Enregistrement impossible.');
+          } finally { setSaving(false); }
+        }}>
+          <h2 className="text-lg font-black text-blue-950">Faire l’appel</h2>
+          <p className="mt-1 text-sm text-slate-700">Le registre peut suivre les élèves et les membres du personnel.</p>
           <label className="mt-4 block text-sm font-bold text-slate-900">Date<input className={inputClass} type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
-          <label className="mt-3 block text-sm font-bold text-slate-900">Élève<select className={inputClass} value={attendanceStudent} onChange={e => setAttendanceStudent(e.target.value)} required><option value="">Sélectionner un élève</option>{students.slice().sort((a,b) => a.lastName.localeCompare(b.lastName,'fr')).map(student => <option key={student.id} value={student.id}>{student.firstName} {student.lastName} — {student.className}</option>)}</select></label>
+          <label className="mt-3 block text-sm font-bold text-slate-900">Personne<select className={inputClass} value={attendancePersonType} onChange={e => { setAttendancePersonType(e.target.value as 'student'|'teacher'); setAttendanceStudent(''); }}><option value="student">Élève</option><option value="teacher">Membre du personnel</option></select></label>
+          <label className="mt-3 block text-sm font-bold text-slate-900">{attendancePersonType === 'student' ? 'Élève' : 'Membre du personnel'}<select className={inputClass} value={attendanceStudent} onChange={e => setAttendanceStudent(e.target.value)} required><option value="">Sélectionner une personne</option>{attendancePersonType === 'student'
+            ? students.slice().sort((a,b) => a.lastName.localeCompare(b.lastName,'fr')).map(student => <option key={student.id} value={student.id}>{student.firstName} {student.lastName} — {student.className}</option>)
+            : teachers.slice().sort((a,b) => a.lastName.localeCompare(b.lastName,'fr')).map(teacher => <option key={teacher.id} value={teacher.id}>{teacher.firstName} {teacher.lastName}</option>)}</select></label>
           <label className="mt-3 block text-sm font-bold text-slate-900">Statut<select className={inputClass} value={attendanceStatus} onChange={e => setAttendanceStatus(e.target.value as 'present'|'absent'|'late')}><option value="present">Présent</option><option value="absent">Absent</option><option value="late">En retard</option></select></label>
-          <button className={buttonClass + ' mt-4 w-full'} disabled={saving || !students.length}><Check className="h-4 w-4" />Enregistrer l’appel</button>
+          <button className={buttonClass + ' mt-4 w-full'} disabled={saving || (attendancePersonType === 'student' ? !students.length : !teachers.length)}><Check className="h-4 w-4" />Enregistrer l’appel</button>
         </form>
-        <div className={panelClass}><div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-lg font-black text-blue-950">Registre des présences</h2><p className="mt-1 text-sm font-semibold text-slate-700">{attendanceRows.filter(row => row.occurred_on === attendanceDate).length} élève(s) suivi(s) le {attendanceDate}</p></div><button className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-bold text-blue-900" onClick={() => saveCsv('presences-gestilys.csv', [['Date','Élève','Classe','Statut'], ...attendanceRows.map(row => [row.occurred_on,row.details.studentName,row.details.className,row.details.status])])}><Download className="h-4 w-4" />Exporter</button></div>
-          <div className="mt-3 space-y-2">{attendanceRows.filter(row => row.occurred_on === attendanceDate).map(row => <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl bg-blue-50 p-3"><div><p className="text-sm font-extrabold text-slate-950">{row.details.studentName || row.title}</p><p className="text-xs font-semibold text-slate-700">{row.details.className || 'Classe non indiquée'}</p></div><span className={'rounded-full px-3 py-1 text-xs font-extrabold ' + (row.details.status === 'present' ? 'bg-emerald-100 text-emerald-900' : row.details.status === 'absent' ? 'bg-red-100 text-red-900' : 'bg-amber-100 text-amber-950')}>{row.details.status === 'present' ? 'Présent' : row.details.status === 'absent' ? 'Absent' : 'En retard'}</span></div>)}{!attendanceRows.some(row => row.occurred_on === attendanceDate) && <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-700">Aucun appel enregistré pour cette date.</p>}</div>
+        <div className={panelClass}>
+          <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-lg font-black text-blue-950">Registre des présences</h2><p className="mt-1 text-sm font-semibold text-slate-700">{attendanceRows.filter(row => row.occurred_on === attendanceDate).length} personne(s) suivie(s) le {attendanceDate}</p></div><button type="button" className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-bold text-blue-900" onClick={() => saveCsv('presences-gestilys.csv', [['Date','Personne','Type','Classe','Statut'], ...attendanceRows.map(row => [row.occurred_on,row.details.personName || row.details.studentName || row.title,row.details.personType === 'teacher' ? 'Personnel' : 'Élève',row.details.className,row.details.status])])}><Download className="h-4 w-4" />Exporter</button></div>
+          <div className="mt-3 space-y-2">{attendanceRows.filter(row => row.occurred_on === attendanceDate).map(row => <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl bg-blue-50 p-3"><div><p className="text-sm font-extrabold text-slate-950">{row.details.personName || row.details.studentName || row.title}</p><p className="text-xs font-semibold text-slate-700">{row.details.personType === 'teacher' ? 'Personnel' : row.details.className || 'Classe non indiquée'}</p></div><span className={'rounded-full px-3 py-1 text-xs font-extrabold ' + (row.details.status === 'present' ? 'bg-emerald-100 text-emerald-900' : row.details.status === 'absent' ? 'bg-red-100 text-red-900' : 'bg-amber-100 text-amber-950')}>{row.details.status === 'present' ? 'Présent' : row.details.status === 'absent' ? 'Absent' : 'En retard'}</span></div>)}{!attendanceRows.some(row => row.occurred_on === attendanceDate) && <p className="rounded-xl bg-slate-50 p-4 text-sm font-semibold text-slate-700">Aucun appel enregistré pour cette date.</p>}</div>
         </div>
       </div>}
-
       {!loading && tab === 'messages' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Préparer un message parent</h2><p className="mt-1 text-sm text-slate-700">Le message est ouvert dans WhatsApp pour que vous puissiez le relire et l’envoyer vous-même.</p>
           <label className="mt-4 block text-sm font-bold text-slate-900">Élève<select className={inputClass} value={messageStudent} onChange={e => setMessageStudent(e.target.value)}><option value="">Message général / sans élève</option>{students.map(student => <option key={student.id} value={student.id}>{student.firstName} {student.lastName} — {student.className}</option>)}</select></label>
@@ -321,18 +369,40 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         </div>
       </div>}
 
-      {!loading && tab === 'team' && <div className="grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
-        <form className={panelClass} onSubmit={async event => { event.preventDefault(); if (!taskTitle.trim()) return; const ok = await createOperation('task', taskTitle, 0, taskDue, { owner: taskOwner, status: taskStatus }); if (ok) setTaskTitle(''); }}>
-          <h2 className="text-lg font-black text-blue-950">Ajouter une tâche</h2><p className="mt-1 text-sm text-slate-700">Suivez les actions administratives à réaliser par la direction ou l’équipe.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Tâche<input className={inputClass} value={taskTitle} onChange={e => setTaskTitle(e.target.value)} maxLength={180} required placeholder="Ex. vérifier les absences de la semaine" /></label>
-          <label className="mt-3 block text-sm font-bold text-slate-900">Responsable<select className={inputClass} value={taskOwner} onChange={e => setTaskOwner(e.target.value)}>{['Direction','Comptabilité','Secrétariat',...teachers.map(t => t.firstName + ' ' + t.lastName)].map((value,index) => <option key={value + index}>{value}</option>)}</select></label>
-          <label className="mt-3 block text-sm font-bold text-slate-900">Échéance<input className={inputClass} type="date" value={taskDue} onChange={e => setTaskDue(e.target.value)} required /></label>
-          <label className="mt-3 block text-sm font-bold text-slate-900">État<select className={inputClass} value={taskStatus} onChange={e => setTaskStatus(e.target.value as 'à faire'|'en cours'|'terminée')}><option>à faire</option><option>en cours</option><option>terminée</option></select></label>
-          <button className={buttonClass + ' mt-4 w-full'} disabled={saving}><Plus className="h-4 w-4" />Ajouter à la liste</button>
-        </form>
-        <div className={panelClass}><div className="flex items-center justify-between gap-2"><h2 className="text-lg font-black text-blue-950">Plan d’action</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{taskRows.length} tâche(s)</span></div><div className="mt-3 space-y-2">{taskRows.map(row => <div key={row.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3"><div className="min-w-0"><p className="break-words text-sm font-extrabold text-slate-950">{row.title}</p><p className="mt-1 text-xs font-bold text-slate-700">Responsable : {row.details.owner || 'Direction'} · Échéance : {row.occurred_on}</p><select aria-label={'État de la tâche ' + row.title} className="mt-2 h-9 rounded-lg border border-blue-200 bg-white px-2 text-xs font-bold text-slate-900" value={row.details.status || 'à faire'} onChange={async e => { const status = e.target.value as 'à faire'|'en cours'|'terminée'; const { data, error } = await getSupabase().from('school_operations').update({ details: { ...row.details, status } }).eq('id', row.id).eq('school_id', schoolId).select('id,school_id,kind,title,amount,occurred_on,details,created_at').single(); if (error) setNotice(error.message); else setOperations(prev => prev.map(item => item.id === row.id ? data as Operation : item)); }}><option>à faire</option><option>en cours</option><option>terminée</option></select></div><button className="rounded-lg p-2 text-red-700 hover:bg-red-50" aria-label="Supprimer la tâche" onClick={() => void deleteOperation(row)}><Trash2 className="h-4 w-4" /></button></div>)}{!taskRows.length && <p className="rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Aucune tâche. Ajoutez une action pour commencer le suivi.</p>}</div></div>
+      {!loading && tab === 'team' && <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
+          <form className={panelClass} onSubmit={async event => { event.preventDefault(); if (!taskTitle.trim()) return; const ok = await createOperation('task', taskTitle, 0, taskDue, { owner: taskOwner, status: taskStatus }); if (ok) setTaskTitle(''); }}>
+            <h2 className="text-lg font-black text-blue-950">Ajouter une tâche</h2><p className="mt-1 text-sm text-slate-700">Suivez les actions administratives à réaliser par la direction ou l’équipe.</p>
+            <label className="mt-4 block text-sm font-bold text-slate-900">Tâche<input className={inputClass} value={taskTitle} onChange={e => setTaskTitle(e.target.value)} maxLength={180} required placeholder="Ex. vérifier les absences de la semaine" /></label>
+            <label className="mt-3 block text-sm font-bold text-slate-900">Responsable<select className={inputClass} value={taskOwner} onChange={e => setTaskOwner(e.target.value)}>{['Direction','Comptabilité','Secrétariat',...teachers.map(t => t.firstName + ' ' + t.lastName)].map((value,index) => <option key={value + index}>{value}</option>)}</select></label>
+            <label className="mt-3 block text-sm font-bold text-slate-900">Échéance<input className={inputClass} type="date" value={taskDue} onChange={e => setTaskDue(e.target.value)} required /></label>
+            <label className="mt-3 block text-sm font-bold text-slate-900">État<select className={inputClass} value={taskStatus} onChange={e => setTaskStatus(e.target.value as 'à faire'|'en cours'|'terminée')}><option>à faire</option><option>en cours</option><option>terminée</option></select></label>
+            <button className={buttonClass + ' mt-4 w-full'} disabled={saving}><Plus className="h-4 w-4" />Ajouter à la liste</button>
+          </form>
+          <div className={panelClass}><div className="flex items-center justify-between gap-2"><h2 className="text-lg font-black text-blue-950">Plan d’action</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{taskRows.length} tâche(s)</span></div><div className="mt-3 space-y-2">{taskRows.map(row => <div key={row.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3"><div className="min-w-0"><p className="break-words text-sm font-extrabold text-slate-950">{row.title}</p><p className="mt-1 text-xs font-bold text-slate-700">Responsable : {row.details.owner || 'Direction'} · Échéance : {row.occurred_on}</p><select aria-label={'État de la tâche ' + row.title} className="mt-2 h-9 rounded-lg border border-blue-200 bg-white px-2 text-xs font-bold text-slate-900" value={row.details.status || 'à faire'} onChange={async e => { const status = e.target.value as 'à faire'|'en cours'|'terminée'; const { data, error } = await getSupabase().from('school_operations').update({ details: { ...row.details, status } }).eq('id', row.id).eq('school_id', schoolId).select('id,school_id,kind,title,amount,occurred_on,details,created_at').single(); if (error) setNotice(error.message); else setOperations(prev => prev.map(item => item.id === row.id ? data as Operation : item)); }}><option>à faire</option><option>en cours</option><option>terminée</option></select></div><button type="button" className="rounded-lg p-2 text-red-700 hover:bg-red-50" aria-label="Supprimer la tâche" onClick={() => void deleteOperation(row)}><Trash2 className="h-4 w-4" /></button></div>)}{!taskRows.length && <p className="rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Aucune tâche. Ajoutez une action pour commencer le suivi.</p>}</div></div>
+        </div>
+        <div className={panelClass}>
+          <h2 className="text-lg font-black text-blue-950">Avances et retenues sur salaire</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-700">Enregistrez une avance versée ou une retenue décidée par l’établissement. Ce registre est distinct du paiement mensuel et ne modifie pas automatiquement le salaire déjà enregistré.</p>
+          <form className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" onSubmit={async event => {
+            event.preventDefault();
+            const amount = Number(payrollAmount);
+            if (!selectedPayrollTeacher || !Number.isFinite(amount) || amount <= 0) { setNotice('Choisissez un enseignant et un montant supérieur à zéro.'); return; }
+            const isAdvance = payrollAdjustmentType === 'advance';
+            const title = (isAdvance ? 'Avance de salaire — ' : 'Retenue sur salaire — ') + selectedPayrollTeacher.firstName + ' ' + selectedPayrollTeacher.lastName;
+            const ok = await createOperation('task', title, amount, payrollDate, { recordType: 'payroll_adjustment', adjustmentType: payrollAdjustmentType, teacherId: selectedPayrollTeacher.id, teacherName: selectedPayrollTeacher.firstName + ' ' + selectedPayrollTeacher.lastName, note: payrollNote.trim(), status: 'enregistré' });
+            if (ok) { setPayrollAmount(''); setPayrollNote(''); }
+          }}>
+            <label className="text-sm font-bold text-slate-900">Enseignant<select className={inputClass} value={payrollTeacherId} onChange={e => setPayrollTeacherId(e.target.value)} required><option value="">Sélectionner</option>{teachers.map(teacher => <option key={teacher.id} value={teacher.id}>{teacher.firstName} {teacher.lastName}</option>)}</select></label>
+            <label className="text-sm font-bold text-slate-900">Opération<select className={inputClass} value={payrollAdjustmentType} onChange={e => setPayrollAdjustmentType(e.target.value as 'advance'|'deduction')}><option value="advance">Avance versée</option><option value="deduction">Retenue</option></select></label>
+            <label className="text-sm font-bold text-slate-900">Montant (FCFA)<input className={inputClass} type="number" min="1" step="1" value={payrollAmount} onChange={e => setPayrollAmount(e.target.value)} required /></label>
+            <label className="text-sm font-bold text-slate-900">Date<input className={inputClass} type="date" value={payrollDate} onChange={e => setPayrollDate(e.target.value)} required /></label>
+            <label className="text-sm font-bold text-slate-900">Motif (facultatif)<input className={inputClass} maxLength={180} value={payrollNote} onChange={e => setPayrollNote(e.target.value)} placeholder="Ex. avance exceptionnelle" /></label>
+            <button className={buttonClass + ' sm:col-span-2 lg:col-span-5'} disabled={saving || !teachers.length}><Plus className="h-4 w-4" />Enregistrer l’opération</button>
+          </form>
+          <div className="mt-4 grid gap-2 md:grid-cols-2">{payrollRows.map(row => <div key={row.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3"><div><p className="text-sm font-extrabold text-slate-950">{row.details.teacherName || row.title}</p><p className="mt-1 text-xs font-semibold text-slate-700">{row.occurred_on} · {row.details.adjustmentType === 'advance' ? 'Avance versée' : 'Retenue'}{row.details.note ? ' · ' + row.details.note : ''}</p><p className={'mt-1 text-sm font-black ' + (row.details.adjustmentType === 'advance' ? 'text-amber-800' : 'text-red-800')}>{formatFCFA(row.amount)}</p></div><button type="button" className="rounded-lg p-2 text-red-700 hover:bg-red-50" aria-label="Supprimer cette opération salariale" onClick={() => void deleteOperation(row)}><Trash2 className="h-4 w-4" /></button></div>)}{!payrollRows.length && <p className="rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Aucune avance ou retenue enregistrée.</p>}</div>
+        </div>
       </div>}
-
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Depuis Excel : choisissez « Enregistrer sous » puis « CSV UTF-8 ». Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
           <label className="mt-4 block text-sm font-bold text-slate-900">Fichier CSV<input type="file" accept=".csv,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => void handleImportFile(e.target.files?.[0])} /></label>
