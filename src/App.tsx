@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
+  BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard, FileSpreadsheet,
   LogOut, Lock, AlertTriangle, ArrowRight, Phone,
   Search, GraduationCap, Check, ShieldCheck, CircleHelp,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
-import { generateMatricule, loadStudents, addStudentDB, recordPayment,
+import { generateMatricule, loadStudents, addStudentDB, bulkAddStudentsDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock, loadSupplyStock, syncSupplyStock,
   loadSchoolFeeConfig, loadCurrentAcademicYear, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
@@ -25,6 +25,7 @@ import { CahierGrid } from './components/CahierGrid';
 import { PaymentModal } from './components/PaymentModal';
 import { WhatsAppReceipt } from './components/WhatsAppReceipt';
 import { AddStudentModal } from './components/AddStudentModal';
+import { BulkStudentImportModal, type ImportedStudentRow } from './components/BulkStudentImportModal';
 import { EditStudentModal } from './components/EditStudentModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ConfigurationPanel } from './components/ConfigurationPanel';
@@ -38,7 +39,7 @@ import { UnpaidTranchesView } from './components/UnpaidTranchesView';
 import { ExpensesView } from './components/ExpensesView';
 import { TeachersView } from './components/TeachersView';
 import type { Student, UniformStockItem, BookStockItem, SupplyStockItem, SchoolFeeConfig, FeeConfigRow, TrancheDef, FeeTypeDef, GradePeriod, Expense, AppView, FeeSubscription, Teacher, SalaryPayment } from './types';
-import { studentExpected, studentCollected, DEFAULT_FEE_TYPES, formatFCFA } from './types';
+import { studentExpected, studentCollected, DEFAULT_FEE_TYPES, formatFCFA, getFeeTotalForClass, emptyTranchePayments, emptySinglePayment } from './types';
 
 const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
   tranches: [{ index: 1, label: 'Tranche 1' }, { index: 2, label: 'Tranche 2' }, { index: 3, label: 'Tranche 3' }],
@@ -88,6 +89,7 @@ export default function App() {
   const [trancheReceiptAmount, setTrancheReceiptAmount] = useState(0);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editStudentId, setEditStudentId] = useState<string | null>(null);
