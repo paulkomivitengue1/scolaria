@@ -258,10 +258,10 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
 
   return (
     <section className="gestilys-direction-hub space-y-5">
-      <div className="gestilys-direction-header overflow-hidden rounded-3xl bg-gradient-to-br from-blue-950 via-blue-900 to-blue-700 p-5 text-white shadow-lg sm:p-7">
+      <div style={{ background: "linear-gradient(120deg,#071735 0%,#123d8f 58%,#075985 100%)", color: "#ffffff", border: "3px solid #f5c451" }} className="gestilys-direction-header overflow-hidden rounded-3xl p-5 shadow-lg sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div><div className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-300/50 bg-amber-300/15 px-3 py-1 text-xs font-extrabold text-amber-200"><ShieldCheck className="h-4 w-4" /> ESPACE DE DIRECTION</div><h1 className="text-2xl font-black tracking-tight sm:text-3xl">Pilotez votre école</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">Finance, présence, communication avec les familles et suivi de l’équipe réunis dans un espace clair pour la direction de {schoolName}.</p></div>
-          <button type="button" onClick={() => void loadOperations()} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm font-bold text-white hover:bg-white/20"><RefreshCw className="h-4 w-4" /> Actualiser</button>
+          <div><div style={{ backgroundColor: "#ffdf70", color: "#10244d", border: "2px solid #ffffff", fontSize: 15, fontWeight: 950 }} className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs"><ShieldCheck className="h-4 w-4" /> ESPACE DE DIRECTION</div><h1 style={{ color: "#ffffff", fontSize: "clamp(32px,5vw,44px)", fontWeight: 950, lineHeight: 1.16 }} className="tracking-tight">Pilotez votre école</h1><p style={{ color: "#ffffff", fontSize: 17, fontWeight: 800, lineHeight: 1.55, opacity: 1 }} className="mt-2 max-w-2xl">Finance, présence, communication avec les familles et suivi de l’équipe réunis dans un espace clair pour la direction de {schoolName}.</p></div>
+          <button type="button" onClick={() => void loadOperations()} style={{ backgroundColor: "#ffdf70", color: "#10244d", border: "2px solid #ffffff", fontWeight: 950 }} className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-base"><RefreshCw className="h-4 w-4" /> Actualiser</button>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
@@ -269,16 +269,16 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
             { label: 'Scolarité encaissée', value: formatFCFA(collected), tone: 'border-emerald-300/30 bg-emerald-500/20' },
             { label: 'Reste à payer estimé', value: formatFCFA(outstanding), tone: 'border-amber-300/30 bg-amber-500/20' },
             { label: 'Tâches ouvertes', value: String(openTasks), tone: 'border-pink-300/30 bg-pink-500/20' },
-          ].map(metric => <div key={metric.label} className={'rounded-2xl border p-3 ' + metric.tone}><p className="text-sm font-extrabold text-white">{metric.label}</p><p className="mt-2 break-words text-2xl font-black text-white sm:text-3xl">{metric.value}</p></div>)}
+          ].map(metric => <div key={metric.label} style={{ backgroundColor: metric.label === "Élèves inscrits" ? "#1248a0" : metric.label === "Scolarité encaissée" ? "#047857" : metric.label === "Reste à payer estimé" ? "#a16207" : "#9d174d", color: "#ffffff", border: "2px solid #ffffff" }} className="rounded-2xl p-3"><p style={{ color: "#ffffff", fontSize: 16, fontWeight: 950, opacity: 1 }}>{metric.label}</p><p style={{ color: "#ffffff", fontSize: "clamp(25px,4vw,35px)", fontWeight: 950, lineHeight: 1.15, overflowWrap: "anywhere" }} className="mt-2 break-words">{metric.value}</p></div>)}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         {visibleTabs.map(item => {
           const Icon = item.icon;
-          return <button type="button" key={item.id} onClick={() => handleTab(item.id, item.locked)} className={'relative min-h-28 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ' + (tab === item.id ? 'border-blue-700 bg-blue-50 ring-2 ring-blue-100' : 'border-blue-200 bg-gradient-to-br from-blue-50 via-white to-amber-50 hover:border-amber-400')}>
+          return <button type="button" key={item.id} onClick={() => handleTab(item.id, item.locked)} style={{ background: tab === item.id ? "linear-gradient(120deg,#10244d 0%,#1d4ed8 100%)" : "linear-gradient(135deg,#d7e7ff 0%,#eff6ff 62%,#ffe8a0 100%)", color: tab === item.id ? "#ffffff" : "#10244d", border: tab === item.id ? "2px solid #ffdf70" : "2px solid #628bd7" }} className="relative min-h-28 rounded-2xl p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md">
             <div className={'mb-3 flex h-9 w-9 items-center justify-center rounded-xl ' + (tab === item.id ? 'bg-blue-800 text-white' : 'bg-amber-100 text-blue-900')}><Icon className="h-5 w-5" /></div>
-            <p className="text-base font-extrabold text-slate-950 sm:text-lg">{item.label}</p><p className="mt-1 text-sm font-semibold leading-5 text-slate-700">{item.description}</p>
+            <p style={{ color: tab === item.id ? "#ffffff" : "#10244d", fontSize: 18, fontWeight: 950, lineHeight: 1.3 }}>{item.label}</p><p style={{ color: tab === item.id ? "#ffffff" : "#243b63", fontSize: 15, fontWeight: 800, lineHeight: 1.45 }} className="mt-1">{item.description}</p>
             {item.locked && <Lock className="absolute right-3 top-3 h-4 w-4 text-amber-600" />}
           </button>;
         })}
