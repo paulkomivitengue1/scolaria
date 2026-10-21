@@ -68,7 +68,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white transition-transform lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-blue-200 bg-gradient-to-b from-blue-50 via-white to-amber-50 transition-transform lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -110,8 +110,8 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
                       onClick={() => onNavigate(item.view)}
                       className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
                         isActive
-                          ? 'bg-royal-50 text-royal-700'
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? 'bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md'
+                          : 'text-blue-950 hover:bg-amber-100 hover:text-blue-950'
                       }`}
                     >
                       <Icon className="h-4.5 w-4.5 shrink-0" />
@@ -126,13 +126,6 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
 
         {/* Bottom: administration + settings + logout */}
         <div className="shrink-0 border-t border-slate-200 px-3 py-3">
-          <button
-            onClick={() => { window.location.hash = '/scolaria-admin'; }}
-            className="mb-2 flex w-full items-center gap-3 rounded-xl border border-royal-100 bg-royal-50 px-3 py-2.5 text-sm font-700 text-royal-700 transition hover:bg-royal-100"
-          >
-            <ShieldCheck className="h-4.5 w-4.5 shrink-0" />
-            <span>Panneau administrateur</span>
-          </button>
           <button
             onClick={() => onNavigate('parametres')}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
