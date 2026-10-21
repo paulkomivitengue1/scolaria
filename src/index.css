@@ -732,3 +732,122 @@ h1, h2, h3 {
   .gestilys-direction-hub { border-radius: 18px; }
   .gestilys-direction-hub button.relative.min-h-28 { min-height: 112px; padding: 10px; }
 }
+
+
+/* Contrast and readable type scale: director space follows the established
+   navy / vivid blue / gold Gestilys interface; avoid white-on-white surfaces. */
+.gestilys-direction-hub {
+  font-size: 16px;
+  line-height: 1.55;
+  color: #172554 !important;
+}
+.gestilys-direction-hub .bg-white {
+  background: linear-gradient(145deg,#edf5ff 0%,#f7faff 72%,#fff5d6 100%) !important;
+  color: #172554 !important;
+}
+.gestilys-direction-hub .bg-white.text-white,
+.gestilys-direction-hub button.bg-white.text-white,
+.gestilys-direction-hub .bg-white [class~="text-white"] {
+  color: #172554 !important;
+}
+.gestilys-direction-hub .text-xs {
+  font-size: 0.875rem !important;
+  line-height: 1.35rem !important;
+}
+.gestilys-direction-hub .text-sm {
+  font-size: 1rem !important;
+  line-height: 1.55rem !important;
+}
+.gestilys-direction-hub .text-lg {
+  font-size: 1.5rem !important;
+  line-height: 1.9rem !important;
+}
+.gestilys-direction-hub .text-xl {
+  font-size: 1.75rem !important;
+  line-height: 2.1rem !important;
+}
+.gestilys-direction-hub .text-2xl {
+  font-size: 2rem !important;
+  line-height: 2.35rem !important;
+}
+.gestilys-direction-hub .text-3xl {
+  font-size: 2.25rem !important;
+  line-height: 2.55rem !important;
+}
+.gestilys-direction-hub .font-medium,
+.gestilys-direction-hub .font-semibold,
+.gestilys-direction-hub .font-bold,
+.gestilys-direction-hub .font-extrabold,
+.gestilys-direction-hub .font-black {
+  font-weight: 750 !important;
+}
+.gestilys-direction-hub input,
+.gestilys-direction-hub select,
+.gestilys-direction-hub textarea {
+  background: #edf5ff !important;
+  border: 2px solid #8fb3f0 !important;
+  color: #172554 !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  min-height: 46px;
+}
+.gestilys-direction-hub input::placeholder,
+.gestilys-direction-hub textarea::placeholder {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+.gestilys-direction-hub .rounded-2xl.border,
+.gestilys-direction-hub .rounded-xl.border {
+  border-color: #a9c5f5 !important;
+}
+.gestilys-direction-hub .rounded-2xl.border.bg-white,
+.gestilys-direction-hub .rounded-xl.border.bg-white {
+  background: linear-gradient(145deg,#eaf3ff 0%,#f8fbff 70%,#fff4d1 100%) !important;
+  box-shadow: 0 7px 20px rgba(23,37,84,.11) !important;
+}
+.gestilys-direction-hub button.relative.min-h-28 {
+  background: linear-gradient(145deg,#dceaff 0%,#f0f6ff 66%,#fff0bf 100%) !important;
+  border: 2px solid #a8c4f4 !important;
+  min-height: 132px;
+}
+.gestilys-direction-hub button.relative.min-h-28 p {
+  font-weight: 800 !important;
+}
+.gestilys-direction-hub button.relative.min-h-28 p.mt-1 {
+  font-size: 0.9rem !important;
+  line-height: 1.35rem !important;
+  font-weight: 650 !important;
+}
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 {
+  background: linear-gradient(125deg,#172554 0%,#1d4ed8 100%) !important;
+  border: 2px solid #f4bd35 !important;
+}
+.gestilys-direction-hub .bg-blue-50 {
+  background-color: #eaf3ff;
+}
+.gestilys-direction-hub .bg-amber-50 {
+  background-color: #fff0bf;
+}
+.gestilys-direction-hub .bg-white,
+.gestilys-direction-hub .bg-blue-50,
+.gestilys-direction-hub .bg-amber-50 {
+  border-color: #a9c5f5;
+}
+.gestilys-direction-hub .text-slate-700,
+.gestilys-direction-hub .text-slate-600,
+.gestilys-direction-hub .text-slate-500,
+.gestilys-direction-hub .text-gray-700,
+.gestilys-direction-hub .text-gray-600,
+.gestilys-direction-hub .text-gray-500 {
+  color: #263b63 !important;
+}
+.gestilys-direction-hub .text-white {
+  color: #ffffff;
+}
+@media (max-width: 639px) {
+  .gestilys-direction-hub .text-xs { font-size: 0.875rem !important; }
+  .gestilys-direction-hub .text-sm { font-size: 1rem !important; }
+  .gestilys-direction-hub .text-2xl { font-size: 1.75rem !important; }
+  .gestilys-direction-hub button.relative.min-h-28 { min-height: 122px; }
+}
