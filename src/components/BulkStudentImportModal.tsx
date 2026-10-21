@@ -63,7 +63,7 @@ export function BulkStudentImportModal({ open, classNames, onClose, onImport }: 
       if (!sheet) throw new Error('Le fichier ne contient aucune feuille.');
       const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '', raw: true });
       if (!data.length) throw new Error('Aucun élève trouvé. La première ligne doit contenir les titres des colonnes.');
-      const parsed = data.map((r, index) => {
+      const parsed = data.map(r => {
         const fullName = pick(r, ['nomcomplet', 'eleve', 'nomdeleve', 'studentname']);
         const firstName = pick(r, ['prenom', 'prenoms', 'firstname', 'givenname']) || (fullName ? fullName.split(/\s+/).slice(0, -1).join(' ') : '');
         const lastName = pick(r, ['nom', 'lastname', 'surname', 'nomdefamille']) || (fullName ? fullName.split(/\s+/).slice(-1)[0] : '');
