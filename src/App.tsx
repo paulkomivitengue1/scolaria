@@ -627,6 +627,7 @@ export default function App() {
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(v => !v)}
         schoolName={profile.schoolName}
+        showAdminEntry={isAuthorizedAdmin}
       />
 
       {/* Main content — offset by sidebar on desktop */}
