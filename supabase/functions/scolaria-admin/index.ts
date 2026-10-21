@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
    const days=Number(data.trial_days);return respond({data:{trial_days:Number.isInteger(days)&&days>=0&&days<=365?days:14}});
   }
   const authHeader = req.headers.get("Authorization") || "";
-  const bearerToken = authHeader.replace(/^Bearer\\s+/i, "");
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
   if (authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
    return respond({error:"Accès administrateur réservé au compte autorisé."},403);
