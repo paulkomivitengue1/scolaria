@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, CalendarCheck, Check, ClipboardList, FileSpreadsheet,
-  MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Users, Wallet, Lock, Download,
+  MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download,
 } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
