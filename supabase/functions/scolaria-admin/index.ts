@@ -46,6 +46,15 @@ Deno.serve(async (req: Request) => {
     return respond({ok:true,plans:normalized});
    }
    case "list_schools": {const {data,error}=await supabase.rpc("admin_list_schools");if(error)throw error;return respond({data});}
+   case "delete_school": {
+    if(!schoolId)throw new Error("Identifiant de l’école requis.");
+    const {data:profiles,error:profileError}=await supabase.from("users").select("auth_uid").eq("school_id",schoolId);
+    if(profileError)throw profileError;
+    const {error:schoolError}=await supabase.from("schools").delete().eq("id",schoolId);
+    if(schoolError)throw schoolError;
+    for(const profile of (profiles||[])) { const {error}=await supabase.auth.admin.deleteUser(profile.auth_uid); if(error) console.error("Suppression auth user échouée",error.message); }
+    return respond({ok:true});
+   }
    case "list_payments": {const {data,error}=await supabase.rpc("admin_list_manual_payments");if(error)throw error;return respond({data});}
    case "validate_payment": {if(!paymentId)throw new Error("Identifiant de paiement requis");const {error}=await supabase.rpc("admin_validate_payment",{p_payment_id:paymentId});if(error)throw error;return respond({ok:true});}
    case "reject_payment": {if(!paymentId)throw new Error("Identifiant de paiement requis");const {error}=await supabase.rpc("admin_reject_payment",{p_payment_id:paymentId});if(error)throw error;return respond({ok:true});}
