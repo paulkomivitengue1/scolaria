@@ -291,7 +291,7 @@ export function AdminPanel({ onExit }: Props) {
   const filteredSchools = useMemo(() => {
     const q = filter.trim().toLowerCase();
     return schools.filter((s) => {
-      const matchesText = !q || [s.name, s.city, s.director_name, s.phone].some(v => (v || '').toLowerCase().includes(q));
+      const matchesText = !q || [s.name, s.city, s.director_name, s.phone, s.email].some(v => (v || '').toLowerCase().includes(q));
       const expired = s.subscription_status !== 'active' && s.subscription_status !== 'suspended' && (s.subscription_status !== 'trial' || new Date(s.trial_ends_at) <= new Date());
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'active' && s.subscription_status === 'active') ||
@@ -303,9 +303,9 @@ export function AdminPanel({ onExit }: Props) {
   }, [schools, filter, statusFilter]);
 
   const exportSchoolsCsv = () => {
-    const columns = ['École', 'Ville', 'Directeur', 'Téléphone', 'Plan', 'Statut', 'Élèves', 'Inscription', 'Fin essai'];
+    const columns = ['École', 'Ville', 'Directeur', 'Téléphone', 'E-mail', 'Plan', 'Statut', 'Élèves', 'Inscription', 'Fin essai'];
     const rows = filteredSchools.map(s => [
-      s.name, s.city, s.director_name, s.phone, s.plan, statusBadge(s.subscription_status, s.trial_ends_at).label,
+      s.name, s.city, s.director_name, s.phone, s.email, s.plan, statusBadge(s.subscription_status, s.trial_ends_at).label,
       String(s.student_count), s.created_at, s.trial_ends_at,
     ]);
     const csv = [columns, ...rows].map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
