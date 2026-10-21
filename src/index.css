@@ -998,3 +998,89 @@ h1, h2, h3 {
   .gestilys-direction-hub .text-xs { font-size: 14px !important; }
   .gestilys-direction-hub button.relative.min-h-28 { min-height: 132px; }
 }
+
+/* DIRECTOR HEADER LEGIBILITY: explicit high-contrast palette for the entire top banner. */
+.gestilys-direction-hub .gestilys-direction-header {
+  background: linear-gradient(125deg,#07183f 0%,#123c91 55%,#075985 100%) !important;
+  color: #ffffff !important;
+  border: 3px solid #f5c451 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header,
+.gestilys-direction-hub .gestilys-direction-header * {
+  text-shadow: none !important;
+}
+.gestilys-direction-hub .gestilys-direction-header h1 {
+  color: #ffffff !important;
+  font-size: clamp(30px, 5vw, 42px) !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -.02em !important;
+  margin-top: 4px !important;
+}
+.gestilys-direction-hub .gestilys-direction-header p {
+  color: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 750 !important;
+  line-height: 1.55 !important;
+  opacity: 1 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div > div:first-child {
+  background: #ffdf70 !important;
+  color: #14264f !important;
+  border: 2px solid #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  opacity: 1 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div > div:first-child svg {
+  color: #14264f !important;
+}
+.gestilys-direction-hub .gestilys-direction-header button {
+  background: #ffdf70 !important;
+  color: #14264f !important;
+  border: 2px solid #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header button svg,
+.gestilys-direction-hub .gestilys-direction-header button span {
+  color: #14264f !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div {
+  border: 2px solid rgba(255,255,255,.8) !important;
+  box-shadow: 0 5px 14px rgba(0,0,0,.2) !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div:nth-child(1) {
+  background: #1248a0 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div:nth-child(2) {
+  background: #047857 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div:nth-child(3) {
+  background: #a16207 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div:nth-child(4) {
+  background: #9d174d !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div p,
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 950 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div p {
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+}
+.gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div p.mt-2 {
+  font-size: clamp(24px, 4vw, 34px) !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere !important;
+}
+@media (max-width: 639px) {
+  .gestilys-direction-hub .gestilys-direction-header { padding: 18px !important; }
+  .gestilys-direction-hub .gestilys-direction-header p { font-size: 16px !important; }
+  .gestilys-direction-hub .gestilys-direction-header > div > div:last-child > div p {
+    font-size: 14px !important;
+  }
+}
