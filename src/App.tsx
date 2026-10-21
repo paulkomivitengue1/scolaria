@@ -264,9 +264,19 @@ export default function App() {
     setReceiptOpen(true);
   };
 
+  const getStudentLimit = () => {
+    if (profile?.subscriptionStatus !== 'active') return Number.POSITIVE_INFINITY;
+    const plan = (profile.plan || 'Essentiel').trim().toLocaleLowerCase('fr');
+    if (plan === 'élite' || plan === 'elite') return Number.POSITIVE_INFINITY;
+    if (plan === 'premium') return 500;
+    return 150;
+  };
+
   const addStudent = async (st: Student) => {
-    if (isEssentielPaid && students.length >= 150) {
-      setPayError('La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.');
+    if (students.length >= getStudentLimit()) {
+      setPayError(getStudentLimit() === 150
+        ? 'La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.'
+        : 'La formule Premium est limitée à 500 élèves. Passez à Élite pour inscrire davantage d’élèves.');
       setView('dashboard');
       return;
     }
@@ -282,11 +292,11 @@ export default function App() {
 
   const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
     if (!profile?.schoolId) throw new Error('École non identifiée.');
-    if (isEssentielPaid && students.length >= 150) throw new Error('La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour continuer.');
+    if (students.length >= getStudentLimit()) throw new Error(getStudentLimit() === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
     const existing = new Set(students.map(st => `${st.firstName}|${st.lastName}|${st.className}`.toLocaleLowerCase('fr')));
     let imported = 0;
     for (const row of rows) {
-      if (isEssentielPaid && students.length + imported >= 150) break;
+      if (students.length + imported >= getStudentLimit()) break;
       const duplicateKey = `${row.firstName}|${row.lastName}|${row.className}`.toLocaleLowerCase('fr');
       if (existing.has(duplicateKey)) continue;
       const fees = feeConfig.feeTypes.map(ft => {
