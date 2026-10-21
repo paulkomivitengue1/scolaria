@@ -548,10 +548,12 @@ h1, h2, h3 {
   color: #fff !important;
 }
 .gestilys-sidebar-logo {
-  background: linear-gradient(135deg,#f4bd35 0%,#e9a900 100%) !important;
+  background: #ffffff !important;
   color: #172554 !important;
-  box-shadow: 0 4px 12px rgba(244,189,53,.3);
+  border: 2px solid #f4bd35 !important;
+  box-shadow: 0 4px 12px rgba(23,37,84,.2);
 }
+.gestilys-sidebar-logo svg { color: #172554 !important; stroke: #172554 !important; opacity: 1 !important; }
 .gestilys-sidebar-brand { color:#fff !important; }
 .gestilys-sidebar-school { color:#dbeafe !important; }
 .gestilys-sidebar-close { color:#fff !important; background:rgba(255,255,255,.12) !important; }
