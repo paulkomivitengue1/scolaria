@@ -30,6 +30,14 @@ export interface AdminSchool {
   last_os?: string | null;
 }
 
+export interface AdminLoginStats {
+  today: number;
+  this_month: number;
+  last_30_days: number;
+  daily: { date: string; count: number }[];
+  monthly: { month: string; count: number }[];
+}
+
 export interface AdminManualPayment {
   id: string;
   school_id: string;
@@ -60,6 +68,11 @@ async function adminFetch(code: string, action: string, paymentId?: string, scho
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
   return json;
+}
+
+export async function adminGetLoginStats(code: string): Promise<AdminLoginStats> {
+  const { data } = await adminFetch(code, 'get_login_stats');
+  return data || { today: 0, this_month: 0, last_30_days: 0, daily: [], monthly: [] };
 }
 
 export async function adminListSchools(code: string): Promise<AdminSchool[]> {
