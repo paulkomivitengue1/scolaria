@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const DEV_CODE = Deno.env.get("ADMIN_DEV_CODE");
+const ADMIN_EMAIL = "paulkomivitengue@gmail.com";
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 type Plan = "Essentiel" | "Premium" | "Élite";
 type Period = "mensuel" | "annuel";
@@ -21,6 +22,12 @@ Deno.serve(async (req: Request) => {
    const {data,error}=await supabase.from("gestilys_public_settings").select("trial_days").eq("id",1).single();
    if(error)throw error;
    const days=Number(data.trial_days);return respond({data:{trial_days:Number.isInteger(days)&&days>=0&&days<=365?days:14}});
+  }
+  const authHeader = req.headers.get("Authorization") || "";
+  const bearerToken = authHeader.replace(/^Bearer\\s+/i, "");
+  const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
+  if (authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
+   return respond({error:"Accès administrateur réservé au compte autorisé."},403);
   }
   if(b.code!==DEV_CODE) return respond({error:"Code développeur invalide"},401);
   const {action,paymentId,schoolId}=b;
