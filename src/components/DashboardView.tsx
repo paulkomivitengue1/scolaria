@@ -144,33 +144,54 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
         <p className="mt-1 text-sm text-slate-500">Cliquez sur une carte pour accéder à la section détaillée.</p>
       </div>
 
+      <style>{`
+        .gestilys-start-panel { position:relative; overflow:hidden; margin-bottom:24px; border:1px solid #bfdbfe; border-radius:26px; background:linear-gradient(135deg,#eff6ff 0%,#fff 48%,#ecfdf5 100%); box-shadow:0 18px 46px rgba(23,37,84,.10); }
+        .gestilys-start-panel:after { content:""; position:absolute; width:220px; height:220px; right:-86px; top:-110px; border:28px solid rgba(244,189,53,.18); border-radius:50%; pointer-events:none; }
+        .gestilys-start-header { position:relative; overflow:hidden; padding:22px; color:#fff; background:linear-gradient(112deg,#172554 0%,#1d4ed8 62%,#0f766e 120%); }
+        .gestilys-start-header:after { content:""; position:absolute; right:-25px; bottom:-92px; width:190px; height:190px; border:22px solid rgba(255,255,255,.10); border-radius:50%; pointer-events:none; }
+        .gestilys-start-eyebrow { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.28); border-radius:999px; padding:6px 10px; color:#fff0b3; background:rgba(255,255,255,.10); font-size:10px; font-weight:900; letter-spacing:.12em; }
+        .gestilys-start-title { margin-top:10px; color:#fff!important; font-size:clamp(21px,3.5vw,28px); font-weight:950; letter-spacing:-.04em; line-height:1.15; }
+        .gestilys-start-copy { margin-top:8px; max-width:680px; color:#eaf2ff!important; font-size:13px; line-height:1.65; }
+        .gestilys-start-steps { position:relative; display:grid; grid-template-columns:1fr; gap:12px; padding:16px; }
+        .gestilys-start-step { min-width:0; border:1px solid #dbeafe; border-radius:19px; padding:16px; background:#fff; box-shadow:0 7px 18px rgba(23,37,84,.045); }
+        .gestilys-start-step:nth-child(2) { border-color:#99f6e4; box-shadow:0 9px 22px rgba(13,148,136,.09); }
+        .gestilys-start-step:nth-child(3) { border-color:#a7f3d0; }
+        .gestilys-start-icon { display:grid; place-items:center; width:42px; height:42px; border-radius:14px; margin-bottom:12px; }
+        .gestilys-start-step h3 { color:#172554!important; font-size:14px; font-weight:900; line-height:1.4; }
+        .gestilys-start-step p { color:#475569!important; font-size:12px; line-height:1.65; }
+        .gestilys-start-action { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:42px; margin-top:14px; border-radius:12px; padding:10px 13px; color:#fff!important; background:linear-gradient(115deg,#1d4ed8,#172554); font-size:12px; font-weight:900; box-shadow:0 7px 16px rgba(29,78,216,.17); }
+        .gestilys-start-action-secondary { color:#1e40af!important; background:#eff6ff; border:1px solid #bfdbfe; box-shadow:none; }
+        .gestilys-start-note { margin:0 16px 16px; display:flex; align-items:flex-start; gap:10px; border:1px solid #fde68a; border-radius:15px; padding:12px 14px; background:#fffbeb; color:#713f12; font-size:12px; line-height:1.6; }
+        @media(min-width:640px) { .gestilys-start-header { padding:26px 28px; } .gestilys-start-steps { grid-template-columns:repeat(3,minmax(0,1fr)); padding:18px; } .gestilys-start-step { padding:17px; } .gestilys-start-note { margin:0 18px 18px; } }
+      `}</style>
       {students.length === 0 && (
-        <section className="mb-6 overflow-hidden rounded-3xl border border-royal-200 bg-gradient-to-br from-royal-50 via-white to-teal-50 shadow-cardLg">
-          <div className="bg-gradient-to-r from-royal-900 via-royal-800 to-teal-800 p-5 text-white sm:p-6">
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-800 uppercase tracking-wider text-teal-100"><Sparkles className="h-3.5 w-3.5" /> Bienvenue sur Gestilys</div>
-            <h2 className="font-display text-xl font-800 sm:text-2xl">Préparons votre école en 3 étapes</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-royal-100">Suivez ces étapes pour commencer. Vous pourrez ensuite gérer les inscriptions, suivre les paiements et imprimer vos documents.</p>
+        <section className="gestilys-start-panel">
+          <header className="gestilys-start-header">
+            <span className="gestilys-start-eyebrow"><Sparkles className="h-3.5 w-3.5" /> VOTRE DÉMARRAGE · 3 ÉTAPES</span>
+            <h2 className="gestilys-start-title">Bienvenue sur Gestilys ! Préparons votre école.</h2>
+            <p className="gestilys-start-copy">Suivez ce petit parcours pour configurer votre espace, créer une première fiche élève et découvrir le suivi des règlements. Vous gardez le contrôle à chaque étape.</p>
+          </header>
+          <div className="gestilys-start-steps">
+            <article className="gestilys-start-step">
+              <div className="gestilys-start-icon" style={{background:"#dbeafe",color:"#1d4ed8"}}><Settings2 className="h-5 w-5" /></div>
+              <h3>01 · Configurez l’école</h3>
+              <p className="mt-2">Vérifiez le nom, les classes, l’année scolaire et les frais avant de commencer les inscriptions.</p>
+              <button type="button" onClick={() => onNavigate('parametres')} className="gestilys-start-action gestilys-start-action-secondary">Ouvrir les paramètres <ArrowRight className="h-4 w-4" /></button>
+            </article>
+            <article className="gestilys-start-step">
+              <div className="gestilys-start-icon" style={{background:"#ccfbf1",color:"#0f766e"}}><Users className="h-5 w-5" /></div>
+              <h3>02 · Inscrivez un élève</h3>
+              <p className="mt-2">Essayez d’abord avec une fiche fictive pour découvrir le parcours sans toucher aux données réelles.</p>
+              <button type="button" onClick={onStartStudent} className="gestilys-start-action">Créer une fiche élève <ArrowRight className="h-4 w-4" /></button>
+            </article>
+            <article className="gestilys-start-step">
+              <div className="gestilys-start-icon" style={{background:"#d1fae5",color:"#047857"}}><Receipt className="h-5 w-5" /></div>
+              <h3>03 · Découvrez les paiements</h3>
+              <p className="mt-2">Après l’inscription, ouvrez les paiements pour voir comment enregistrer un versement réel et préparer un reçu.</p>
+              <button type="button" onClick={() => onNavigate('paiements')} className="gestilys-start-action gestilys-start-action-secondary">Voir les paiements <ArrowRight className="h-4 w-4" /></button>
+            </article>
           </div>
-          <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
-            <div className="rounded-2xl border border-royal-100 bg-white p-4">
-              <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl bg-royal-100 text-royal-800"><Settings2 className="h-5 w-5" /></div>
-              <p className="text-sm font-800 text-ink">1. Configurez l’école</p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">Vérifiez le nom, les classes et les frais de scolarité.</p>
-              <button type="button" onClick={() => onNavigate('parametres')} className="mt-4 inline-flex items-center gap-1.5 text-sm font-800 text-royal-700 hover:text-royal-900">Configurer <ArrowRight className="h-4 w-4" /></button>
-            </div>
-            <div className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl bg-teal-100 text-teal-800"><Users className="h-5 w-5" /></div>
-              <p className="text-sm font-800 text-ink">2. Inscrivez un élève</p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">Ajoutez le premier dossier pour activer le suivi de sa scolarité.</p>
-              <button type="button" onClick={onStartStudent} className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-royal-700 to-royal-900 px-3.5 py-2.5 text-sm font-800 text-white shadow-card">Inscrire un élève <ArrowRight className="h-4 w-4" /></button>
-            </div>
-            <div className="rounded-2xl border border-emerald-100 bg-white p-4">
-              <div className="mb-3 grid h-9 w-9 place-items-center rounded-xl bg-emerald-100 text-emerald-800"><Receipt className="h-5 w-5" /></div>
-              <p className="text-sm font-800 text-ink">3. Enregistrez un paiement</p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">Après l’inscription, ouvrez le cahier de caisse pour enregistrer un versement et préparer un reçu.</p>
-              <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-700 text-emerald-700"><ArrowRight className="h-4 w-4" /> Disponible après l’inscription</span>
-            </div>
-          </div>
+          <div className="gestilys-start-note"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" /><span><strong>Conseil :</strong> pour la démonstration, utilisez des données fictives. N’enregistrez jamais de faux paiements dans les dossiers d’une école réelle.</span></div>
         </section>
       )}
 
