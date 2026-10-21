@@ -96,6 +96,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Keep subscription status in sync when an administrator changes it in another tab/device.
+  // On mobile, returning to the app commonly fires visibilitychange rather than a full reload.
+  useEffect(() => {
+    if (!user) return;
+    let refreshing = false;
+    const refreshCurrentProfile = async () => {
+      if (refreshing || document.visibilityState !== 'visible') return;
+      refreshing = true;
+      try {
+        await fetchProfile(user);
+      } catch (error) {
+        console.error('Failed to refresh school subscription status:', error);
+      } finally {
+        refreshing = false;
+      }
+    };
+    window.addEventListener('focus', refreshCurrentProfile);
+    document.addEventListener('visibilitychange', refreshCurrentProfile);
+    return () => {
+      window.removeEventListener('focus', refreshCurrentProfile);
+      document.removeEventListener('visibilitychange', refreshCurrentProfile);
+    };
+  }, [user]);
+
   const isTrialExpired =
     !!profile &&
     profile.subscriptionStatus === 'trial' &&
