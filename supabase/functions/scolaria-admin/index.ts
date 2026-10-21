@@ -50,14 +50,14 @@ Deno.serve(async (req: Request) => {
     if(!schoolId)throw new Error("Identifiant de l’école requis.");
     const {data:profiles,error:profileError}=await supabase.from("users").select("auth_uid").eq("school_id",schoolId);
     if(profileError)throw profileError;
-    // Expenses are the one school-linked table without ON DELETE CASCADE.
-    // Remove only this school's expenses before deleting the school and its related data.
-    const {error:expenseError}=await supabase.from("expenses").delete().eq("school_id",schoolId);
-    if(expenseError)throw expenseError;
-    const {error:schoolError}=await supabase.from("schools").delete().eq("id",schoolId);
-    if(schoolError)throw schoolError;
-    for(const profile of (profiles||[])) { const {error}=await supabase.auth.admin.deleteUser(profile.auth_uid); if(error) console.error("Suppression auth user échouée",error.message); }
-    return respond({ok:true});
+    const {error:deleteError}=await supabase.rpc("admin_delete_school",{p_school_id:schoolId});
+    if(deleteError)throw deleteError;
+    const authDeleteErrors:string[]=[];
+    for(const profile of (profiles||[])) {
+     const {error}=await supabase.auth.admin.deleteUser(profile.auth_uid);
+     if(error) { console.error("Suppression auth user échouée",error.message); authDeleteErrors.push(error.message); }
+    }
+    return respond({ok:true,auth_cleanup_warnings:authDeleteErrors.length});
    }
    case "list_payments": {const {data,error}=await supabase.rpc("admin_list_manual_payments");if(error)throw error;return respond({data});}
    case "validate_payment": {if(!paymentId)throw new Error("Identifiant de paiement requis");const {error}=await supabase.rpc("admin_validate_payment",{p_payment_id:paymentId});if(error)throw error;return respond({ok:true});}
