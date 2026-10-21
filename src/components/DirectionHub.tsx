@@ -57,6 +57,14 @@ const panelClass = 'rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm
 function normalizeHeader(value: string) {
   return value.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 }
+function normalizeDate(value: string): string {
+  const text = value.trim();
+  if (!text) return '';
+  const european = text.match(/^(\\d{1,2})[/.\\-](\\d{1,2})[/.\\-](\\d{4})$/);
+  if (european) return european[3] + '-' + european[2].padStart(2, '0') + '-' + european[1].padStart(2, '0');
+  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(text)) return text;
+  throw new Error('Date de naissance invalide : « ' + text + ' ». Utilisez JJ/MM/AAAA ou AAAA-MM-JJ.');
+}
 function splitCsvLine(line: string, separator: string): string[] {
   const result: string[] = [];
   let value = '';
@@ -81,8 +89,8 @@ function parseStudentCsv(text: string): ImportedStudentRow[] {
     first: find(['prenom','prenoms','firstname']),
     last: find(['nom','nomdefamille','lastname']),
     cls: find(['classe','class','niveau']),
-    parent: find(['parent','nomparent','nomdututeur','tuteur']),
-    phone: find(['telephoneparent','telephone','tel','telephonepere','contactparent','phone']),
+    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur']),
+    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone']),
     birthDate: find(['datenaissance','naissance','birthdate']),
     birthPlace: find(['lieunaissance','lieudenaissance','birthplace']),
     sex: find(['sexe','genre']),
@@ -94,7 +102,7 @@ function parseStudentCsv(text: string): ImportedStudentRow[] {
     const cells = splitCsvLine(line, separator);
     const get = (index: number) => index >= 0 ? (cells[index] || '').trim() : '';
     const firstName = get(idx.first), lastName = get(idx.last), className = get(idx.cls);
-    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: get(idx.birthDate), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex };
+    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex };
   }).filter(row => row.firstName || row.lastName || row.className);
   const invalid = rows.find(row => !row.firstName || !row.lastName || !row.className);
   if (invalid) throw new Error('Ligne ' + (invalid.rowIndex + 2) + ' : Prénom, Nom et Classe doivent être renseignés.');
@@ -334,7 +342,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
               if (error) throw error;
               setOperations(prev => prev.map(row => row.id === existing.id ? data as Operation : row));
             } else {
-              await createOperation('attendance', title, 0, attendanceDate, details);
+              const saved = await createOperation('attendance', title, 0, attendanceDate, details);
+              if (!saved) return;
             }
             setNotice('Présence enregistrée pour ' + title + '.');
           } catch (error) {
