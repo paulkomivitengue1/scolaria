@@ -662,6 +662,7 @@ export default function App() {
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(v => !v)}
         schoolName={profile.schoolName}
+        lockedViews={isEssentielPaid ? premiumViews : []}
       />
 
       {/* Main content — offset by sidebar on desktop */}
