@@ -607,3 +607,128 @@ h1, h2, h3 {
 @media (max-width:1023px) {
   .gestilys-sidebar { width:min(84vw,320px); }
 }
+
+
+/* Gestilys Director Workspace — visual reference: LandingPage, AuthPage,
+   Help Centre and UserGuide. Scoped only to newly added director tools. */
+.gestilys-direction-hub {
+  color: #172554;
+  border-radius: 24px;
+}
+.gestilys-direction-hub .bg-white {
+  background-color: #ffffff !important;
+  color: #172554;
+}
+.gestilys-direction-hub .bg-white .text-white,
+.gestilys-direction-hub .bg-blue-50 .text-white,
+.gestilys-direction-hub .bg-amber-50 .text-white,
+.gestilys-direction-hub .bg-slate-50 .text-white,
+.gestilys-direction-hub .bg-gray-50 .text-white {
+  color: #172554 !important;
+}
+.gestilys-direction-hub .text-slate-950,
+.gestilys-direction-hub .text-slate-900,
+.gestilys-direction-hub .text-slate-800,
+.gestilys-direction-hub .text-slate-700,
+.gestilys-direction-hub .text-gray-900,
+.gestilys-direction-hub .text-gray-800,
+.gestilys-direction-hub .text-gray-700 {
+  color: #172554 !important;
+}
+.gestilys-direction-hub .text-slate-600,
+.gestilys-direction-hub .text-slate-500,
+.gestilys-direction-hub .text-gray-600,
+.gestilys-direction-hub .text-gray-500,
+.gestilys-direction-hub .text-blue-700 {
+  color: #334155 !important;
+}
+.gestilys-direction-hub .text-blue-950,
+.gestilys-direction-hub .text-blue-900,
+.gestilys-direction-hub .text-blue-800 {
+  color: #172554 !important;
+}
+.gestilys-direction-hub input,
+.gestilys-direction-hub select,
+.gestilys-direction-hub textarea {
+  color: #172554 !important;
+  background-color: #ffffff !important;
+  border-color: #93baf5 !important;
+}
+.gestilys-direction-hub input::placeholder,
+.gestilys-direction-hub textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+.gestilys-direction-hub .rounded-2xl.border,
+.gestilys-direction-hub .rounded-xl.border {
+  border-color: #c6d8f7 !important;
+}
+.gestilys-direction-hub .rounded-2xl.border.bg-white,
+.gestilys-direction-hub .rounded-xl.border.bg-white {
+  box-shadow: 0 8px 22px rgba(23,37,84,.08);
+}
+.gestilys-direction-hub button.relative.min-h-28 {
+  min-height: 118px;
+  border-width: 1px !important;
+  border-color: #bfd3f5 !important;
+  background: linear-gradient(145deg,#ffffff 0%,#edf5ff 70%,#fff8e5 100%) !important;
+  box-shadow: 0 5px 16px rgba(23,37,84,.07);
+  color: #172554 !important;
+}
+.gestilys-direction-hub button.relative.min-h-28 p {
+  color: #172554 !important;
+}
+.gestilys-direction-hub button.relative.min-h-28:hover {
+  border-color: #e0a800 !important;
+  box-shadow: 0 9px 22px rgba(23,37,84,.13);
+}
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 {
+  border: 2px solid #f4bd35 !important;
+  background: linear-gradient(125deg,#172554 0%,#1d4ed8 100%) !important;
+  box-shadow: 0 8px 22px rgba(29,78,216,.24);
+}
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700 p,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 p {
+  color: #ffffff !important;
+}
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700 p.mt-1,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 p.mt-1 {
+  color: #eaf2ff !important;
+}
+.gestilys-direction-hub button:focus-visible,
+.gestilys-direction-hub input:focus-visible,
+.gestilys-direction-hub select:focus-visible,
+.gestilys-direction-hub textarea:focus-visible {
+  outline: 3px solid #f4bd35 !important;
+  outline-offset: 2px;
+}
+.gestilys-direction-hub .bg-blue-50 {
+  background-color: #edf5ff;
+}
+.gestilys-direction-hub .bg-amber-50 {
+  background-color: #fff7d6;
+}
+.gestilys-direction-hub [role="status"] {
+  border: 1px solid #8eb6ff !important;
+  background: linear-gradient(110deg,#eaf2ff,#fff7d6) !important;
+  color: #172554 !important;
+  box-shadow: 0 4px 14px rgba(23,37,84,.06);
+}
+.gestilys-direction-hub table {
+  color: #172554;
+}
+.gestilys-direction-hub th {
+  color: #172554 !important;
+  background-color: #eaf2ff;
+}
+.gestilys-direction-hub td {
+  color: #334155;
+}
+.gestilys-direction-hub .text-white {
+  color: #ffffff;
+}
+@media (max-width: 639px) {
+  .gestilys-direction-hub { border-radius: 18px; }
+  .gestilys-direction-hub button.relative.min-h-28 { min-height: 112px; padding: 10px; }
+}
