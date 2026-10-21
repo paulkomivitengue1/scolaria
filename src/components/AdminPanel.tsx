@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminGetLoginStats, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
-  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment, type AdminLoginStats,
+  adminListSchools, adminListPayments, adminGetLoginStats, adminGetChurnStats, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
+  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment, type AdminLoginStats, type AdminChurnStats,
 } from '../lib/admin';
 import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 
@@ -87,6 +87,7 @@ export function AdminPanel({ onExit }: Props) {
   }, [selectedSchool]);
   const [payments, setPayments] = useState<AdminManualPayment[]>([]);
   const [loginStats, setLoginStats] = useState<AdminLoginStats>({ today: 0, this_month: 0, last_30_days: 0, daily: [], monthly: [] });
+  const [churnStats, setChurnStats] = useState<AdminChurnStats>({ churned_30_days: 0, churn_rate_30_days: 0, churned_this_month: 0, churn_rate_this_month: 0, tracking_started_at: null });
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
@@ -108,10 +109,11 @@ export function AdminPanel({ onExit }: Props) {
   const loadData = useCallback(async (c: string) => {
     setDataLoading(true);
     try {
-      const [s, p, pricing, trialDuration, activity] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays(), adminGetLoginStats(c)]);
+      const [s, p, pricing, trialDuration, activity, churn] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays(), adminGetLoginStats(c), adminGetChurnStats(c)]);
       setSchools(s);
       setPayments(p);
       setLoginStats(activity);
+      setChurnStats(churn);
       setPublicTrialDays(String(trialDuration));
       setPriceInputs({
         Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
@@ -412,8 +414,8 @@ export function AdminPanel({ onExit }: Props) {
     .reduce((sum, s) => sum + (Number(s.subscription_amount) || ({ Essentiel: 10000, Premium: 20000, 'Élite': 30000 } as Record<string, number>)[s.plan] || 0), 0);
   const monthlyActiveCount = paidSchools.filter(s => s.billing_period !== 'annuel').length;
   const annualActiveCount = paidSchools.filter(s => s.billing_period === 'annuel').length;
-  const churnedLast30Days = schools.filter(s => s.subscription_status !== 'active' && !!s.last_paid_at && new Date(s.last_paid_at) >= new Date(now.getTime() - 30 * 86400000)).length;
-  const churnRate30Days = paidSchools.length + churnedLast30Days ? Math.round(churnedLast30Days / (paidSchools.length + churnedLast30Days) * 1000) / 10 : 0;
+  const churnedLast30Days = churnStats.churned_30_days;
+  const churnRate30Days = churnStats.churn_rate_30_days;
   const planDistribution = (['Essentiel', 'Premium', 'Élite'] as const).map(plan => ({
     plan,
     count: schools.filter(s => s.subscription_status === 'active' && s.plan === plan).length,
@@ -594,6 +596,7 @@ export function AdminPanel({ onExit }: Props) {
                 <div className="rounded-xl border border-amber-300/30 bg-amber-300/15 p-4"><p className="text-xs font-bold text-amber-100">Ce mois-ci</p><p className="mt-1 text-3xl font-extrabold text-amber-100">{loginStats.this_month}</p><p className="text-[11px] text-amber-100">Connexions et reconnexions</p></div>
                 <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/15 p-4"><p className="text-xs font-bold text-cyan-100">30 derniers jours</p><p className="mt-1 text-3xl font-extrabold text-cyan-100">{loginStats.last_30_days}</p><p className="text-[11px] text-cyan-100">Événements enregistrés</p></div>
               </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-blue-100">Le suivi des connexions et du churn commence avec cette version ; les événements antérieurs ne peuvent pas être reconstitués.</p>
               <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
                 <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
                 <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
@@ -604,6 +607,17 @@ export function AdminPanel({ onExit }: Props) {
                   })}
                 </div>
                 <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 30 jours</span><span>Aujourd’hui</span></div>
+              </div>
+              <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
+                <p className="mb-3 text-sm font-bold text-white">Activité mensuelle · 12 mois</p>
+                <div className="flex h-24 items-end gap-2 overflow-x-auto pb-1" aria-label="Graphique des connexions mensuelles">
+                  {loginStats.monthly.map((month) => {
+                    const max = Math.max(1, ...loginStats.monthly.map(item => item.count));
+                    const height = Math.max(4, Math.round(month.count / max * 100));
+                    return <div key={month.month} title={month.month + ': ' + month.count + ' connexion(s)'} className="flex h-full min-w-4 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-indigo-300 to-amber-300" style={{ height: height + '%' }} /></div>;
+                  })}
+                </div>
+                <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 12 mois</span><span>Mois actuel</span></div>
               </div>
             </section>
 
@@ -617,7 +631,8 @@ export function AdminPanel({ onExit }: Props) {
                 <p className="mt-1 text-xs leading-relaxed text-slate-500">Calcul basé uniquement sur les paiements manuels enregistrés dans Gestilys. Ce montant n’inclut pas d’éventuels paiements reçus hors de cet historique.</p>
               </div>
               <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-4"><p className="text-xs font-800 text-rose-800">Churn · 30 jours</p><p className="mt-1 text-2xl font-900 text-rose-950">{churnRate30Days}%</p><p className="text-[11px] text-rose-700">{churnedLast30Days} école(s) ayant quitté le statut payant récemment</p></div>
+                <div className="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-4"><p className="text-xs font-800 text-rose-800">Churn · 30 jours</p><p className="mt-1 text-2xl font-900 text-rose-950">{churnRate30Days}%</p><p className="text-[11px] text-rose-700">{churnedLast30Days} école(s) passées d’un abonnement actif à expiré</p></div>
+                <div className="rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-4"><p className="text-xs font-800 text-orange-800">Churn · ce mois</p><p className="mt-1 text-2xl font-900 text-orange-950">{churnStats.churn_rate_this_month}%</p><p className="text-[11px] text-orange-700">{churnStats.churned_this_month} école(s) passée(s) d’actif à expiré</p></div>
                 <div className="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-4"><p className="text-xs font-800 text-sky-800">Abonnements mensuels</p><p className="mt-1 text-2xl font-900 text-sky-950">{monthlyActiveCount}</p><p className="text-[11px] text-sky-700">Comptés dans le MRR uniquement</p></div>
                 <div className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-4"><p className="text-xs font-800 text-violet-800">Abonnements annuels</p><p className="mt-1 text-2xl font-900 text-violet-950">{annualActiveCount}</p><p className="text-[11px] text-violet-700">Comptés dans l’ARR uniquement</p></div>
               </div>
