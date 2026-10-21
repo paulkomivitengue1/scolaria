@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -11,6 +11,7 @@ interface Props {
   open: boolean;
   onToggle: () => void;
   schoolName: string;
+  showAdminEntry: boolean;
 }
 
 interface NavItem {
@@ -54,7 +55,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName }: Props) {
+export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, showAdminEntry }: Props) {
   return (
     <>
       {/* Mobile overlay backdrop */}
@@ -126,6 +127,15 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
 
         {/* Bottom: administration + settings + logout */}
         <div className="shrink-0 border-t border-slate-200 px-3 py-3">
+          {showAdminEntry && (
+            <button
+              onClick={() => { window.location.hash = '/scolaria-admin'; onToggle(); }}
+              className="mb-2 flex w-full items-center gap-3 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400 px-3 py-2.5 text-sm font-extrabold text-blue-950 shadow-md transition hover:brightness-105"
+            >
+              <ShieldCheck className="h-4.5 w-4.5 shrink-0" />
+              <span>Mon panneau admin</span>
+            </button>
+          )}
           <button
             onClick={() => onNavigate('parametres')}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-600 transition ${
