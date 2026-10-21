@@ -79,9 +79,10 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
         <div className="gestilys-sidebar-header flex h-16 shrink-0 items-center justify-between px-5">
           <div className="flex items-center gap-2.5">
             <span className="gestilys-sidebar-logo grid h-9 w-9 place-items-center rounded-xl text-white shadow-card">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#172554" />
-                <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#172554" />
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2 8.5 12 3l10 5.5L12 14 2 8.5Z" fill="#f4bd35" stroke="#fff0a6" strokeWidth="1.2" />
+                <path d="M5 10.5v5.2c4.1 3.1 9.9 3.1 14 0v-5.2" stroke="#ffffff" strokeWidth="1.8" />
+                <path d="M21 9v5" stroke="#f4bd35" strokeWidth="1.8" />
               </svg>
             </span>
             <div className="leading-tight">
