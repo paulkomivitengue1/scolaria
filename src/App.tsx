@@ -275,6 +275,11 @@ export default function App() {
   };
 
   const addStudent = async (st: Student) => {
+    if (isEssentielPaid && students.length >= 150) {
+      setPayError('La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.');
+      setView('dashboard');
+      return;
+    }
     if (!profile?.schoolId) return;
     try {
       const dbId = await addStudentDB(profile.schoolId, st);
@@ -283,6 +288,25 @@ export default function App() {
     } catch (err: any) {
       console.error('Failed to add student:', err);
     }
+  };
+
+  const handleBulkImport = async (rows: ImportedStudentRow[]) => {
+    if (!profile?.schoolId) throw new Error('École non identifiée.');
+    if (isEssentielPaid && students.length + rows.length > 150) {
+      throw new Error(`La formule Essentiel est limitée à 150 élèves. L’école en a déjà ${students.length} ; cet import dépasserait la limite. Aucun élève de ce fichier n’a été importé. Contacte Gestilys pour passer à Premium ou Élite.`);
+    }
+    const imported: Omit<Student, 'id'>[] = rows.map(row => ({
+      ...row,
+      fees: feeConfig.feeTypes.filter(f => f.feeType === 'scolarite').map(f => ({
+        feeType: f.feeType,
+        paymentMode: f.paymentMode,
+        payments: f.paymentMode === 'tranche' ? emptyTranchePayments(feeConfig.tranches.length) : emptySinglePayment(),
+        totalExpected: getFeeTotalForClass(feeConfig.feeConfig, f.feeType, row.className),
+      })),
+    }));
+    await bulkAddStudentsDB(profile.schoolId, imported);
+    setStudents(await loadStudents(profile.schoolId, feeConfig.feeConfig, feeConfig.tranches));
+    setPayError(null);
   };
 
   const openEdit = (s: Student) => {
@@ -515,7 +539,24 @@ export default function App() {
     setSupplies(refreshedSupplies);
   };
 
+  const isPremium = !!profile && (
+    profile.subscriptionStatus === 'trial' ||
+    (profile.subscriptionStatus === 'active' && (
+      (profile.subscriptionAmount ?? 0) >= 20000 ||
+      ['premium', 'élite', 'elite'].includes(profile.plan.toLocaleLowerCase('fr'))
+    ))
+  );
+  const isEssentielPaid = profile?.subscriptionStatus === 'active' && !isPremium;
+  const premiumViews: AppView[] = ['statistiques', 'bulletins', 'stocks', 'depenses', 'enseignants'];
+
   const handleNavigate = (v: AppView) => {
+    if (isEssentielPaid && premiumViews.includes(v)) {
+      setPayError('Cette rubrique est incluse dans les formules Premium et Élite (20 000 ou 30 000 FCFA). Votre formule actuelle est Essentiel. Contactez Gestilys pour changer de formule.');
+      setView('dashboard');
+      setSidebarOpen(false);
+      return;
+    }
+    setPayError(null);
     setView(v);
     setSidebarOpen(false);
     if (v !== 'dashboard' && guideMode !== 'onboarding' && profile?.schoolId) {
