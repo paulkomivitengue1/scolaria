@@ -533,14 +533,15 @@ export default function App() {
     setAddOpen(true);
   };
 
-  // ── Render ────────────────────────────────────────────
+  const isAuthorizedAdmin = user?.email?.trim().toLowerCase() === 'paulkomivitengue@gmail.com' && typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-  if (isAdminPanel) {
-    return <AdminPanel onExit={() => {
-      if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
-      setIsAdminPanel(false);
-    }} />;
-  }
+  useEffect(() => {
+    if (loading || !isAdminPanel || isAuthorizedAdmin) return;
+    if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+    setIsAdminPanel(false);
+  }, [loading, isAdminPanel, isAuthorizedAdmin]);
+
+  // ── Render ────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -548,6 +549,13 @@ export default function App() {
         <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-royal-700 animate-spin" />
       </div>
     );
+  }
+
+  if (isAdminPanel && isAuthorizedAdmin) {
+    return <AdminPanel onExit={() => {
+      if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+      setIsAdminPanel(false);
+    }} />;
   }
 
   if (!user) {
@@ -619,6 +627,7 @@ export default function App() {
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(v => !v)}
         schoolName={profile.schoolName}
+        showAdminEntry={isAuthorizedAdmin}
       />
 
       {/* Main content — offset by sidebar on desktop */}

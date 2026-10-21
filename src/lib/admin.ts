@@ -4,6 +4,8 @@
    to read/write data that school-account RLS blocks.
    ──────────────────────────────────────────────────────── */
 
+import { getSupabase } from './supabase';
+
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scolaria-admin`;
 
 export interface AdminSchool {
@@ -28,6 +30,14 @@ export interface AdminSchool {
   last_os?: string | null;
 }
 
+export interface AdminLoginStats {
+  today: number;
+  this_month: number;
+  last_30_days: number;
+  daily: { date: string; count: number }[];
+  monthly: { month: string; count: number }[];
+}
+
 export interface AdminManualPayment {
   id: string;
   school_id: string;
@@ -44,18 +54,25 @@ export interface AdminManualPayment {
 }
 
 async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'suspend' | 'restore', paid?: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel', trialDays?: number, plans?: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[]) {
+  const { data: { session } } = await getSupabase().auth.getSession();
+  const token = session?.access_token;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${token || key}`,
     },
     body: JSON.stringify({ code, action, paymentId, schoolId, status, paid, plan, billingPeriod, trialDays, plans }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
   return json;
+}
+
+export async function adminGetLoginStats(code: string): Promise<AdminLoginStats> {
+  const { data } = await adminFetch(code, 'get_login_stats');
+  return data || { today: 0, this_month: 0, last_30_days: 0, daily: [], monthly: [] };
 }
 
 export async function adminListSchools(code: string): Promise<AdminSchool[]> {

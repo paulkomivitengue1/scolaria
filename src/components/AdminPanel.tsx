@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
-  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment,
+  adminListSchools, adminListPayments, adminGetLoginStats, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
+  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment, type AdminLoginStats,
 } from '../lib/admin';
 import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 
@@ -86,6 +86,7 @@ export function AdminPanel({ onExit }: Props) {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [selectedSchool]);
   const [payments, setPayments] = useState<AdminManualPayment[]>([]);
+  const [loginStats, setLoginStats] = useState<AdminLoginStats>({ today: 0, this_month: 0, last_30_days: 0, daily: [], monthly: [] });
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
@@ -107,9 +108,10 @@ export function AdminPanel({ onExit }: Props) {
   const loadData = useCallback(async (c: string) => {
     setDataLoading(true);
     try {
-      const [s, p, pricing, trialDuration] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays()]);
+      const [s, p, pricing, trialDuration, activity] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays(), adminGetLoginStats(c)]);
       setSchools(s);
       setPayments(p);
+      setLoginStats(activity);
       setPublicTrialDays(String(trialDuration));
       setPriceInputs({
         Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
@@ -401,13 +403,17 @@ export function AdminPanel({ onExit }: Props) {
   const revenueLast7Days = revenueBetween(weekStart);
   const revenueThisMonth = revenueBetween(monthStart);
   const revenuePreviousMonth = revenueBetween(previousMonthStart, monthStart);
-  const monthlyRecurringRevenue = schools
-    .filter(s => s.subscription_status === 'active')
-    .reduce((sum, s) => {
-      const monthly = Number(s.subscription_amount) || ({ Essentiel: 10000, Premium: 20000, 'Élite': 30000 } as Record<string, number>)[s.plan] || 0;
-      return sum + (s.billing_period === 'annuel' ? monthly / 10 : monthly);
-    }, 0);
-  const annualRecurringRevenue = monthlyRecurringRevenue * 12;
+  const paidSchools = schools.filter(s => s.subscription_status === 'active');
+  const monthlyRecurringRevenue = paidSchools
+    .filter(s => s.billing_period !== 'annuel')
+    .reduce((sum, s) => sum + (Number(s.subscription_amount) || ({ Essentiel: 10000, Premium: 20000, 'Élite': 30000 } as Record<string, number>)[s.plan] || 0), 0);
+  const annualRecurringRevenue = paidSchools
+    .filter(s => s.billing_period === 'annuel')
+    .reduce((sum, s) => sum + (Number(s.subscription_amount) || ({ Essentiel: 10000, Premium: 20000, 'Élite': 30000 } as Record<string, number>)[s.plan] || 0), 0);
+  const monthlyActiveCount = paidSchools.filter(s => s.billing_period !== 'annuel').length;
+  const annualActiveCount = paidSchools.filter(s => s.billing_period === 'annuel').length;
+  const churnedLast30Days = schools.filter(s => s.subscription_status !== 'active' && !!s.last_paid_at && new Date(s.last_paid_at) >= new Date(now.getTime() - 30 * 86400000)).length;
+  const churnRate30Days = paidSchools.length + churnedLast30Days ? Math.round(churnedLast30Days / (paidSchools.length + churnedLast30Days) * 1000) / 10 : 0;
   const planDistribution = (['Essentiel', 'Premium', 'Élite'] as const).map(plan => ({
     plan,
     count: schools.filter(s => s.subscription_status === 'active' && s.plan === plan).length,
@@ -573,6 +579,34 @@ export function AdminPanel({ onExit }: Props) {
               )}
             </section>
 
+            {/* ── Login and reconnection analytics ── */}
+            <section data-admin-module="dashboard" className="mb-6 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-800 p-4 text-white shadow-lg sm:p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-300/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-200"><Activity className="h-3 w-3" /> Activité des utilisateurs</div>
+                  <h2 className="text-lg font-extrabold tracking-tight sm:text-xl">Connexions et reconnexions</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-blue-100">Historique suivi à partir de l’activation de cette version. Les anciennes connexions ne peuvent pas être reconstituées.</p>
+                </div>
+                <button type="button" onClick={() => code && loadData(code)} className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/20"><RefreshCw className="h-3.5 w-3.5" /> Actualiser</button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/15 bg-white/10 p-4"><p className="text-xs font-bold text-blue-100">Aujourd’hui</p><p className="mt-1 text-3xl font-extrabold">{loginStats.today}</p><p className="text-[11px] text-blue-100">Ouvertures de session suivies</p></div>
+                <div className="rounded-xl border border-amber-300/30 bg-amber-300/15 p-4"><p className="text-xs font-bold text-amber-100">Ce mois-ci</p><p className="mt-1 text-3xl font-extrabold text-amber-100">{loginStats.this_month}</p><p className="text-[11px] text-amber-100">Connexions et reconnexions</p></div>
+                <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/15 p-4"><p className="text-xs font-bold text-cyan-100">30 derniers jours</p><p className="mt-1 text-3xl font-extrabold text-cyan-100">{loginStats.last_30_days}</p><p className="text-[11px] text-cyan-100">Événements enregistrés</p></div>
+              </div>
+              <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
+                <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
+                <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
+                  {loginStats.daily.map((day) => {
+                    const max = Math.max(1, ...loginStats.daily.map(item => item.count));
+                    const height = Math.max(4, Math.round(day.count / max * 100));
+                    return <div key={day.date} title={day.date + ': ' + day.count + ' connexion(s)'} className="flex h-full min-w-2 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-amber-400 to-cyan-300" style={{ height: height + '%' }} /></div>;
+                  })}
+                </div>
+                <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 30 jours</span><span>Aujourd’hui</span></div>
+              </div>
+            </section>
+
             {/* ── Payment and revenue reporting ── */}
             <section id="admin-revenus" data-admin-module="revenus" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
               <div className="mb-4">
@@ -581,6 +615,11 @@ export function AdminPanel({ onExit }: Props) {
                 </div>
                 <h2 className="font-display text-lg font-800 tracking-tight text-ink sm:text-xl">Paiements et recettes confirmées</h2>
                 <p className="mt-1 text-xs leading-relaxed text-slate-500">Calcul basé uniquement sur les paiements manuels enregistrés dans Gestilys. Ce montant n’inclut pas d’éventuels paiements reçus hors de cet historique.</p>
+              </div>
+              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-4"><p className="text-xs font-800 text-rose-800">Churn · 30 jours</p><p className="mt-1 text-2xl font-900 text-rose-950">{churnRate30Days}%</p><p className="text-[11px] text-rose-700">{churnedLast30Days} école(s) ayant quitté le statut payant récemment</p></div>
+                <div className="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-4"><p className="text-xs font-800 text-sky-800">Abonnements mensuels</p><p className="mt-1 text-2xl font-900 text-sky-950">{monthlyActiveCount}</p><p className="text-[11px] text-sky-700">Comptés dans le MRR uniquement</p></div>
+                <div className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-4"><p className="text-xs font-800 text-violet-800">Abonnements annuels</p><p className="mt-1 text-2xl font-900 text-violet-950">{annualActiveCount}</p><p className="text-[11px] text-violet-700">Comptés dans l’ARR uniquement</p></div>
               </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
@@ -619,11 +658,11 @@ export function AdminPanel({ onExit }: Props) {
               <div className="mb-4">
                 <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-indigo-700"><TrendingUp className="h-3 w-3" /> Indicateurs business</div>
                 <h2 className="font-display text-lg font-800 tracking-tight text-ink sm:text-xl">Revenus récurrents et activité commerciale</h2>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">MRR/ARR estimés à partir des abonnements marqués actifs. Les recettes encaissées proviennent uniquement de l’historique des paiements validés : ce sont deux indicateurs différents.</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">MRR = montant des abonnements mensuels actifs. ARR = montant des abonnements annuels actifs. Les recettes encaissées proviennent séparément de l’historique des paiements validés.</p>
               </div>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p className="text-xs font-700 text-indigo-800">MRR estimé</p><p className="mt-1 text-xl font-800 text-indigo-950">{formatFCFA(Math.round(monthlyRecurringRevenue))}</p><p className="mt-1 text-[11px] text-indigo-700">Revenu mensuel récurrent</p></div>
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p className="text-xs font-700 text-indigo-800">ARR estimé</p><p className="mt-1 text-xl font-800 text-indigo-950">{formatFCFA(Math.round(annualRecurringRevenue))}</p><p className="mt-1 text-[11px] text-indigo-700">MRR × 12</p></div>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p className="text-xs font-700 text-indigo-800">MRR estimé</p><p className="mt-1 text-xl font-800 text-indigo-950">{formatFCFA(Math.round(monthlyRecurringRevenue))}</p><p className="mt-1 text-[11px] text-indigo-700">Abonnements mensuels actifs · {monthlyActiveCount} école(s)</p></div>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p className="text-xs font-700 text-indigo-800">ARR estimé</p><p className="mt-1 text-xl font-800 text-indigo-950">{formatFCFA(Math.round(annualRecurringRevenue))}</p><p className="mt-1 text-[11px] text-indigo-700">Abonnements annuels actifs · {annualActiveCount} école(s)</p></div>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-700 text-emerald-800">Part des écoles payantes</p><p className="mt-1 text-xl font-800 text-emerald-950">{activeTrialConversion}%</p><p className="mt-1 text-[11px] text-emerald-700">{paidCount} école(s) payante(s) sur {schools.length}</p></div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-700 text-slate-700">Panier moyen validé</p><p className="mt-1 text-xl font-800 text-ink">{formatFCFA(validatedPayments.length ? Math.round(confirmedManualRevenue / validatedPayments.length) : 0)}</p><p className="mt-1 text-[11px] text-slate-500">Par paiement, historique chargé</p></div>
               </div>
