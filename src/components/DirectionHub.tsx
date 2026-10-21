@@ -60,7 +60,7 @@ function normalizeHeader(value: string) {
 function normalizeDate(value: string): string {
   const text = value.trim();
   if (!text) return '';
-  const european = text.match(/^(\d{1,2})[/.\/-](\d{1,2})[/.\/-](\d{4})$/);
+  const european = text.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
   if (european) return european[3] + '-' + european[2].padStart(2, '0') + '-' + european[1].padStart(2, '0');
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
   throw new Error('Date de naissance invalide : « ' + text + ' ». Utilisez JJ/MM/AAAA ou AAAA-MM-JJ.');
