@@ -762,7 +762,7 @@ export default function App() {
                 <section className="animate-fadeIn space-y-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div><div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-teal-700"><UserPlus className="h-3 w-3" /> Scolarité</div><h1 className="font-display text-2xl font-800 tracking-tight text-ink sm:text-3xl">Inscriptions et élèves</h1><p className="mt-1 text-sm text-slate-500">Retrouvez les dossiers des élèves et ajoutez rapidement une inscription.</p></div>
-                    <button onClick={() => setAddOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-3 text-sm font-700 text-white shadow-cardLg"><UserPlus className="h-4 w-4" /> Inscrire un élève</button>
+                    <div className="flex flex-col gap-2 sm:flex-row"><button onClick={() => setBulkImportOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-extrabold text-blue-900 shadow-sm transition hover:bg-blue-100"><FileSpreadsheet className="h-4 w-4" /> Importer Excel</button><button onClick={() => setAddOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-royal-700 to-royal-900 px-4 py-3 text-sm font-700 text-white shadow-cardLg"><UserPlus className="h-4 w-4" /> Inscrire un élève</button></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-teal-700">Total inscrits</p><p className="mt-1 font-display text-2xl font-800 text-ink">{students.length}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-xs font-700 uppercase tracking-wide text-slate-500">Résultats filtrés</p><p className="mt-1 font-display text-2xl font-800 text-ink">{filtered.length}</p></div></div>
                   <div className="space-y-3">
@@ -939,6 +939,12 @@ export default function App() {
         schoolId={profile?.schoolId || ''}
         classNames={classNames}
         onGenerateMatricule={generateMatricule}      />
+      <BulkStudentImportModal
+        open={bulkImportOpen}
+        classNames={classNames}
+        onClose={() => setBulkImportOpen(false)}
+        onImport={handleBulkImport}
+      />
       <EditStudentModal
         student={editStudent}
         open={editOpen}
