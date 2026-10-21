@@ -3,7 +3,7 @@ import {
   BookOpen, CheckCircle2, ChevronLeft, ChevronRight, GraduationCap, Settings2,
   Users, Wallet, X, Sparkles, Trophy, RotateCcw, IdCard, ClipboardList,
   Search, LayoutDashboard, BarChart3, CreditCard, Receipt, Boxes, AlertCircle,
-  UserRound, ArrowUpRight, CircleHelp,
+  UserRound, ArrowUpRight, CircleHelp, ShieldCheck,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
