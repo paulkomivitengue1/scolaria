@@ -851,3 +851,150 @@ h1, h2, h3 {
   .gestilys-direction-hub .text-2xl { font-size: 1.75rem !important; }
   .gestilys-direction-hub button.relative.min-h-28 { min-height: 122px; }
 }
+
+/* HARD CONTRAST OVERRIDE — no pale text on pale surfaces in director tools. */
+.gestilys-direction-hub,
+.gestilys-direction-hub * {
+  text-shadow: none;
+}
+.gestilys-direction-hub {
+  color: #14264f !important;
+  font-size: 17px !important;
+  line-height: 1.55 !important;
+}
+/* Any card or container that used to be plain white gets a visible branded tint. */
+.gestilys-direction-hub .bg-white,
+.gestilys-direction-hub [class~="bg-white"] {
+  background: linear-gradient(135deg,#e2eeff 0%,#f0f6ff 68%,#ffefb8 100%) !important;
+  color: #14264f !important;
+  border-color: #8eafe9 !important;
+}
+/* Gray text on light backgrounds is removed from this workspace. */
+.gestilys-direction-hub .text-slate-950,
+.gestilys-direction-hub .text-slate-900,
+.gestilys-direction-hub .text-slate-800,
+.gestilys-direction-hub .text-slate-700,
+.gestilys-direction-hub .text-slate-600,
+.gestilys-direction-hub .text-slate-500,
+.gestilys-direction-hub .text-gray-950,
+.gestilys-direction-hub .text-gray-900,
+.gestilys-direction-hub .text-gray-800,
+.gestilys-direction-hub .text-gray-700,
+.gestilys-direction-hub .text-gray-600,
+.gestilys-direction-hub .text-gray-500,
+.gestilys-direction-hub .text-blue-950,
+.gestilys-direction-hub .text-blue-900,
+.gestilys-direction-hub .text-blue-800,
+.gestilys-direction-hub .text-blue-700,
+.gestilys-direction-hub .text-amber-950,
+.gestilys-direction-hub .text-amber-900,
+.gestilys-direction-hub .text-amber-800,
+.gestilys-direction-hub .text-emerald-950,
+.gestilys-direction-hub .text-emerald-900,
+.gestilys-direction-hub .text-pink-950,
+.gestilys-direction-hub .text-pink-900 {
+  color: #14264f !important;
+  font-weight: 750 !important;
+}
+/* Small text should not become tiny or thin. */
+.gestilys-direction-hub .text-xs {
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  font-weight: 750 !important;
+}
+.gestilys-direction-hub .text-sm {
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  font-weight: 700 !important;
+}
+.gestilys-direction-hub .text-lg { font-size: 23px !important; font-weight: 850 !important; }
+.gestilys-direction-hub .text-xl { font-size: 27px !important; font-weight: 900 !important; }
+.gestilys-direction-hub .text-2xl { font-size: 31px !important; font-weight: 900 !important; }
+.gestilys-direction-hub .text-3xl { font-size: 36px !important; font-weight: 950 !important; }
+/* No pale/white button fills: all buttons use a strong navy-blue base and white text. */
+.gestilys-direction-hub button:not(.relative.min-h-28) {
+  background: linear-gradient(120deg,#172554 0%,#1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid #1e40af !important;
+  font-weight: 850 !important;
+  text-shadow: none !important;
+  box-shadow: 0 4px 12px rgba(23,37,84,.16);
+}
+.gestilys-direction-hub button:not(.relative.min-h-28) svg,
+.gestilys-direction-hub button:not(.relative.min-h-28) span,
+.gestilys-direction-hub button:not(.relative.min-h-28) p {
+  color: #ffffff !important;
+}
+.gestilys-direction-hub button:not(.relative.min-h-28):hover {
+  background: linear-gradient(120deg,#0f1c43 0%,#1e40af 100%) !important;
+  border-color: #f4bd35 !important;
+}
+.gestilys-direction-hub button:disabled {
+  color: #ffffff !important;
+  opacity: .78 !important;
+}
+/* Module tiles: pale blue/gold when idle, strong blue when selected, always readable. */
+.gestilys-direction-hub button.relative.min-h-28 {
+  background: linear-gradient(135deg,#d9e8ff 0%,#edf4ff 60%,#ffe9a3 100%) !important;
+  color: #14264f !important;
+  border: 2px solid #789de3 !important;
+  box-shadow: 0 5px 15px rgba(23,37,84,.12) !important;
+}
+.gestilys-direction-hub button.relative.min-h-28 p,
+.gestilys-direction-hub button.relative.min-h-28 svg {
+  color: #14264f !important;
+  font-weight: 900 !important;
+}
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 {
+  background: linear-gradient(125deg,#172554 0%,#1d4ed8 100%) !important;
+  border: 2px solid #f4bd35 !important;
+}
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700 p,
+.gestilys-direction-hub button.relative.min-h-28.border-blue-700 svg,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 p,
+.gestilys-direction-hub button.relative.min-h-28.bg-blue-50 svg {
+  color: #ffffff !important;
+}
+/* Inputs and notices get their own strong, consistent contrast. */
+.gestilys-direction-hub input,
+.gestilys-direction-hub select,
+.gestilys-direction-hub textarea {
+  background: #e4efff !important;
+  color: #14264f !important;
+  border: 2px solid #527dcc !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+}
+.gestilys-direction-hub input::placeholder,
+.gestilys-direction-hub textarea::placeholder {
+  color: #33466d !important;
+  opacity: 1 !important;
+}
+.gestilys-direction-hub [role="status"] {
+  background: linear-gradient(120deg,#dbeafe 0%,#fff0b3 100%) !important;
+  color: #14264f !important;
+  border: 2px solid #527dcc !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+}
+.gestilys-direction-hub table th,
+.gestilys-direction-hub table td {
+  color: #14264f !important;
+  font-weight: 750 !important;
+}
+.gestilys-direction-hub .bg-slate-50,
+.gestilys-direction-hub .bg-slate-100,
+.gestilys-direction-hub .bg-gray-50,
+.gestilys-direction-hub .bg-gray-100 {
+  background-color: #dceaff !important;
+}
+.gestilys-direction-hub .bg-emerald-50 { background-color: #d1fae5 !important; }
+.gestilys-direction-hub .bg-pink-50 { background-color: #fce7f3 !important; }
+.gestilys-direction-hub .bg-amber-50 { background-color: #fff0b3 !important; }
+.gestilys-direction-hub .bg-blue-50 { background-color: #dceaff !important; }
+@media (max-width: 639px) {
+  .gestilys-direction-hub { font-size: 16px !important; }
+  .gestilys-direction-hub .text-xs { font-size: 14px !important; }
+  .gestilys-direction-hub button.relative.min-h-28 { min-height: 132px; }
+}
