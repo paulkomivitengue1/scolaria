@@ -533,7 +533,7 @@ export default function App() {
     setAddOpen(true);
   };
 
-  const isAuthorizedAdmin = user?.email?.trim().toLowerCase() === 'paulkomivitengue@gmail.com';
+  const isAuthorizedAdmin = user?.email?.trim().toLowerCase() === 'paulkomivitengue@gmail.com' && typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
   useEffect(() => {
     if (loading || !isAdminPanel || isAuthorizedAdmin) return;
