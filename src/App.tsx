@@ -925,19 +925,55 @@ function LandingOrAuth(_: { onEnterAuth: () => void }) {
 function SchoolSuspended({ schoolName, onLogout }: { schoolName: string; onLogout: () => void }) {
   const message = encodeURIComponent(`Bonjour Gestilys, l’accès de l’école « ${schoolName} » est suspendu. Pouvez-vous m’aider à rétablir l’accès ?`);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
-      <div className="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900 p-6 text-center shadow-2xl sm:p-10">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-red-500/15 text-red-300"><Lock className="h-8 w-8" /></div>
-        <h1 className="mt-6 text-3xl font-extrabold text-white">Accès suspendu</h1>
-        <p className="mt-3 text-base leading-7 text-slate-200">L’accès à Gestilys pour <strong className="text-white">{schoolName}</strong> a été suspendu par l’administration.</p>
-        <p className="mt-2 text-sm leading-6 text-slate-300">Vos données sont conservées. Contactez-nous pour comprendre la situation ou demander le rétablissement de l’accès.</p>
-        <a href={`https://wa.me/22373369410?text=${message}`} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 font-bold text-slate-950 hover:bg-emerald-300">Contacter Gestilys sur WhatsApp</a>
-        <button onClick={onLogout} className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-800 px-5 py-2.5 font-semibold text-white hover:bg-slate-700"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+    <div className="gestilys-suspended-page min-h-screen px-4 py-6 sm:px-6 sm:py-10">
+      <style>{`
+        .gestilys-suspended-page { --gs-navy:#172554; --gs-blue:#1d4ed8; --gs-gold:#f4bd35; position:relative; isolation:isolate; display:flex; align-items:center; justify-content:center; overflow:hidden; background:radial-gradient(ellipse at 8% 10%,rgba(59,130,246,.24),transparent 32%),radial-gradient(ellipse at 95% 3%,rgba(244,189,53,.24),transparent 30%),linear-gradient(145deg,#101c42 0%,#172554 48%,#1e40af 115%); }
+        .gestilys-suspended-page:before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px); background-size:32px 32px; mask-image:linear-gradient(to bottom,black,transparent 88%); }
+        .gs-suspended-shell { width:min(650px,100%); overflow:hidden; border:1px solid rgba(255,255,255,.28); border-radius:28px; background:#fff; box-shadow:0 30px 90px rgba(2,6,23,.4); }
+        .gs-suspended-top { position:relative; overflow:hidden; padding:22px; color:#fff; background:linear-gradient(115deg,#172554 0%,#1d4ed8 72%,#0f766e 135%); }
+        .gs-suspended-top:after { content:""; position:absolute; right:-50px; top:-100px; width:210px; height:210px; border:24px solid rgba(255,255,255,.10); border-radius:50%; pointer-events:none; }
+        .gs-suspended-brand { display:flex; align-items:center; gap:11px; font-weight:950; letter-spacing:-.04em; font-size:22px; }
+        .gs-suspended-brand-mark { display:grid; place-items:center; width:43px; height:43px; flex:none; border:1px solid rgba(255,255,255,.35); border-radius:14px; color:#172554; background:linear-gradient(135deg,#ffe89a,#f4bd35); box-shadow:0 8px 22px rgba(244,189,53,.2); }
+        .gs-suspended-badge { display:inline-flex; align-items:center; gap:7px; margin-top:20px; border:1px solid #fecaca; border-radius:999px; padding:7px 11px; color:#991b1b; background:#fff1f2; font-size:11px; font-weight:950; letter-spacing:.08em; text-transform:uppercase; }
+        .gs-suspended-title { margin-top:12px; color:#fff!important; font-size:clamp(27px,5vw,38px); font-weight:950; letter-spacing:-.045em; line-height:1.08; }
+        .gs-suspended-top-copy { margin-top:9px; max-width:510px; color:#eff6ff!important; font-size:13px; line-height:1.7; }
+        .gs-suspended-body { padding:20px; color:#172554; }
+        .gs-suspended-school { border:1px solid #bfdbfe; border-radius:16px; padding:14px; background:linear-gradient(120deg,#eff6ff,#fff 75%); }
+        .gs-suspended-school-label { color:#1d4ed8!important; font-size:10px; font-weight:950; letter-spacing:.12em; text-transform:uppercase; }
+        .gs-suspended-school-name { margin-top:4px; color:#172554!important; overflow-wrap:anywhere; font-size:17px; font-weight:900; }
+        .gs-suspended-copy { color:#334155!important; font-size:13px; line-height:1.75; }
+        .gs-suspended-info { display:flex; align-items:flex-start; gap:10px; margin-top:15px; border:1px solid #fde68a; border-radius:15px; padding:13px; color:#713f12; background:#fffbeb; }
+        .gs-suspended-info p { color:#713f12!important; font-size:12px; line-height:1.65; }
+        .gs-suspended-primary { display:flex; align-items:center; justify-content:center; gap:9px; width:100%; min-height:50px; margin-top:18px; border:1px solid #047857; border-radius:14px; padding:12px 16px; color:#fff!important; background:linear-gradient(110deg,#059669,#047857); box-shadow:0 10px 22px rgba(5,150,105,.2); font-size:13px; font-weight:900; text-decoration:none; transition:transform .18s,filter .18s; }
+        .gs-suspended-primary:hover { transform:translateY(-1px); filter:brightness(1.04); }
+        .gs-suspended-secondary { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:46px; margin-top:9px; border:1px solid #cbd5e1; border-radius:13px; padding:10px 16px; color:#172554!important; background:#fff; font-size:13px; font-weight:850; }
+        .gs-suspended-secondary:hover { background:#f8fafc; }
+        .gs-suspended-footer { margin-top:15px; text-align:center; color:#cbd5e1; font-size:11px; line-height:1.6; }
+        @media(min-width:560px) { .gs-suspended-top { padding:28px 30px; } .gs-suspended-body { padding:26px 30px 28px; } }
+        @media(prefers-reduced-motion:reduce) { .gs-suspended-primary { transition:none; } .gs-suspended-primary:hover { transform:none; } }
+      `}</style>
+      <div className="gs-suspended-shell">
+        <header className="gs-suspended-top">
+          <div className="gs-suspended-brand"><span className="gs-suspended-brand-mark"><GraduationCap className="h-6 w-6" /></span><span>Gestilys<span className="text-[#f4bd35]">.</span></span></div>
+          <div className="gs-suspended-badge"><Lock className="h-3.5 w-3.5" /> Accès temporairement suspendu</div>
+          <h1 className="gs-suspended-title">Retrouvons l’accès à votre école.</h1>
+          <p className="gs-suspended-top-copy">Votre espace Gestilys est actuellement suspendu par l’administration. Notre équipe peut vous aider à comprendre la situation et à examiner la réactivation.</p>
+        </header>
+        <main className="gs-suspended-body">
+          <div className="gs-suspended-school">
+            <p className="gs-suspended-school-label">Établissement concerné</p>
+            <p className="gs-suspended-school-name">{schoolName || 'Votre établissement'}</p>
+          </div>
+          <p className="gs-suspended-copy mt-4">Les données de votre école sont conservées. Contactez l’équipe Gestilys pour connaître la raison de la suspension ou demander un rétablissement de l’accès.</p>
+          <div className="gs-suspended-info"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" /><p><strong>Besoin d’aide ?</strong><br />Envoyez-nous un message. Indiquez le nom de l’établissement pour accélérer la vérification.</p></div>
+          <a href={`https://wa.me/22373369410?text=${message}`} target="_blank" rel="noreferrer" className="gs-suspended-primary"><Phone className="h-4 w-4" /> Contacter Gestilys sur WhatsApp <ArrowRight className="h-4 w-4" /></a>
+          <button onClick={onLogout} className="gs-suspended-secondary"><LogOut className="h-4 w-4" /> Se déconnecter</button>
+        </main>
       </div>
+      <p className="gs-suspended-footer">Gestilys · Gestion scolaire simplifiée · Vos données restent associées à votre établissement.</p>
     </div>
   );
 }
-
 function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: string; schoolEmail: string; onLogout: () => void }) {
   const [billingPeriod, setBillingPeriod] = useState<'mensuel' | 'annuel'>('annuel');
   const plans = [
