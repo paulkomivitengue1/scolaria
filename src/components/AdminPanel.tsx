@@ -73,6 +73,9 @@ export function AdminPanel({ onExit }: Props) {
 
   const [schools, setSchools] = useState<AdminSchool[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<AdminSchool | null>(null);
+  const [deleteConfirmSchoolId, setDeleteConfirmSchoolId] = useState<string | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedSchool) return;
@@ -178,16 +181,17 @@ export function AdminPanel({ onExit }: Props) {
   };
 
   const deleteSchool = async (school: AdminSchool) => {
-    const confirmation = window.prompt(`Suppression définitive de « ${school.name} » et de toutes ses données. Pour confirmer, tapez SUPPRIMER :`);
-    if (confirmation !== 'SUPPRIMER') { showToast('Suppression annulée'); return; }
-    setActionLoading(school.id);
+    if (deleteConfirmSchoolId !== school.id) {
+      setDeleteConfirmSchoolId(school.id); setDeleteConfirmText(''); setDeleteError(null); return;
+    }
+    if (deleteConfirmText.trim() !== 'SUPPRIMER') { setDeleteError('Tape exactement SUPPRIMER pour confirmer.'); return; }
+    setActionLoading(school.id); setDeleteError(null);
     try {
       await adminDeleteSchool(code, school.id);
       const refreshedSchools = await adminListSchools(code);
-      setSchools(refreshedSchools);
-      setSelectedSchool(null);
+      setSchools(refreshedSchools); setSelectedSchool(null); setDeleteConfirmSchoolId(null); setDeleteConfirmText('');
       showToast(`École « ${school.name} » supprimée`);
-    } catch (err: any) { showToast(err.message || 'Impossible de supprimer cette école'); }
+    } catch (err: any) { setDeleteError(err.message || 'Impossible de supprimer cette école. Aucune confirmation de suppression reçue.'); }
     finally { setActionLoading(null); }
   };
 
@@ -986,6 +990,7 @@ export function AdminPanel({ onExit }: Props) {
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Nombre d’élèves</p><p className="mt-1 text-xl font-800 text-ink">{selectedSchool.student_count}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Abonnement</p><p className="mt-1 font-700 text-ink">{selectedSchool.plan} · {statusBadge(selectedSchool.subscription_status, selectedSchool.trial_ends_at).label}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Inscription</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.created_at)}</p></div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 sm:col-span-2"><p className="text-xs font-700 text-blue-800">Dernier appareil connu</p><p className="mt-1 font-800 text-blue-950">{selectedSchool.last_device || 'Pas encore détecté'}</p><p className="mt-1 text-xs text-blue-800">{[selectedSchool.last_browser, selectedSchool.last_os].filter(Boolean).join(' · ') || 'Les informations apparaîtront après la prochaine connexion du directeur.'}</p><p className="mt-1 text-xs text-blue-800">Dernière activité : {selectedSchool.last_seen_at ? new Date(selectedSchool.last_seen_at).toLocaleString('fr-FR') : 'Aucune donnée disponible'}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Fin de l’essai</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.trial_ends_at)}</p></div>
             </div>
             <div className="mt-4 rounded-xl border border-slate-200 p-4">
@@ -1014,8 +1019,9 @@ export function AdminPanel({ onExit }: Props) {
               </div>
             </div>
             {selectedSchool.subscription_status !== 'active' && <button type="button" onClick={() => void setSchoolPaidStatus(selectedSchool.id, true, editPlan, editPeriod)} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white disabled:opacity-50">{actionLoading === selectedSchool.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />} Confirmer l’argent reçu et activer ce forfait</button>}
-            <button type="button" onClick={() => void deleteSchool(selectedSchool)} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-800 text-red-700 disabled:opacity-50"><X className="h-4 w-4" /> Supprimer définitivement cette école</button>
-            <p className="mt-1 text-xs text-red-700">Cette action supprime aussi les données liées à cette école. Elle est irréversible.</p>
+            <button type="button" onClick={() => { if (deleteConfirmSchoolId === selectedSchool.id) { setDeleteConfirmSchoolId(null); setDeleteConfirmText(''); setDeleteError(null); } else void deleteSchool(selectedSchool); }} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-800 text-red-700 disabled:opacity-50"><X className="h-4 w-4" /> {deleteConfirmSchoolId === selectedSchool.id ? 'Annuler la suppression' : 'Préparer la suppression'}</button>
+            <p className="mt-1 text-xs text-red-700">La suppression efface définitivement les données liées à cette école. Vérifie bien le nom avant de confirmer.</p>
+            {deleteConfirmSchoolId === selectedSchool.id && <div className="mt-3 rounded-xl border-2 border-red-200 bg-red-50 p-4"><p className="text-sm font-800 text-red-900">Confirmer la suppression de « {selectedSchool.name} »</p><p className="mt-1 text-xs text-red-800">Cette action est irréversible. Tape SUPPRIMER dans le champ ci-dessous.</p><input type="text" value={deleteConfirmText} onChange={e => { setDeleteConfirmText(e.target.value); setDeleteError(null); }} placeholder="Tape SUPPRIMER" autoComplete="off" className="mt-3 h-11 w-full rounded-lg border border-red-300 bg-white px-3 text-sm text-slate-900" /><button type="button" onClick={() => void deleteSchool(selectedSchool)} disabled={actionLoading === selectedSchool.id || deleteConfirmText.trim() !== 'SUPPRIMER'} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2 text-sm font-800 text-white disabled:cursor-not-allowed disabled:opacity-50">{actionLoading === selectedSchool.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />} {actionLoading === selectedSchool.id ? 'Suppression en cours…' : 'Confirmer la suppression définitive'}</button>{deleteError && <p role="alert" className="mt-3 rounded-lg bg-white p-3 text-sm font-600 text-red-800">{deleteError}</p>}</div>}
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {selectedSchool.phone && <a href={buildSchoolWhatsAppUrl(selectedSchool)} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Relancer sur WhatsApp</a>}
               <button type="button" onClick={() => { const s=selectedSchool; setSelectedSchool(null); void setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend'); }} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-800 text-red-700">{selectedSchool.subscription_status === 'suspended' ? 'Rétablir l’accès' : 'Suspendre l’école'}</button>
@@ -1024,7 +1030,7 @@ export function AdminPanel({ onExit }: Props) {
         </div>
       )}
       {toast && (
-        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
+        <div className="fixed bottom-5 left-1/2 z-[120] -translate-x-1/2 animate-fadeUp rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-700 text-emerald-700 shadow-cardLg">
           <span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4" /> {toast}</span>
         </div>
       )}
