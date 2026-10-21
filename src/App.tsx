@@ -544,12 +544,10 @@ export default function App() {
   };
 
   const isAdminEmail = (user?.email || '').trim().toLowerCase() === 'paulkomivitengue@gmail.com';
-  const isMobileDevice = typeof navigator !== 'undefined' && (
-    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
-    Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile) ||
-    (navigator.maxTouchPoints > 0 && typeof window !== 'undefined' && window.innerWidth < 900)
-  );
-  const isAuthorizedAdmin = isAdminEmail && isMobileDevice;
+  // The signed-in admin account controls visibility in the app. Device user-agent
+  // detection is not reliable for installed PWAs, so it must not hide the entry.
+  // The Supabase admin function still independently checks the account and device.
+  const isAuthorizedAdmin = isAdminEmail;
 
   useEffect(() => {
     if (loading || !isAdminPanel || isAuthorizedAdmin) return;
@@ -593,7 +591,7 @@ export default function App() {
           </p>
           {!loading && (
             <>
-              {isAuthorizedAdmin && (
+              {isAdminEmail && (
                 <button
                   type="button"
                   onClick={() => setIsAdminPanel(true)}
@@ -634,11 +632,21 @@ export default function App() {
   }
 
   if (profile.subscriptionStatus === 'suspended') {
-    return <SchoolSuspended schoolName={profile.schoolName} onLogout={handleLogout} />;
+    return (
+      <div className="min-h-screen">
+        <SchoolSuspended schoolName={profile.schoolName} onLogout={handleLogout} />
+        {isAdminEmail && <button type="button" onClick={() => setIsAdminPanel(true)} className="fixed bottom-4 right-4 z-50 rounded-xl border-2 border-amber-400 bg-blue-900 px-4 py-3 font-extrabold text-white shadow-xl">Ouvrir le panneau admin</button>}
+      </div>
+    );
   }
 
   if (isTrialExpired || profile.subscriptionStatus === 'expired') {
-    return <TrialExpired schoolName={profile.schoolName} schoolEmail={user.email || ''} onLogout={handleLogout} />;
+    return (
+      <div className="min-h-screen">
+        <TrialExpired schoolName={profile.schoolName} schoolEmail={user.email || ''} onLogout={handleLogout} />
+        {isAdminEmail && <button type="button" onClick={() => setIsAdminPanel(true)} className="fixed bottom-4 right-4 z-50 rounded-xl border-2 border-amber-400 bg-blue-900 px-4 py-3 font-extrabold text-white shadow-xl">Ouvrir le panneau admin</button>}
+      </div>
+    );
   }
 
   return (
@@ -650,7 +658,7 @@ export default function App() {
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(v => !v)}
         schoolName={profile.schoolName}
-        showAdminEntry={isAuthorizedAdmin}
+        showAdminEntry={isAdminEmail}
         lockedViews={isEssentielPaid ? premiumViews : []}
         onOpenAdmin={() => {
           setSidebarOpen(false);
