@@ -596,6 +596,7 @@ export function AdminPanel({ onExit }: Props) {
                 <div className="rounded-xl border border-amber-300/30 bg-amber-300/15 p-4"><p className="text-xs font-bold text-amber-100">Ce mois-ci</p><p className="mt-1 text-3xl font-extrabold text-amber-100">{loginStats.this_month}</p><p className="text-[11px] text-amber-100">Connexions et reconnexions</p></div>
                 <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/15 p-4"><p className="text-xs font-bold text-cyan-100">30 derniers jours</p><p className="mt-1 text-3xl font-extrabold text-cyan-100">{loginStats.last_30_days}</p><p className="text-[11px] text-cyan-100">Événements enregistrés</p></div>
               </div>
+              <p className="mt-3 text-[11px] leading-relaxed text-blue-100">Le suivi des connexions et du churn commence avec cette version ; les événements antérieurs ne peuvent pas être reconstitués.</p>
               <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
                 <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
                 <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
@@ -631,6 +632,7 @@ export function AdminPanel({ onExit }: Props) {
               </div>
               <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-4"><p className="text-xs font-800 text-rose-800">Churn · 30 jours</p><p className="mt-1 text-2xl font-900 text-rose-950">{churnRate30Days}%</p><p className="text-[11px] text-rose-700">{churnedLast30Days} école(s) passées d’un abonnement actif à expiré</p></div>
+                <div className="rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-4"><p className="text-xs font-800 text-orange-800">Churn · ce mois</p><p className="mt-1 text-2xl font-900 text-orange-950">{churnStats.churn_rate_this_month}%</p><p className="text-[11px] text-orange-700">{churnStats.churned_this_month} école(s) passée(s) d’actif à expiré</p></div>
                 <div className="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-4"><p className="text-xs font-800 text-sky-800">Abonnements mensuels</p><p className="mt-1 text-2xl font-900 text-sky-950">{monthlyActiveCount}</p><p className="text-[11px] text-sky-700">Comptés dans le MRR uniquement</p></div>
                 <div className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-4"><p className="text-xs font-800 text-violet-800">Abonnements annuels</p><p className="mt-1 text-2xl font-900 text-violet-950">{annualActiveCount}</p><p className="text-[11px] text-violet-700">Comptés dans l’ARR uniquement</p></div>
               </div>
