@@ -92,13 +92,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // onAuthStateChange runs synchronously — wrap async work in IIFE to avoid deadlock
-    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = getSupabase().auth.onAuthStateChange((event, session) => {
       (async () => {
         if (session?.user) {
           setLoading(true);
           setUser(session.user);
           try {
             await fetchProfile(session.user);
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+              const eventType = event === 'SIGNED_IN' ? 'sign_in' : 'session_restore';
+              void getSupabase().rpc('record_my_login', { p_event_type: eventType }).then(({ error: loginError }) => {
+                if (loginError) console.warn('Impossible d’enregistrer cette connexion :', loginError.message);
+              });
+            }
           } finally {
             setLoading(false);
           }
