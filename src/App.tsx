@@ -274,6 +274,12 @@ export default function App() {
 
   const addStudent = async (st: Student) => {
     if (!profile?.schoolId) return;
+    const plan = (profile.plan || 'Essentiel').toLocaleLowerCase();
+    const isEssentiel = plan.includes('essentiel') || plan.includes('10');
+    if (isEssentiel && students.length >= 150) {
+      setPayError('Le forfait Essentiel est limité à 150 élèves. Pour inscrire davantage d’élèves, passez à Premium ou Élite.');
+      return;
+    }
     try {
       const dbId = await addStudentDB(profile.schoolId, st);
       setStudents(p => [{ ...st, id: dbId }, ...p]);
@@ -514,6 +520,14 @@ export default function App() {
   };
 
   const handleNavigate = (v: AppView) => {
+    const plan = (profile?.plan || 'Essentiel').toLocaleLowerCase();
+    const premiumViews: AppView[] = ['statistiques', 'bulletins', 'stocks', 'depenses'];
+    const hasPremium = plan.includes('premium') || plan.includes('élite') || plan.includes('elite') || plan.includes('30');
+    if (premiumViews.includes(v) && !hasPremium) {
+      setPayError('Ce module est inclus dans Premium (20 000 FCFA/mois) et Élite (30 000 FCFA/mois). Votre forfait actuel : Essentiel.');
+      setSidebarOpen(false);
+      return;
+    }
     setView(v);
     setSidebarOpen(false);
     if (v !== 'dashboard' && guideMode !== 'onboarding' && profile?.schoolId) {
