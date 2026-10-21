@@ -26,9 +26,10 @@ Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get("Authorization") || "";
   const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
-  const clientUserAgent = req.headers.get("user-agent") || "";
-  const mobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(clientUserAgent);
-  if (!mobileDevice || authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
+  // Do not use the User-Agent as an authorization factor: Android browsers in
+  // desktop-site mode report a desktop UA and falsely lock out the real admin.
+  // Access remains restricted by the exact admin account and the secret code.
+  if (authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
    return respond({error:"Accès administrateur réservé au compte autorisé."},403);
   }
   if(String(b.code ?? '').trim() !== String(DEV_CODE ?? '').trim()) return respond({error:"Code développeur invalide"},401);
