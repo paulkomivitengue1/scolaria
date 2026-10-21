@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, CalendarCheck, Check, ClipboardList, FileSpreadsheet,
-  MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download,
+  MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download, Users,
 } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
@@ -297,6 +297,16 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
           <div className="rounded-xl bg-emerald-50 p-3"><p className="text-xs font-bold text-emerald-900">Dépenses</p><p className="mt-1 text-xl font-black text-emerald-950">{formatFCFA(expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0))}</p><p className="mt-1 text-xs font-semibold text-emerald-900">Total des dépenses enregistrées.</p></div>
           <div className="rounded-xl bg-pink-50 p-3"><p className="text-xs font-bold text-pink-900">Présences aujourd’hui</p><p className="mt-1 text-2xl font-black text-pink-950">{presentToday}</p><button className="mt-2 text-sm font-extrabold text-pink-800 underline" onClick={() => handleTab('attendance', !premium)}>Ouvrir le registre</button></div>
         </div></div>
+      </div>}
+
+      {!loading && tab === 'overview' && <div className={panelClass}>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-black text-blue-950">Effectifs par classe</h2><p className="mt-1 text-sm font-semibold text-slate-700">Répartition calculée à partir des fiches élèves enregistrées.</p></div><button type="button" className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('effectifs-gestilys.csv', [['Classe','Effectif'], ...Array.from(new Set([...classNames, ...students.map(student => student.className)])).sort((a,b) => a.localeCompare(b,'fr')).map(name => [name, students.filter(student => student.className === name).length])])}><Download className="h-4 w-4" />Exporter les effectifs</button></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{Array.from(new Set([...classNames, ...students.map(student => student.className).filter(Boolean)])).sort((a,b) => a.localeCompare(b,'fr')).map(className => {
+          const count = students.filter(student => student.className === className).length;
+          const percent = students.length ? Math.round(count / students.length * 100) : 0;
+          return <div key={className} className="rounded-xl border border-blue-100 bg-blue-50/70 p-3"><div className="flex items-start justify-between gap-2"><p className="text-sm font-extrabold text-blue-950">{className}</p><span className="rounded-full bg-white px-2 py-1 text-xs font-black text-blue-900">{count}</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-700 to-amber-400" style={{ width: percent + '%' }} /></div><p className="mt-1 text-xs font-semibold text-slate-700">{percent}% des élèves enregistrés</p></div>;
+        })}</div>
+        <button type="button" className={buttonClass + ' mt-4'} onClick={() => onNavigate('inscriptions')}><Users className="h-4 w-4" />Gérer les inscriptions</button>
       </div>}
 
       {!loading && tab === 'cash' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
