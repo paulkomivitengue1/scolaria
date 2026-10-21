@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -12,6 +12,7 @@ interface Props {
   onToggle: () => void;
   schoolName: string;
   showAdminEntry: boolean;
+  onOpenAdmin: () => void;
 }
 
 interface NavItem {
@@ -55,7 +56,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, showAdminEntry }: Props) {
+export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, showAdminEntry, onOpenAdmin }: Props) {
   return (
     <>
       {/* Mobile overlay backdrop */}
@@ -78,7 +79,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
           <div className="flex items-center gap-2.5">
             <span className="gestilys-sidebar-logo grid h-9 w-9 place-items-center rounded-xl text-white shadow-card">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#f5c518" />
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#172554" />
                 <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#f5c518" />
               </svg>
             </span>
@@ -125,7 +126,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
         <div className="gestilys-sidebar-footer shrink-0 px-3 py-3">
           {showAdminEntry && (
             <button
-              onClick={() => { window.location.hash = '/scolaria-admin'; onToggle(); }}
+              onClick={onOpenAdmin}
               className="gestilys-admin-entry mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-extrabold shadow-md transition hover:brightness-105"
             >
               <ShieldCheck className="h-4.5 w-4.5 shrink-0" />
