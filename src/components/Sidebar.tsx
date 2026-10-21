@@ -11,6 +11,7 @@ interface Props {
   open: boolean;
   onToggle: () => void;
   schoolName: string;
+  lockedViews?: AppView[];
 }
 
 interface NavItem {
@@ -54,7 +55,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName }: Props) {
+export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, lockedViews = [] }: Props) {
   return (
     <>
       {/* Mobile overlay backdrop */}
