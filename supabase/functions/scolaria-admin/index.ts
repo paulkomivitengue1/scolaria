@@ -54,6 +54,11 @@ Deno.serve(async (req: Request) => {
     if(error)throw error;
     return respond({ok:true,plans:normalized});
    }
+   case "get_subscription_churn_stats": {
+    const {data,error}=await supabase.rpc("admin_subscription_churn_stats");
+    if(error)throw error;
+    return respond({data});
+   }
    case "get_login_stats": {
     const {data,error}=await supabase.rpc("admin_login_stats");
     if(error)throw error;
