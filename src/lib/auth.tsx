@@ -14,6 +14,8 @@ export interface SchoolProfile {
   role: string;
   trialEndsAt: string | null;
   subscriptionStatus: string;
+  plan: string;
+  subscriptionAmount: number | null;
 }
 
 interface AuthContextValue {
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function fetchProfile(u: User): Promise<SchoolProfile | null> {
     const { data, error } = await getSupabase()
       .from('users')
-      .select('school_id, role, email, schools(name, director_name, trial_ends_at, subscription_status)')
+      .select('school_id, role, email, schools(name, director_name, trial_ends_at, subscription_status, plan, subscription_amount)')
       .eq('auth_uid', u.id)
       .maybeSingle();
 
@@ -72,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.role,
       trialEndsAt: school?.trial_ends_at || null,
       subscriptionStatus: school?.subscription_status || 'trial',
+      plan: school?.plan || 'Essentiel',
+      subscriptionAmount: school?.subscription_amount ?? null,
     };
     setProfile(p);
     return p;
