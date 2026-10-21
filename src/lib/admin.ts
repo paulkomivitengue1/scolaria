@@ -30,6 +30,14 @@ export interface AdminSchool {
   last_os?: string | null;
 }
 
+export interface AdminChurnStats {
+  churned_30_days: number;
+  churn_rate_30_days: number;
+  churned_this_month: number;
+  churn_rate_this_month: number;
+  tracking_started_at: string | null;
+}
+
 export interface AdminLoginStats {
   today: number;
   this_month: number;
@@ -68,6 +76,11 @@ async function adminFetch(code: string, action: string, paymentId?: string, scho
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
   return json;
+}
+
+export async function adminGetChurnStats(code: string): Promise<AdminChurnStats> {
+  const { data } = await adminFetch(code, 'get_subscription_churn_stats');
+  return data || { churned_30_days: 0, churn_rate_30_days: 0, churned_this_month: 0, churn_rate_this_month: 0, tracking_started_at: null };
 }
 
 export async function adminGetLoginStats(code: string): Promise<AdminLoginStats> {
