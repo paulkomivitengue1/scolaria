@@ -509,7 +509,10 @@ export default function App() {
     setSupplies(refreshedSupplies);
   };
 
-  const isPremium = !!profile && (profile.subscriptionStatus === 'trial' || (profile.subscriptionStatus === 'active' && ((profile.subscriptionAmount ?? 0) >= 20000 || ['premium', 'élite', 'elite'].includes((profile.plan || '').toLocaleLowerCase('fr')))));
+  const normalizedPlan = (profile?.plan || 'Essentiel').trim().toLocaleLowerCase('fr');
+  // Use the selected plan name, not the amount paid: an annual Essentiel payment
+  // (100,000 FCFA) must not unlock Premium modules just because its total exceeds 20,000.
+  const isPremium = !!profile && (profile.subscriptionStatus === 'trial' || (profile.subscriptionStatus === 'active' && ['premium', 'élite', 'elite'].includes(normalizedPlan)));
   const isEssentielPaid = profile?.subscriptionStatus === 'active' && !isPremium;
   const premiumViews: AppView[] = ['statistiques', 'bulletins', 'stocks', 'depenses', 'enseignants'];
 
