@@ -138,12 +138,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data.user) return { error: "Erreur inattendue lors de l'inscription." };
 
     // Create the school + user profile + seed default data atomically
-    const { error: rpcError } = await getSupabase().rpc('handle_new_school', {
+    const { data: schoolId, error: rpcError } = await getSupabase().rpc('handle_new_school', {
       p_school_name: schoolName,
       p_director_name: directorName,
       p_email: email,
     });
     if (rpcError) return { error: rpcError.message };
+    const { error: phoneError } = await getSupabase().rpc('set_new_school_phone', {
+      p_school_id: schoolId,
+      p_phone: phone,
+    });
+    if (phoneError) return { error: 'Compte créé, mais le numéro n’a pas pu être enregistré. Contactez le support avant de recommencer l’inscription.' };
 
     await fetchProfile(data.user);
     return {};
