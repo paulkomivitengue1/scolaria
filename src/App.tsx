@@ -648,6 +648,11 @@ export default function App() {
         onToggle={() => setSidebarOpen(v => !v)}
         schoolName={profile.schoolName}
         showAdminEntry={isAuthorizedAdmin}
+        onOpenAdmin={() => {
+          setSidebarOpen(false);
+          setIsAdminPanel(true);
+          if (window.location.hash !== '#/scolaria-admin') window.location.hash = '/scolaria-admin';
+        }}
       />
 
       {/* Main content — offset by sidebar on desktop */}
