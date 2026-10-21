@@ -37,7 +37,7 @@ function dateValue(value: unknown, xlsx: typeof import('xlsx')): string {
   }
   const raw = String(value ?? '').trim();
   if (!raw) return '';
-  if (/^\\d{4,5}(\\.\\d+)?$/.test(raw)) { const parsed = xlsx.SSF.parse_date_code(Number(raw)); if (parsed) return [parsed.y, String(parsed.m).padStart(2, '0'), String(parsed.d).padStart(2, '0')].join('-'); }
+  if (/^\d{4,5}(\.\d+)?$/.test(raw)) { const parsed = xlsx.SSF.parse_date_code(Number(raw)); if (parsed) return [parsed.y, String(parsed.m).padStart(2, '0'), String(parsed.d).padStart(2, '0')].join('-'); }
   const dmy = raw.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
   return raw;
