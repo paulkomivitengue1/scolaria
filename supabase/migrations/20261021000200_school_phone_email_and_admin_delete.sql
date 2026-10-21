@@ -7,7 +7,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF p_phone IS NULL OR p_phone !~ '^\\+223[0-9]{8}$' THEN
+  IF p_phone IS NULL OR p_phone !~ '^\+223[0-9]{8}$' THEN
     RAISE EXCEPTION 'Numéro invalide : utilisez +223 suivi de 8 chiffres.';
   END IF;
   IF NOT EXISTS (
