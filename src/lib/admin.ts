@@ -27,7 +27,7 @@ export interface AdminManualPayment {
   id: string;
   school_id: string;
   school_name: string;
-  provider: 'Orange Money' | 'Wave' | 'Moov Money';
+  provider: 'Orange Money' | 'Wave' | 'Moov Money' | 'Paiement manuel';
   sender: string;
   amount: number;
   status: 'en_attente' | 'valide' | 'rejete';
