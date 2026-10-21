@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays,
+  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
   adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment,
 } from '../lib/admin';
 import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
@@ -166,6 +166,20 @@ export function AdminPanel({ onExit }: Props) {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const deleteSchool = async (school: AdminSchool) => {
+    const confirmation = window.prompt(`Suppression définitive de « ${school.name} » et de toutes ses données. Pour confirmer, tapez SUPPRIMER :`);
+    if (confirmation !== 'SUPPRIMER') { showToast('Suppression annulée'); return; }
+    setActionLoading(school.id);
+    try {
+      await adminDeleteSchool(code, school.id);
+      const refreshedSchools = await adminListSchools(code);
+      setSchools(refreshedSchools);
+      setSelectedSchool(null);
+      showToast(`École « ${school.name} » supprimée`);
+    } catch (err: any) { showToast(err.message || 'Impossible de supprimer cette école'); }
+    finally { setActionLoading(null); }
   };
 
   const setSchoolStatus = async (schoolId: string, status: 'suspend' | 'restore') => {
@@ -959,6 +973,7 @@ export function AdminPanel({ onExit }: Props) {
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Directeur / directrice</p><p className="mt-1 font-700 text-ink">{selectedSchool.director_name || 'Non renseigné'}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Téléphone</p><p className="mt-1 font-700 text-ink">{selectedSchool.phone || 'Non renseigné'}</p></div>
+              <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Adresse e-mail</p><p className="mt-1 break-all font-700 text-ink">{selectedSchool.email || 'Non renseignée'}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Nombre d’élèves</p><p className="mt-1 text-xl font-800 text-ink">{selectedSchool.student_count}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Abonnement</p><p className="mt-1 font-700 text-ink">{selectedSchool.plan} · {statusBadge(selectedSchool.subscription_status, selectedSchool.trial_ends_at).label}</p></div>
               <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Inscription</p><p className="mt-1 font-700 text-ink">{formatDate(selectedSchool.created_at)}</p></div>
@@ -990,6 +1005,8 @@ export function AdminPanel({ onExit }: Props) {
               </div>
             </div>
             {selectedSchool.subscription_status !== 'active' && <button type="button" onClick={() => void setSchoolPaidStatus(selectedSchool.id, true, editPlan, editPeriod)} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white disabled:opacity-50">{actionLoading === selectedSchool.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />} Confirmer l’argent reçu et activer ce forfait</button>}
+            <button type="button" onClick={() => void deleteSchool(selectedSchool)} disabled={actionLoading === selectedSchool.id} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-800 text-red-700 disabled:opacity-50"><X className="h-4 w-4" /> Supprimer définitivement cette école</button>
+            <p className="mt-1 text-xs text-red-700">Cette action supprime aussi les données liées à cette école. Elle est irréversible.</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {selectedSchool.phone && <a href={buildSchoolWhatsAppUrl(selectedSchool)} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-800 text-white"><Phone className="h-4 w-4" /> Relancer sur WhatsApp</a>}
               <button type="button" onClick={() => { const s=selectedSchool; setSelectedSchool(null); void setSchoolStatus(s.id, s.subscription_status === 'suspended' ? 'restore' : 'suspend'); }} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-800 text-red-700">{selectedSchool.subscription_status === 'suspended' ? 'Rétablir l’accès' : 'Suspendre l’école'}</button>
