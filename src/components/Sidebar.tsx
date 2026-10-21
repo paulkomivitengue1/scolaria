@@ -80,7 +80,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
             <span className="gestilys-sidebar-logo grid h-9 w-9 place-items-center rounded-xl text-white shadow-card">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#172554" />
-                <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#f5c518" />
+                <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#172554" />
               </svg>
             </span>
             <div className="leading-tight">
