@@ -533,7 +533,13 @@ export default function App() {
     setAddOpen(true);
   };
 
-  const isAuthorizedAdmin = user?.email?.trim().toLowerCase() === 'paulkomivitengue@gmail.com' && typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const isAdminEmail = (user?.email || '').trim().toLowerCase() === 'paulkomivitengue@gmail.com';
+  const isMobileDevice = typeof navigator !== 'undefined' && (
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+    Boolean((navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile) ||
+    (navigator.maxTouchPoints > 0 && typeof window !== 'undefined' && window.innerWidth < 900)
+  );
+  const isAuthorizedAdmin = isAdminEmail && isMobileDevice;
 
   useEffect(() => {
     if (loading || !isAdminPanel || isAuthorizedAdmin) return;
