@@ -68,6 +68,11 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.admin_list_schools() FROM anon, authenticated, PUBLIC;
 GRANT EXECUTE ON FUNCTION public.admin_list_schools() TO service_role;
+
+-- The manual-payment listing is only accessed by the service-role Edge Function.
+REVOKE EXECUTE ON FUNCTION public.admin_list_manual_payments() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_list_manual_payments() TO service_role;
+
 NOTIFY pgrst, 'reload schema';
  THEN
     RAISE EXCEPTION 'Numéro invalide : utilisez +223 suivi de 8 chiffres.';
