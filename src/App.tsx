@@ -278,7 +278,8 @@ export default function App() {
     if (!profile?.schoolId) return;
     const plan = (profile.plan || 'Essentiel').toLocaleLowerCase();
     const isEssentiel = plan.includes('essentiel') || plan.includes('10');
-    if (isEssentiel && students.length >= 150) {
+    const isTrial = profile?.subscriptionStatus === 'trial';
+    if (isEssentiel && !isTrial && students.length >= 150) {
       setPayError('Le forfait Essentiel est limité à 150 élèves. Pour inscrire davantage d’élèves, passez à Premium ou Élite.');
       return;
     }
@@ -295,7 +296,8 @@ export default function App() {
     if (!profile?.schoolId) throw new Error('École non identifiée.');
     const plan = (profile.plan || 'Essentiel').toLocaleLowerCase();
     const isEssentiel = plan.includes('essentiel') || plan.includes('10');
-    if (isEssentiel && students.length + rows.length > 150) {
+    const isTrial = profile?.subscriptionStatus === 'trial';
+    if (isEssentiel && !isTrial && students.length + rows.length > 150) {
       throw new Error(`Le forfait Essentiel est limité à 150 élèves. Il reste ${Math.max(0, 150 - students.length)} place(s), mais le fichier contient ${rows.length} élèves. Passez à Premium ou Élite pour dépasser cette limite.`);
     }
     let nextStudents: Student[] = [];
@@ -569,7 +571,8 @@ export default function App() {
     const plan = (profile?.plan || 'Essentiel').toLocaleLowerCase();
     const premiumViews: AppView[] = ['statistiques', 'bulletins', 'stocks', 'depenses'];
     const hasPremium = plan.includes('premium') || plan.includes('élite') || plan.includes('elite') || plan.includes('30');
-    if (premiumViews.includes(v) && !hasPremium) {
+    const isTrial = profile?.subscriptionStatus === 'trial';
+    if (premiumViews.includes(v) && !hasPremium && !isTrial) {
       setPayError('Ce module est inclus dans Premium (20 000 FCFA/mois) et Élite (30 000 FCFA/mois). Votre forfait actuel : Essentiel.');
       setSidebarOpen(false);
       return;
