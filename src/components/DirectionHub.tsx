@@ -50,9 +50,9 @@ const TABS: { id: Tab; label: string; description: string; icon: typeof Activity
   { id: 'import', label: 'Import élèves', description: 'Importer un fichier CSV d’Excel', icon: FileSpreadsheet },
 ];
 const today = () => new Date().toISOString().slice(0, 10);
-const inputClass = 'mt-1 h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-800 to-blue-600 px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50';
-const panelClass = 'rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5';
+const inputClass = 'mt-1 h-11 w-full rounded-xl border border-blue-200 bg-blue-50 px-3 text-base font-bold text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
+const buttonClass = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-800 to-blue-600 px-4 py-2 text-base font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50';
+const panelClass = 'rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-amber-50 p-4 shadow-sm sm:p-5';
 
 function normalizeHeader(value: string) {
   return value.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
@@ -269,16 +269,16 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
             { label: 'Scolarité encaissée', value: formatFCFA(collected), tone: 'border-emerald-300/30 bg-emerald-500/20' },
             { label: 'Reste à payer estimé', value: formatFCFA(outstanding), tone: 'border-amber-300/30 bg-amber-500/20' },
             { label: 'Tâches ouvertes', value: String(openTasks), tone: 'border-pink-300/30 bg-pink-500/20' },
-          ].map(metric => <div key={metric.label} className={'rounded-2xl border p-3 ' + metric.tone}><p className="text-xs font-bold text-white/90">{metric.label}</p><p className="mt-2 break-words text-lg font-black text-white sm:text-xl">{metric.value}</p></div>)}
+          ].map(metric => <div key={metric.label} className={'rounded-2xl border p-3 ' + metric.tone}><p className="text-sm font-extrabold text-white">{metric.label}</p><p className="mt-2 break-words text-2xl font-black text-white sm:text-3xl">{metric.value}</p></div>)}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         {visibleTabs.map(item => {
           const Icon = item.icon;
-          return <button type="button" key={item.id} onClick={() => handleTab(item.id, item.locked)} className={'relative min-h-28 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ' + (tab === item.id ? 'border-blue-700 bg-blue-50 ring-2 ring-blue-100' : 'border-blue-100 bg-white hover:border-blue-300')}>
+          return <button type="button" key={item.id} onClick={() => handleTab(item.id, item.locked)} className={'relative min-h-28 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ' + (tab === item.id ? 'border-blue-700 bg-blue-50 ring-2 ring-blue-100' : 'border-blue-200 bg-gradient-to-br from-blue-50 via-white to-amber-50 hover:border-amber-400')}>
             <div className={'mb-3 flex h-9 w-9 items-center justify-center rounded-xl ' + (tab === item.id ? 'bg-blue-800 text-white' : 'bg-amber-100 text-blue-900')}><Icon className="h-5 w-5" /></div>
-            <p className="text-sm font-extrabold text-slate-950">{item.label}</p><p className="mt-1 text-xs leading-4 text-slate-700">{item.description}</p>
+            <p className="text-base font-extrabold text-slate-950 sm:text-lg">{item.label}</p><p className="mt-1 text-sm font-semibold leading-5 text-slate-700">{item.description}</p>
             {item.locked && <Lock className="absolute right-3 top-3 h-4 w-4 text-amber-600" />}
           </button>;
         })}
@@ -288,7 +288,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       {loading && <div className="rounded-xl border border-blue-100 bg-white p-4 text-sm font-semibold text-blue-900">Chargement du suivi de direction…</div>}
 
       {!loading && tab === 'overview' && <div className="grid gap-4 lg:grid-cols-2">
-        <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Situation financière</h2><p className="mt-1 text-sm text-slate-700">Résumé calculé à partir des frais et règlements actuellement enregistrés.</p><div className="mt-4 space-y-3">
+        <div className={panelClass}><h2 className="text-xl font-black text-blue-950 sm:text-2xl">Situation financière</h2><p className="mt-1 text-sm text-slate-700">Résumé calculé à partir des frais et règlements actuellement enregistrés.</p><div className="mt-4 space-y-3">
           {[['Frais attendus', expected, 'bg-blue-600'], ['Frais encaissés', collected, 'bg-emerald-600'], ['Reste à recouvrer', outstanding, 'bg-amber-500']].map(([label, value, color]) => <div key={String(label)}><div className="flex justify-between gap-3 text-sm"><span className="font-bold text-slate-800">{label}</span><strong className="text-slate-950">{formatFCFA(Number(value))}</strong></div><div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100"><div className={'h-full rounded-full ' + color} style={{ width: (expected ? Math.min(100, Number(value) / expected * 100) : 0) + '%' }} /></div></div>)}
         </div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => onNavigate('paiements')}>Suivi des paiements</button><button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-extrabold text-amber-950" onClick={() => onNavigate('depenses')}>Dépenses</button></div></div>
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Suivi de l’établissement</h2><div className="mt-3 grid grid-cols-2 gap-3">
