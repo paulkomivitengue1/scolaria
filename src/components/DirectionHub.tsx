@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, CalendarCheck, Check, ClipboardList, FileSpreadsheet,
   MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Users, Wallet, Lock, Download,
@@ -104,7 +104,7 @@ function parseStudentCsv(text: string): ImportedStudentRow[] {
     if (seen.has(key)) throw new Error('Doublon dans le fichier : ' + row.firstName + ' ' + row.lastName + ' (' + row.className + ').');
     seen.add(key);
   }
-  return rows.map(({ rowIndex: _rowIndex, ...row }) => row);
+  return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
 }
 function csvEscape(value: unknown) {
   const text = String(value ?? '');
@@ -193,7 +193,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const currentStudent = students.find(student => student.id === messageStudent);
   const selectedAttendanceStudent = students.find(student => student.id === attendanceStudent);
   const whatsappUrl = currentStudent?.parentPhone
-    ? 'https://wa.me/' + currentStudent.parentPhone.replace(/\D/g, '').replace(/^0/, '223') + '?text=' + encodeURIComponent(messageText)
+    ? 'https://wa.me/' + (() => { const digits = currentStudent.parentPhone.replace(/\D/g, ''); return digits.length === 8 ? '223' + digits : digits; })() + '?text=' + encodeURIComponent(messageText)
     : '';
 
   const handleImportFile = async (file?: File) => {
@@ -208,6 +208,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     try {
       const text = await file.text();
       const rows = parseStudentCsv(text);
+      const knownClasses = new Set(classNames.map(name => name.trim().toLocaleLowerCase('fr')));
+      const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !knownClasses.has(name.trim().toLocaleLowerCase('fr'))))];
+      if (unknownClasses.length) throw new Error('Classe(s) inconnue(s) : ' + unknownClasses.join(', ') + '. Créez ces classes dans Paramètres avant l’import.');
       setImportPreview(rows);
       setImportName(file.name);
       setNotice(rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
