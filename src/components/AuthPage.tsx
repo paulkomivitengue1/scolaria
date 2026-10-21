@@ -34,9 +34,11 @@ export function AuthPage({ onBack }: AuthPageProps) {
   const inputBase = 'h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm text-ink outline-none transition focus:border-royal-400 focus:ring-4';
   const inputPass = 'h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm text-ink outline-none transition focus:border-royal-400 focus:ring-4';
 
+  const normalizedPhone = phone.replace(/[\s().-]/g, '');
+  const validMalianPhone = /^\+223[0-9]{8}$/.test(normalizedPhone);
   const canSubmit = mode === 'login'
     ? email.trim().length > 0 && password.length > 0
-    : schoolName.trim() && directorName.trim() && phone.trim().length >= 8 && email.trim() && password.length >= 6;
+    : Boolean(schoolName.trim() && directorName.trim() && validMalianPhone && email.trim() && password.length >= 6);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,8 @@ export function AuthPage({ onBack }: AuthPageProps) {
 
     try {
       if (mode === 'signup') {
-        const { error: err } = await signUp(email.trim(), password, schoolName.trim(), directorName.trim(), phone.trim());
+        if (!validMalianPhone) { setError('Saisissez un numéro malien valide : +223 suivi de 8 chiffres.'); return; }
+        const { error: err } = await signUp(email.trim(), password, schoolName.trim(), directorName.trim(), normalizedPhone);
         if (err) setError(err);
       } else {
         const { error: err } = await signIn(email.trim(), password);
@@ -132,7 +135,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
                 </Field>
               )}
 
-              {mode === 'signup' && <Field icon={<Phone className="h-4.5 w-4.5 text-slate-400" />} label="Téléphone du directeur / WhatsApp"><input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+223 70 00 00 00" className={inputBase} autoComplete="tel" /></Field>}
+              {mode === 'signup' && <Field icon={<Phone className="h-4.5 w-4.5 text-slate-400" />} label="Téléphone du directeur / WhatsApp"><input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+223 70 00 00 00" maxLength={16} aria-describedby="phone-help" className={inputBase} autoComplete="tel" /><p id="phone-help" className="mt-1 text-xs text-slate-500">Obligatoire : +223 suivi de 8 chiffres.</p>{phone && !validMalianPhone && <p className="mt-1 text-xs font-600 text-red-600">Numéro invalide. Exemple : +223 70 00 00 00</p>}</Field>}
 
               <Field icon={<Mail className="h-4.5 w-4.5 text-slate-400" />} label="Adresse e-mail">
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="directeur@ecole.sn" className={inputBase} autoComplete="email" />
