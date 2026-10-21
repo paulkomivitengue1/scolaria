@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { FileSpreadsheet, Upload, X, AlertCircle, CheckCircle2 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 
 export interface ImportedStudentRow {
   firstName: string;
@@ -30,7 +29,7 @@ function pick(row: Record<string, unknown>, aliases: string[]) {
   return found ? String(row[found] ?? '').trim() : '';
 }
 
-function dateValue(value: unknown): string {
+function dateValue(value: unknown, xlsx: typeof import('xlsx')): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
   if (typeof value === 'number') {
     const parsed = XLSX.SSF.parse_date_code(value);
@@ -38,6 +37,7 @@ function dateValue(value: unknown): string {
   }
   const raw = String(value ?? '').trim();
   if (!raw) return '';
+  if (/^\\d{4,5}(\\.\\d+)?$/.test(raw)) { const parsed = xlsx.SSF.parse_date_code(Number(raw)); if (parsed) return [parsed.y, String(parsed.m).padStart(2, '0'), String(parsed.d).padStart(2, '0')].join('-'); }
   const dmy = raw.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
   return raw;
@@ -57,6 +57,7 @@ export function BulkStudentImportModal({ open, classNames, onClose, onImport }: 
     setError('');
     setFileName(file.name);
     try {
+      const XLSX = await import('xlsx');
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -73,7 +74,7 @@ export function BulkStudentImportModal({ open, classNames, onClose, onImport }: 
           firstName, lastName, className,
           parentName: pick(r, ['nomparent', 'parent', 'nomdututeur', 'tuteur', 'responsable']),
           parentPhone: pick(r, ['telephoneparent', 'numeroparent', 'telparent', 'telephone', 'phone', 'contact']),
-          birthDate: dateValue(pick(r, ['datenaissance', 'naissance', 'birthdate', 'dateofbirth'])),
+          birthDate: dateValue(pick(r, ['datenaissance', 'naissance', 'birthdate', 'dateofbirth']), XLSX),
           birthPlace: pick(r, ['lieunaissance', 'lieudenaissance', 'birthplace']),
           matricule: pick(r, ['matricule', 'matriculation', 'numeroeleve', 'identifiant']),
           sexe: (['f', 'feminin', 'femme', 'female'].includes(rawSex) ? 'F' : 'M') as 'M' | 'F',
