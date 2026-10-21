@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v2';
+const CACHE_NAME = 'gestilys-shell-v3';
 const SHELL_URLS = [
   '/',
   '/offline.html',
