@@ -57,7 +57,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, showAdminEntry, onOpenAdmin }: Props) {
+export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolName, showAdminEntry, onOpenAdmin, lockedViews = [] }: Props) {
   return (
     <>
       {/* Mobile overlay backdrop */}
