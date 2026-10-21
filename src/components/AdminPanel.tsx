@@ -411,7 +411,6 @@ export function AdminPanel({ onExit }: Props) {
   const monthlyActiveCount = paidSchools.filter(s => s.billing_period !== 'annuel').length;
   const annualActiveCount = paidSchools.filter(s => s.billing_period === 'annuel').length;
   const churnedLast30Days = schools.filter(s => s.subscription_status !== 'active' && !!s.last_paid_at && new Date(s.last_paid_at) >= new Date(now.getTime() - 30 * 86400000)).length;
-  const paidAtRiskLast30Days = paidSchools.filter(s => !!s.trial_ends_at && new Date(s.trial_ends_at) < new Date(now.getTime() - 30 * 86400000)).length;
   const churnRate30Days = paidSchools.length + churnedLast30Days ? Math.round(churnedLast30Days / (paidSchools.length + churnedLast30Days) * 1000) / 10 : 0;
   const planDistribution = (['Essentiel', 'Premium', 'Élite'] as const).map(plan => ({
     plan,
