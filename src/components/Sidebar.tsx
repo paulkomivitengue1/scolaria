@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, BarChart3, GraduationCap, Users, UserPlus, CreditCard, ClipboardList,
-  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck,
+  Wallet, Boxes, Settings2, LogOut, X, Menu, AlertCircle, Receipt, ShieldCheck, Lock,
 } from 'lucide-react';
 import type { AppView } from '../types';
 
@@ -116,7 +116,7 @@ export function Sidebar({ current, onNavigate, onLogout, open, onToggle, schoolN
                     >
                       <Icon className="h-4.5 w-4.5 shrink-0" />
                       <span className="truncate">{item.label}</span>
-                      {isLocked && <Lock className="ml-auto h-4 w-4 shrink-0 text-amber-600" aria-label="Inclus dans Premium et Élite" />
+                      {isLocked && <Lock className="ml-auto h-4 w-4 shrink-0 text-amber-600" aria-label="Inclus dans Premium et Élite" />}
                     </button>
                   );
                 })}
