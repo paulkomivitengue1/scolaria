@@ -52,6 +52,11 @@ Deno.serve(async (req: Request) => {
     if(error)throw error;
     return respond({ok:true,plans:normalized});
    }
+   case "get_login_stats": {
+    const {data,error}=await supabase.rpc("admin_login_stats");
+    if(error)throw error;
+    return respond({data});
+   }
    case "list_schools": {const {data,error}=await supabase.rpc("admin_list_schools");if(error)throw error;return respond({data});}
    case "delete_school": {
     if(!schoolId)throw new Error("Identifiant de l’école requis.");
