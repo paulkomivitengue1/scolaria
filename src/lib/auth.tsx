@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { getSupabase } from './supabase';
 
@@ -30,10 +30,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function detectDeviceInfo() {
+  const ua = navigator.userAgent || '';
+  const device = /iPad|Tablet/i.test(ua) ? 'Tablette' : /Android/i.test(ua) ? 'Téléphone Android' : /iPhone|iPod/i.test(ua) ? 'iPhone' : /Windows Phone/i.test(ua) ? 'Téléphone Windows' : /Mobi/i.test(ua) ? 'Téléphone' : /Macintosh|Mac OS/i.test(ua) ? 'Ordinateur Mac' : /Windows/i.test(ua) ? 'Ordinateur Windows' : /Linux/i.test(ua) ? 'Ordinateur Linux' : 'Appareil inconnu';
+  const browser = /Edg\//.test(ua) ? 'Microsoft Edge' : /SamsungBrowser\//.test(ua) ? 'Samsung Internet' : /Firefox\//.test(ua) ? 'Mozilla Firefox' : /Chrome\//.test(ua) ? 'Google Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Navigateur inconnu';
+  const os = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iOS/iPadOS' : /Windows/i.test(ua) ? 'Windows' : /Mac OS|Macintosh/i.test(ua) ? 'macOS' : /Linux/i.test(ua) ? 'Linux' : 'Système inconnu';
+  return { device, browser, os };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<SchoolProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastDeviceReportAt = useRef(0);
 
   async function fetchProfile(u: User): Promise<SchoolProfile | null> {
     const { data, error } = await getSupabase()
@@ -45,6 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data) {
       setProfile(null);
       return null;
+    }
+
+    if (Date.now() - lastDeviceReportAt.current > 5 * 60 * 1000) {
+      lastDeviceReportAt.current = Date.now();
+      const deviceInfo = detectDeviceInfo();
+      void getSupabase().rpc('record_my_device', { p_device: deviceInfo.device, p_browser: deviceInfo.browser, p_os: deviceInfo.os }).then(({ error: deviceError }) => {
+        if (deviceError) console.warn('Impossible d’enregistrer les informations de l’appareil :', deviceError.message);
+      });
     }
 
     const school = (data as any).schools;
