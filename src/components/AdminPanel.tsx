@@ -108,20 +108,35 @@ export function AdminPanel({ onExit }: Props) {
 
   const loadData = useCallback(async (c: string) => {
     setDataLoading(true);
+    setAuthError(null);
     try {
-      const [s, p, pricing, trialDuration, activity, churn] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays(), adminGetLoginStats(c), adminGetChurnStats(c)]);
+      // The school list validates admin access. Secondary dashboards must not
+      // lock the entire console if an analytics RPC or public setting is unavailable.
+      const s = await adminListSchools(c);
       setSchools(s);
-      setPayments(p);
-      setLoginStats(activity);
-      setChurnStats(churn);
-      setPublicTrialDays(String(trialDuration));
-      setPriceInputs({
-        Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
-        Premium: String(pricing.find((plan) => plan.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly),
-        'Élite': String(pricing.find((plan) => plan.name === 'Élite')?.monthly ?? DEFAULT_PLAN_PRICES[2].monthly),
-      });
+      const optional = await Promise.allSettled([
+        adminListPayments(c),
+        loadPublicPlanPrices(),
+        loadPublicTrialDays(),
+        adminGetLoginStats(c),
+        adminGetChurnStats(c),
+      ]);
+      const [paymentsResult, pricingResult, trialResult, activityResult, churnResult] = optional;
+      if (paymentsResult.status === 'fulfilled') setPayments(paymentsResult.value);
+      else { setPayments([]); setToast('Les paiements ne sont pas disponibles pour le moment.'); }
+      if (pricingResult.status === 'fulfilled') {
+        const pricing = pricingResult.value;
+        setPriceInputs({
+          Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
+          Premium: String(pricing.find((plan) => plan.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly),
+          'Élite': String(pricing.find((plan) => plan.name === 'Élite')?.monthly ?? DEFAULT_PLAN_PRICES[2].monthly),
+        });
+      }
+      if (trialResult.status === 'fulfilled') setPublicTrialDays(String(trialResult.value));
+      if (activityResult.status === 'fulfilled') setLoginStats(activityResult.value);
+      if (churnResult.status === 'fulfilled') setChurnStats(churnResult.value);
     } catch (err: any) {
-      const message = err?.message || 'Erreur de chargement';
+      const message = err?.message || 'Accès refusé. Vérifiez le code et la connexion.';
       setAuthError(message);
       setAuthed(false);
       sessionStorage.removeItem(DEV_CODE_STORAGE);
@@ -142,12 +157,14 @@ export function AdminPanel({ onExit }: Props) {
     setAuthLoading(true);
     setAuthError(null);
     try {
-      await adminListSchools(code);
-      sessionStorage.setItem(DEV_CODE_STORAGE, code);
+      const normalizedCode = code.trim();
+      await adminListSchools(normalizedCode);
+      sessionStorage.setItem(DEV_CODE_STORAGE, normalizedCode);
+      setCode(normalizedCode);
       setAuthed(true);
-      loadData(code);
+      void loadData(normalizedCode);
     } catch (err: any) {
-      setAuthError(err.message || 'Code invalide');
+      setAuthError(err.message || 'Code invalide. Vérifiez également la connexion au compte administrateur.');
     } finally {
       setAuthLoading(false);
     }
