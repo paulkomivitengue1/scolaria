@@ -16,6 +16,7 @@ export interface AdminSchool {
   created_at: string;
   director_name: string;
   phone: string;
+  email: string;
   student_count: number;
   billing_period?: 'mensuel' | 'annuel';
   subscription_amount?: number | null;
@@ -56,6 +57,10 @@ async function adminFetch(code: string, action: string, paymentId?: string, scho
 export async function adminListSchools(code: string): Promise<AdminSchool[]> {
   const { data } = await adminFetch(code, 'list_schools');
   return data || [];
+}
+
+export async function adminDeleteSchool(code: string, schoolId: string): Promise<void> {
+  await adminFetch(code, 'delete_school', undefined, schoolId);
 }
 
 export async function adminListPayments(code: string): Promise<AdminManualPayment[]> {
