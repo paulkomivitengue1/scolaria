@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
-  adminListSchools, adminListPayments, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
-  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment,
+  adminListSchools, adminListPayments, adminGetLoginStats, adminValidatePayment, adminRejectPayment, adminSetSchoolStatus, adminSetSchoolPaidStatus, adminSetSchoolPlan, adminSetTrialDays, adminDeleteSchool,
+  adminSavePublicPricing, adminSavePublicTrialDays, type AdminSchool, type AdminManualPayment, type AdminLoginStats,
 } from '../lib/admin';
 import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 
@@ -86,6 +86,7 @@ export function AdminPanel({ onExit }: Props) {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [selectedSchool]);
   const [payments, setPayments] = useState<AdminManualPayment[]>([]);
+  const [loginStats, setLoginStats] = useState<AdminLoginStats>({ today: 0, this_month: 0, last_30_days: 0, daily: [], monthly: [] });
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
@@ -107,9 +108,10 @@ export function AdminPanel({ onExit }: Props) {
   const loadData = useCallback(async (c: string) => {
     setDataLoading(true);
     try {
-      const [s, p, pricing, trialDuration] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays()]);
+      const [s, p, pricing, trialDuration, activity] = await Promise.all([adminListSchools(c), adminListPayments(c), loadPublicPlanPrices(), loadPublicTrialDays(), adminGetLoginStats(c)]);
       setSchools(s);
       setPayments(p);
+      setLoginStats(activity);
       setPublicTrialDays(String(trialDuration));
       setPriceInputs({
         Essentiel: String(pricing.find((plan) => plan.name === 'Essentiel')?.monthly ?? DEFAULT_PLAN_PRICES[0].monthly),
@@ -575,6 +577,34 @@ export function AdminPanel({ onExit }: Props) {
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* ── Login and reconnection analytics ── */}
+            <section data-admin-module="dashboard" className="mb-6 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-800 p-4 text-white shadow-lg sm:p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-300/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-200"><Activity className="h-3 w-3" /> Activité des utilisateurs</div>
+                  <h2 className="text-lg font-extrabold tracking-tight sm:text-xl">Connexions et reconnexions</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-blue-100">Historique suivi à partir de l’activation de cette version. Les anciennes connexions ne peuvent pas être reconstituées.</p>
+                </div>
+                <button type="button" onClick={() => code && loadData(code)} className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/20"><RefreshCw className="h-3.5 w-3.5" /> Actualiser</button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/15 bg-white/10 p-4"><p className="text-xs font-bold text-blue-100">Aujourd’hui</p><p className="mt-1 text-3xl font-extrabold">{loginStats.today}</p><p className="text-[11px] text-blue-100">Ouvertures de session suivies</p></div>
+                <div className="rounded-xl border border-amber-300/30 bg-amber-300/15 p-4"><p className="text-xs font-bold text-amber-100">Ce mois-ci</p><p className="mt-1 text-3xl font-extrabold text-amber-100">{loginStats.this_month}</p><p className="text-[11px] text-amber-100">Connexions et reconnexions</p></div>
+                <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/15 p-4"><p className="text-xs font-bold text-cyan-100">30 derniers jours</p><p className="mt-1 text-3xl font-extrabold text-cyan-100">{loginStats.last_30_days}</p><p className="text-[11px] text-cyan-100">Événements enregistrés</p></div>
+              </div>
+              <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
+                <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
+                <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
+                  {loginStats.daily.map((day) => {
+                    const max = Math.max(1, ...loginStats.daily.map(item => item.count));
+                    const height = Math.max(4, Math.round(day.count / max * 100));
+                    return <div key={day.date} title={day.date + ': ' + day.count + ' connexion(s)'} className="flex h-full min-w-2 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-amber-400 to-cyan-300" style={{ height: height + '%' }} /></div>;
+                  })}
+                </div>
+                <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 30 jours</span><span>Aujourd’hui</span></div>
+              </div>
             </section>
 
             {/* ── Payment and revenue reporting ── */}
