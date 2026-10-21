@@ -1,7 +1,7 @@
 import {
   Users, TrendingUp, AlertCircle, PieChart,
   GraduationCap, ClipboardList, Boxes, Settings2,
-  ArrowRight, Sparkles, Receipt,
+  ArrowRight, Sparkles, Receipt, ShieldCheck,
 } from 'lucide-react';
 import type { AppView, Student } from '../types';
 import { formatFCFA, studentExpected } from '../types';
