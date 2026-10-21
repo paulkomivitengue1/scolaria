@@ -273,6 +273,11 @@ export default function App() {
   };
 
   const addStudent = async (st: Student) => {
+    if (isEssentielPaid && students.length >= 150) {
+      setPayError('La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.');
+      setView('dashboard');
+      return;
+    }
     if (!profile?.schoolId) return;
     try {
       const dbId = await addStudentDB(profile.schoolId, st);
@@ -513,7 +518,18 @@ export default function App() {
     setSupplies(refreshedSupplies);
   };
 
+  const isPremium = !!profile && (profile.subscriptionStatus === 'trial' || (profile.subscriptionStatus === 'active' && ((profile.subscriptionAmount ?? 0) >= 20000 || ['premium', 'élite', 'elite'].includes((profile.plan || '').toLocaleLowerCase('fr')))));
+  const isEssentielPaid = profile?.subscriptionStatus === 'active' && !isPremium;
+  const premiumViews: AppView[] = ['statistiques', 'bulletins', 'stocks', 'depenses', 'enseignants'];
+
   const handleNavigate = (v: AppView) => {
+    if (isEssentielPaid && premiumViews.includes(v)) {
+      setPayError('Cette rubrique est incluse dans les formules Premium et Élite (20 000 ou 30 000 FCFA). Votre formule actuelle est Essentiel. Contactez Gestilys pour changer de formule.');
+      setView('dashboard');
+      setSidebarOpen(false);
+      return;
+    }
+    setPayError(null);
     setView(v);
     setSidebarOpen(false);
     if (v !== 'dashboard' && guideMode !== 'onboarding' && profile?.schoolId) {
@@ -648,6 +664,7 @@ export default function App() {
         onToggle={() => setSidebarOpen(v => !v)}
         schoolName={profile.schoolName}
         showAdminEntry={isAuthorizedAdmin}
+        lockedViews={isEssentielPaid ? premiumViews : []}
         onOpenAdmin={() => {
           setSidebarOpen(false);
           setIsAdminPanel(true);
