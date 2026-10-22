@@ -47,7 +47,7 @@ const TABS: { id: Tab; label: string; description: string; icon: typeof Activity
   { id: 'attendance', label: 'Présences', description: 'Registre quotidien des élèves', icon: CalendarCheck },
   { id: 'messages', label: 'Parents', description: 'Messages WhatsApp préparés', icon: MessageCircle },
   { id: 'team', label: 'Équipe', description: 'Tâches et suivi interne', icon: ClipboardList },
-  { id: 'import', label: 'Import élèves', description: 'Importer un fichier CSV d’Excel', icon: FileSpreadsheet },
+  { id: 'import', label: 'Import élèves', description: 'Importer un fichier Excel ou CSV', icon: FileSpreadsheet },
 ];
 const today = () => new Date().toISOString().slice(0, 10);
 const inputClass = 'mt-1 h-11 w-full rounded-xl border border-blue-200 bg-blue-50 px-3 text-base font-bold text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
@@ -79,6 +79,90 @@ function splitCsvLine(line: string, separator: string): string[] {
   result.push(value.trim());
   return result;
 }
+
+async function readZipText(bytes: Uint8Array, filename: string): Promise<string> {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let end = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { end = i; break; }
+  }
+  if (end < 0) throw new Error('Ce fichier Excel semble endommagé ou n’est pas un fichier .xlsx valide.');
+  const count = view.getUint16(end + 10, true);
+  let cursor = view.getUint32(end + 16, true);
+  for (let i = 0; i < count; i++) {
+    if (view.getUint32(cursor, true) !== 0x02014b50) break;
+    const method = view.getUint16(cursor + 10, true);
+    const compressedSize = view.getUint32(cursor + 20, true);
+    const nameLength = view.getUint16(cursor + 28, true);
+    const extraLength = view.getUint16(cursor + 30, true);
+    const commentLength = view.getUint16(cursor + 32, true);
+    const localOffset = view.getUint32(cursor + 42, true);
+    const name = new TextDecoder().decode(bytes.slice(cursor + 46, cursor + 46 + nameLength));
+    if (name === filename) {
+      const localNameLength = view.getUint16(localOffset + 26, true);
+      const localExtraLength = view.getUint16(localOffset + 28, true);
+      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+      const compressed = bytes.slice(dataStart, dataStart + compressedSize);
+      if (method === 0) return new TextDecoder().decode(compressed);
+      if (method !== 8) throw new Error('Compression Excel non prise en charge dans cette feuille.');
+      try {
+        const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw' as CompressionFormat));
+        return await new Response(stream).text();
+      } catch {
+        throw new Error('La lecture .xlsx n’est pas prise en charge par ce navigateur. Essayez Chrome à jour ou exportez le fichier en CSV UTF-8.');
+      }
+    }
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+  throw new Error('Feuille Excel introuvable : ' + filename);
+}
+function excelColumnIndex(reference: string): number {
+  const letters = reference.match(/^[A-Z]+/i)?.[0]?.toUpperCase() || 'A';
+  return [...letters].reduce((n, letter) => n * 26 + letter.charCodeAt(0) - 64, 0) - 1;
+}
+async function parseStudentXlsx(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const sheetXml = await readZipText(bytes, 'xl/worksheets/sheet1.xml');
+  let sharedStrings: string[] = [];
+  try {
+    const sharedXml = await readZipText(bytes, 'xl/sharedStrings.xml');
+    const sharedDoc = new DOMParser().parseFromString(sharedXml, 'application/xml');
+    sharedStrings = Array.from(sharedDoc.getElementsByTagName('si')).map(item =>
+      Array.from(item.getElementsByTagName('t')).map(node => node.textContent || '').join('')
+    );
+  } catch { /* Certains fichiers utilisent uniquement des chaînes intégrées aux cellules. */ }
+  const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
+  if (doc.querySelector('parsererror')) throw new Error('La première feuille Excel est illisible.');
+  const rows = Array.from(doc.getElementsByTagName('row'));
+  if (rows.length < 2) throw new Error('La première feuille doit contenir les en-têtes et au moins un élève.');
+  const matrix: string[][] = rows.map(row => {
+    const cells = Array.from(row.getElementsByTagName('c'));
+    const values: string[] = [];
+    for (const cell of cells) {
+      const index = excelColumnIndex(cell.getAttribute('r') || 'A');
+      const type = cell.getAttribute('t');
+      const valueNode = cell.getElementsByTagName('v')[0];
+      let value = valueNode?.textContent || '';
+      if (type === 's') value = sharedStrings[Number(value)] ?? '';
+      else if (type === 'inlineStr') value = Array.from(cell.getElementsByTagName('t')).map(node => node.textContent || '').join('');
+      values[index] = value;
+    }
+    return values.map(value => value || '');
+  });
+  const dateColumns = (matrix[0] || []).map((value, index) => ({ key: normalizeHeader(value), index }))
+    .filter(item => ['datenaissance','naissance','birthdate'].includes(item.key)).map(item => item.index);
+  for (let row = 1; row < matrix.length; row++) {
+    for (const col of dateColumns) {
+      const serial = Number(matrix[row][col]);
+      if (matrix[row][col] && Number.isFinite(serial) && serial > 0 && serial < 100000) {
+        matrix[row][col] = new Date(Date.UTC(1899, 11, 30) + serial * 86400000).toISOString().slice(0, 10);
+      }
+    }
+  }
+  const escape = (value: string) => '"' + String(value || '').replace(/"/g, '""') + '"';
+  return '\uFEFF' + matrix.map(row => row.map(escape).join(';')).join('\r\n');
+}
+
 function parseStudentCsv(text: string): ImportedStudentRow[] {
   const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
   if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne d’en-têtes et au moins un élève.');
@@ -217,14 +301,14 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const handleImportFile = async (file?: File) => {
     if (!file) return;
     setNotice('');
-    if (!/\.csv$/i.test(file.name) && file.type !== 'text/csv') {
+    if (!/\.csv$|\.xlsx$/i.test(file.name) && file.type !== 'text/csv' && file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
       setImportPreview([]);
       setImportName(file.name);
-      setNotice('Pour éviter les erreurs, exportez d’abord le fichier Excel en CSV UTF-8, puis importez ce fichier .csv.');
+      setNotice('Choisissez un fichier Excel .xlsx ou un fichier .csv UTF-8.');
       return;
     }
     try {
-      const text = await file.text();
+      const text = /\.xlsx$/i.test(file.name) ? await parseStudentXlsx(file) : await file.text();
       const rows = parseStudentCsv(text);
       const knownClasses = new Set(classNames.map(name => name.trim().toLocaleLowerCase('fr')));
       const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !knownClasses.has(name.trim().toLocaleLowerCase('fr'))))];
@@ -423,8 +507,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         </div>
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
-        <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Depuis Excel : choisissez « Enregistrer sous » puis « CSV UTF-8 ». Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier CSV<input type="file" accept=".csv,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => void handleImportFile(e.target.files?.[0])} /></label>
+        <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Importez directement un fichier Excel (.xlsx) ou CSV UTF-8. Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe. Pour un fichier Excel, les données doivent se trouver sur la première feuille.</p>
+          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => void handleImportFile(e.target.files?.[0])} /></label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('modele-import-eleves-gestilys.csv', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
