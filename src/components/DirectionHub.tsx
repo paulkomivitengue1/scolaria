@@ -211,7 +211,21 @@ function saveCsv(filename: string, rows: unknown[][]) {
 }
 
 export function DirectionHub({ schoolId, schoolName, students, classNames, teachers, expenses, salaryPayments, premium, onImportStudents, onNavigate }: Props) {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTabState] = useState<Tab>(() => {
+    try {
+      return sessionStorage.getItem('gestilys-direction-tab') === 'import' ? 'import' : 'overview';
+    } catch {
+      return 'overview';
+    }
+  });
+  const setTab = (nextTab: Tab) => {
+    setTabState(nextTab);
+    try {
+      sessionStorage.setItem('gestilys-direction-tab', nextTab);
+    } catch {
+      // Le choix de l’onglet reste utilisable même si le stockage de session est indisponible.
+    }
+  };
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
