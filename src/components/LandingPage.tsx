@@ -295,9 +295,9 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         <section id="accueil" className="gl-hero">
           <div className="gl-container gl-hero-grid">
             <div className="gl-hero-copy">
-              <div className="gl-eyebrow"><span style={{ width:7, height:7, borderRadius:'50%', background:'#1d4ed8' }} /> Pensé pour la gestion scolaire</div>
-              <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
-              <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
+              <div className="gl-eyebrow"><span style={{ width:7, height:7, borderRadius:'50%', background:'#1d4ed8' }} /> Logiciel de gestion scolaire en Afrique de l’Ouest</div>
+              <h1 className="gl-title">Le logiciel de gestion scolaire<br /><span>pour votre école privée</span></h1>
+              <p className="gl-lead">Gestilys aide les directeurs d’écoles privées d’Afrique de l’Ouest à gérer les élèves, les frais de scolarité, les reçus, les classes, les bulletins et le suivi financier depuis un téléphone ou un ordinateur.</p>
               <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
                 <button className="gl-btn gl-btn-primary" onClick={onEnter}>Essai gratuit {trialDays} jours <ArrowRight size={17} /></button>
                 <a href="#demonstration" className="gl-btn" style={{ border:'1px solid #dbe3ef', color:'#172554', textDecoration:'none', background:'white' }}>Voir l’aperçu</a>
