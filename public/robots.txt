@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://scolaria-gestion.vercel.app/sitemap.xml
