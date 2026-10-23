@@ -5,7 +5,7 @@ import {
   Search, GraduationCap, Check, ShieldCheck, CircleHelp,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
-import { generateMatricule, loadStudents, addStudentDB, recordPayment,
+import { generateMatricule, generateMatricules, loadStudents, addStudentDB, bulkAddStudentsDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock, loadSupplyStock, syncSupplyStock,
   loadSchoolFeeConfig, loadCurrentAcademicYear, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
@@ -292,13 +292,28 @@ export default function App() {
 
   const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
     if (!profile?.schoolId) throw new Error('École non identifiée.');
-    if (students.length >= getStudentLimit()) throw new Error(getStudentLimit() === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
+    const limit = getStudentLimit();
     const existing = new Set(students.map(st => `${st.firstName}|${st.lastName}|${st.className}`.toLocaleLowerCase('fr')));
-    let imported = 0;
+    const uniqueRows: ImportedStudentRow[] = [];
     for (const row of rows) {
-      if (students.length + imported >= getStudentLimit()) break;
-      const duplicateKey = `${row.firstName}|${row.lastName}|${row.className}`.toLocaleLowerCase('fr');
+      const firstName = row.firstName.trim();
+      const lastName = row.lastName.trim();
+      const className = row.className.trim();
+      if (!firstName || !lastName || !className) continue;
+      const duplicateKey = `${firstName}|${lastName}|${className}`.toLocaleLowerCase('fr');
       if (existing.has(duplicateKey)) continue;
+      existing.add(duplicateKey);
+      uniqueRows.push({ ...row, firstName, lastName, className });
+    }
+    if (!uniqueRows.length) throw new Error('Aucun nouvel élève importé : les élèves du fichier sont déjà présents ou les champs obligatoires sont vides.');
+    if (students.length + uniqueRows.length > limit) {
+      const planName = (profile.plan || 'Essentiel').trim();
+      const limitText = Number.isFinite(limit) ? `Votre formule ${planName} autorise ${limit} élèves. Il y en aurait ${students.length + uniqueRows.length} après import.` : '';
+      throw new Error(`Import annulé avant enregistrement. ${limitText} Aucun élève de ce fichier n’a été ajouté. Choisissez une formule adaptée ou retirez des lignes du fichier.`);
+    }
+
+    const matricules = await generateMatricules(profile.schoolId, profile.schoolName, uniqueRows.length);
+    const importedStudents: Omit<Student, 'id'>[] = uniqueRows.map((row, index) => {
       const fees = feeConfig.feeTypes.map(ft => {
         const matching = feeConfig.feeConfig.filter(config => config.feeType === ft.feeType && config.className === row.className);
         const payments: Record<string, { paid: number }> = {};
@@ -306,19 +321,24 @@ export default function App() {
         else for (const tranche of feeConfig.tranches) payments[String(tranche.index)] = { paid: 0 };
         return { feeType: ft.feeType, paymentMode: ft.paymentMode, payments, totalExpected: matching.reduce((sum, config) => sum + Number(config.amount || 0), 0) };
       });
-      const student: Omit<Student, 'id'> = {
-        firstName: row.firstName.trim(), lastName: row.lastName.trim(), className: row.className.trim(),
+      return {
+        firstName: row.firstName, lastName: row.lastName, className: row.className,
         parentName: row.parentName.trim(), parentPhone: row.parentPhone.trim(),
         birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees,
-        matricule: await generateMatricule(profile.schoolId, profile.schoolName), sexe: row.sexe,
+        matricule: matricules[index], sexe: row.sexe,
       };
-      const id = await addStudentDB(profile.schoolId, student);
-      setStudents(prev => [{ ...student, id }, ...prev]);
-      existing.add(duplicateKey);
-      imported++;
+    });
+
+    try {
+      await bulkAddStudentsDB(profile.schoolId, importedStudents);
+    } catch (error) {
+      // A later batch can fail after earlier batches were saved; refresh state before allowing a retry.
+      try { setStudents(await loadStudents(profile.schoolId, feeConfig.feeConfig, feeConfig.tranches)); } catch { /* Preserve the original import error. */ }
+      throw error;
     }
-    if (imported === 0) throw new Error('Aucun nouvel élève importé : vérifiez les doublons et la limite de votre forfait.');
-    return imported;
+    const refreshed = await loadStudents(profile.schoolId, feeConfig.feeConfig, feeConfig.tranches);
+    setStudents(refreshed);
+    return importedStudents.length;
   };
 
   const openEdit = (s: Student) => {
