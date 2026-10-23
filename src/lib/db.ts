@@ -286,6 +286,36 @@ export async function addStudentDB(schoolId: string, student: Omit<Student, 'id'
   return data.id;
 }
 
+/**
+ * Inserts large school lists in small batches to avoid one network request per student.
+ * If a later batch fails, the error states how many records were already saved.
+ */
+export async function bulkAddStudentsDB(schoolId: string, students: Omit<Student, 'id'>[]): Promise<number> {
+  if (students.length === 0) return 0;
+  const supa = getSupabase();
+  let inserted = 0;
+  for (let offset = 0; offset < students.length; offset += 100) {
+    const batch = students.slice(offset, offset + 100).map(student => ({
+      school_id: schoolId,
+      first_name: student.firstName.trim(),
+      last_name: student.lastName.trim(),
+      class_name: student.className.trim(),
+      parent_name: student.parentName?.trim() || null,
+      parent_phone: student.parentPhone?.trim() || null,
+      birth_date: student.birthDate || null,
+      birth_place: student.birthPlace?.trim() || null,
+      fees_json: student.fees.map(f => ({ feeType: f.feeType, paymentMode: f.paymentMode, totalExpected: f.totalExpected })),
+      status: 'actif',
+      matricule: student.matricule?.trim() || null,
+      sexe: student.sexe || 'M',
+    }));
+    const { error } = await supa.from('students').insert(batch);
+    if (error) throw new Error(`Import interrompu après ${inserted} élève(s) enregistrés : ${error.message}`);
+    inserted += batch.length;
+  }
+  return inserted;
+}
+
 export async function deleteStudentDB(studentId: string): Promise<void> {
   const { error } = await getSupabase().from('students').delete().eq('id', studentId);
   if (error) throw error;
@@ -347,6 +377,28 @@ export async function generateMatricule(schoolId: string, schoolName: string): P
   });
   const next = maxSeq + 1;
   return `${prefix}-${year}-${String(next).padStart(3, '0')}`;
+}
+
+/** Generates a sequence of matricules with one database read for bulk imports. */
+export async function generateMatricules(schoolId: string, schoolName: string, count: number): Promise<string[]> {
+  if (count <= 0) return [];
+  const year = new Date().getFullYear();
+  const prefix = (schoolName || 'ECOLE')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 5) || 'ECOLE';
+  const { data, error } = await getSupabase()
+    .from('students')
+    .select('matricule')
+    .eq('school_id', schoolId)
+    .like('matricule', `${prefix}-${year}-%`);
+  if (error) throw error;
+  let maxSeq = 0;
+  (data || []).forEach(row => {
+    const match = String(row.matricule || '').match(/-(\d+)$/);
+    if (match) maxSeq = Math.max(maxSeq, Number(match[1]));
+  });
+  return Array.from({ length: count }, (_, index) => `${prefix}-${year}-${String(maxSeq + index + 1).padStart(3, '0')}`);
 }
 
 // ── Payments ────────────────────────────────────────────
