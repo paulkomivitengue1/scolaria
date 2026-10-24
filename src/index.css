@@ -623,5 +623,5 @@ h1, h2, h3 {
 .from-blue-700{--g-from:#1d4ed8;}.to-amber-400{--g-to:#fbbf24;}
 .bg-gradient-to-br.from-blue-950.via-blue-900.to-blue-700{background-image:linear-gradient(to bottom right,#172554,#1e3a8a,#1d4ed8);}
 .text-white\/90{color:rgba(255,255,255,.9);}.bg-white\/10{background-color:rgba(255,255,255,.1);}.bg-white\/20{background-color:rgba(255,255,255,.2);}.border-white\/25{border-color:rgba(255,255,255,.25);}
-.hover\\:bg-white\\/20:hover{background-color:rgba(255,255,255,.2);}
+/* Hover tint remains optional; avoid an invalid escaped selector. */
 
