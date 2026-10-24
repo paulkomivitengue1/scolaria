@@ -70,7 +70,11 @@ export default function App() {
   const [currentAcademicYear, setCurrentAcademicYear] = useState('');
 
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<AppView>('dashboard');
+  const [view, setView] = useState<AppView>(() => {
+    // Keep the Direction area open if Android/Chrome restores the page after the file picker.
+    try { return sessionStorage.getItem('gestilys-resume-direction') === '1' ? 'direction' : 'dashboard'; }
+    catch { return 'dashboard'; }
+  });
   const [guideMode, setGuideMode] = useState<'onboarding' | 'module' | 'help' | null>(null);
   const [guideView, setGuideView] = useState<AppView>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -698,6 +702,10 @@ export default function App() {
     }
     setPayError(null);
     setView(v);
+    try {
+      if (v === 'direction') sessionStorage.setItem('gestilys-resume-direction', '1');
+      else sessionStorage.removeItem('gestilys-resume-direction');
+    } catch { /* Navigation still works if session storage is unavailable. */ }
     setSidebarOpen(false);
     if (v !== 'dashboard' && guideMode !== 'onboarding' && profile?.schoolId) {
       const key = 'gestilys-guide-module:' + profile.schoolId + ':' + v;
