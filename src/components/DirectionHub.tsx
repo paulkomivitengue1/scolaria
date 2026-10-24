@@ -307,8 +307,12 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     : '';
 
   const handleImportFile = async (file?: File) => {
-    if (file) { try { await savePendingImport(file); } catch (storageError) { console.warn('Fichier non conservé pour reprise automatique :', storageError); } }
     if (!file) return;
+    // Do not wait for IndexedDB before reading the file: Android can recreate
+    // the screen while that write is pending, which used to lose the preview.
+    void savePendingImport(file).catch(storageError => {
+      console.warn('Fichier non conservé pour reprise automatique :', storageError);
+    });
     setNotice('');
     setImportPreview([]);
     if (file.size > 10 * 1024 * 1024) {
@@ -379,7 +383,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       // Android can recreate this screen before the file-picker callback has
       // finished writing the selected file to IndexedDB. Retry briefly so the
       // new screen does not miss that write and leave the user without a preview.
-      for (let attempt = 0; attempt < 12 && !cancelled && !recovered; attempt++) {
+      for (let attempt = 0; attempt < 30 && !cancelled && !recovered; attempt++) {
         try {
           const file = await readPendingImport();
           if (cancelled) return;
@@ -392,7 +396,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         } catch (error) {
           console.warn('Reprise de fichier impossible :', error);
         }
-        if (attempt < 11) await wait(250);
+        if (attempt < 29) await wait(400);
       }
     };
     if (tab === 'import') void recoverPendingFile();
