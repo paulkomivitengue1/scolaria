@@ -23,6 +23,7 @@ interface Props {
 }
 
 type Mode = 'list' | 'edit' | 'bulletin' | 'history';
+type LyceeScore = { classScore: string; compositionScore: string; rank: string };
 
 export function ReportCardView({ students, gradePeriods, schoolId, schoolName, academicYear, schoolLogo }: Props) {
   const [mode, setMode] = useState<Mode>('list');
@@ -47,8 +48,32 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [schoolStamp, setSchoolStamp] = useState('');
   const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
   const [showRank, setShowRank] = useState(false);
+  const [lyceeScores, setLyceeScores] = useState<Record<string, LyceeScore>>({});
   const [classStats, setClassStats] = useState<{ count: number; highest: number | null; lowest: number | null; rank: number | null }>({ count: 0, highest: null, lowest: null, rank: null });
   useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
+
+  useEffect(() => {
+    if (!selectedStudent) { setLyceeScores({}); return; }
+    try {
+      const key = 'gestilys-lycee-scores-' + schoolId + '-' + selectedStudent.id + '-' + selectedPeriod;
+      const saved = localStorage.getItem(key);
+      setLyceeScores(saved ? JSON.parse(saved) as Record<string, LyceeScore> : {});
+    } catch { setLyceeScores({}); }
+  }, [schoolId, selectedStudent?.id, selectedPeriod]);
+
+  const updateLyceeScore = (subject: string, field: keyof LyceeScore, value: string) => {
+    if (!selectedStudent) return;
+    const next = { ...lyceeScores, [subject]: { classScore: '', compositionScore: '', rank: '', ...(lyceeScores[subject] || {}), [field]: value } };
+    setLyceeScores(next);
+    try { localStorage.setItem('gestilys-lycee-scores-' + schoolId + '-' + selectedStudent.id + '-' + selectedPeriod, JSON.stringify(next)); }
+    catch { window.alert('Impossible d’enregistrer ces notes sur cet appareil.'); }
+  };
+  const lyceeAverage = (subject: string) => {
+    if (subject === 'Conduite') return Number(lyceeScores[subject]?.classScore || 18);
+    const row = lyceeScores[subject];
+    return (Number(row?.classScore || 0) + (Number(row?.compositionScore || 0) / 20) * 2) / 3;
+  };
+  const lyceeMention = (average: number) => average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
 
   useEffect(() => {
     try {
@@ -435,7 +460,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm font-700 text-slate-700">Format du bulletin
               <select value={bulletinFormat} onChange={e=>{setBulletinFormat(e.target.value);setFormatSaved(false);}} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base">
-                <option value="classique">1. Classique malien</option><option value="moderne">2. Moderne coloré</option><option value="compact">3. Compact</option><option value="officiel">4. Institutionnel</option><option value="minimal">5. Minimaliste</option><option value="personnalise">Personnaliser mon format</option>
+                <option value="classique">1. Classique malien</option><option value="moderne">2. Moderne coloré</option><option value="compact">3. Compact</option><option value="officiel">4. Institutionnel</option><option value="minimal">5. Minimaliste</option><option value="lycee-malien">6. Lycée malien (classe + composition)</option><option value="personnalise">Personnaliser mon format</option>
               </select>
             </label>
             <label className="flex-1 text-sm font-700 text-slate-700">Devise de l’école<input type="text" maxLength={80} value={schoolMotto} onChange={e=>{setSchoolMotto(e.target.value);setFormatSaved(false);}} placeholder="Ex. Travail – Discipline – Réussite" className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base" /></label>
@@ -498,7 +523,50 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           </div>
 
           {/* Grades table */}
-          <table className={`mt-4 w-full border-collapse ${bulletinFormat==='compact'?'text-xs':'text-sm'}`} style={{border:bulletinFormat==='minimal'?'none':undefined}}>
+          {bulletinFormat === 'lycee-malien' ? (() => {
+            const subjectRows = [...grades.filter(g => g.subject.trim()), { id: '__conduite__', subject: 'Conduite', score: 18, maxScore: 20, coefficient: 1 } as GradeRow];
+            const totalCoefficient = subjectRows.reduce((sum, g) => sum + (Number(g.coefficient) || 1), 0);
+            const totalPoints = subjectRows.reduce((sum, g) => sum + lyceeAverage(g.subject) * (Number(g.coefficient) || 1), 0);
+            const totalMax = totalCoefficient * 20;
+            return <div className="mt-4">
+              <div className="mb-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                <div className="rounded border border-slate-300 p-2"><b>Classe :</b> {selectedStudent.className}</div>
+                <div className="rounded border border-slate-300 p-2"><b>Matières :</b> {subjectRows.length}</div>
+                <div className="rounded border border-slate-300 p-2"><b>Effectif :</b> {classStats.count || students.filter(s => s.className === selectedStudent.className).length}</div>
+                <div className="rounded border border-slate-300 p-2"><b>Rang :</b> {classStats.rank ? classStats.rank + 'e' : '—'}</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] border-collapse text-xs sm:text-sm">
+                  <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matières','Note classe /20','Compo /40','Rang','Moy. générale','Coef.','Moy. coef.','Mention'].map(label => <th key={label} className="border border-slate-500 px-1 py-2 text-center font-bold">{label}</th>)}</tr></thead>
+                  <tbody>{subjectRows.map((g, index) => {
+                    const score = lyceeAverage(g.subject);
+                    const coef = Number(g.coefficient) || 1;
+                    const points = score * coef;
+                    const isConduct = g.subject === 'Conduite';
+                    return <tr key={g.id || g.subject}>
+                      <td className="border border-slate-500 px-1 py-1 text-center">{index + 1}</td>
+                      <td className="border border-slate-500 px-2 py-1 font-semibold">{g.subject}</td>
+                      <td className="border border-slate-500 p-1 text-center">{isConduct ? <input aria-label="Note de conduite sur 20" type="number" min="0" max="20" step="0.5" value={lyceeScores.Conduite?.classScore ?? '18'} onChange={e => updateLyceeScore('Conduite','classScore',e.target.value)} className="w-16 rounded border border-slate-300 p-1 text-center print:hidden" /> : <input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? ''} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-16 rounded border border-slate-300 p-1 text-center print:hidden" />}{isConduct && <span className="hidden print:inline">{score.toFixed(2)}</span>}</td>
+                      <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : <input aria-label={'Note de composition '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-16 rounded border border-slate-300 p-1 text-center print:hidden" />}{!isConduct && <span className="hidden print:inline">{Number(lyceeScores[g.subject]?.compositionScore || 0).toFixed(2)}</span>}</td>
+                      <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : <input aria-label={'Rang de '+g.subject} type="number" min="1" value={lyceeScores[g.subject]?.rank ?? ''} onChange={e => updateLyceeScore(g.subject,'rank',e.target.value)} className="w-12 rounded border border-slate-300 p-1 text-center print:hidden" />}{!isConduct && <span className="hidden print:inline">{lyceeScores[g.subject]?.rank ? lyceeScores[g.subject].rank + 'e' : '—'}</span>}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center font-bold">{score.toFixed(2)}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center">{coef}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center font-bold">{points.toFixed(2)}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center">{isConduct ? 'Bonne' : lyceeMention(score)}</td>
+                    </tr>;
+                  })}</tbody>
+                  <tfoot><tr className="bg-slate-100 font-bold"><td colSpan={6} className="border border-slate-500 px-2 py-2 text-right">TOTAL</td><td className="border border-slate-500 px-1 py-2 text-center">{totalCoefficient}</td><td className="border border-slate-500 px-1 py-2 text-center">{totalPoints.toFixed(2)}</td><td className="border border-slate-500 px-1 py-2 text-center">Sur {totalMax}</td></tr></tfoot>
+                </table>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div><b>Moyenne :</b> {(totalCoefficient ? totalPoints / totalCoefficient : 0).toFixed(2)} / 20</div>
+                <div><b>Rang :</b> {classStats.rank ? classStats.rank + 'e / ' + classStats.count + ' élèves classés' : 'À renseigner'}</div>
+                <div><b>Moyenne du premier :</b> {classStats.highest === null ? 'À renseigner' : classStats.highest.toFixed(2)}</div>
+                <div className="text-right"><b>{schoolName || 'École'}, le</b> {new Date().toLocaleDateString('fr-FR')}</div>
+              </div>
+              <p className="mt-3 text-xs italic text-slate-600">Les notes de classe et de composition sont enregistrées sur cet appareil pour ce bulletin. Les autres bulletins restent inchangés.</p>
+            </div>;
+          })() : <table className={`mt-4 w-full border-collapse ${bulletinFormat==='compact'?'text-xs':'text-sm'}`} style={{border:bulletinFormat==='minimal'?'none':undefined}}>
             <thead>
               <tr className="border-b-2 border-slate-300 bg-slate-50">
                 <th className="px-3 py-2 text-left text-xs font-700 uppercase tracking-wider text-slate-600">Matière</th>
@@ -522,7 +590,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-400">Aucune note saisie</td></tr>
               )}
             </tbody>
-          </table>
+          </table>}
 
           {/* Average + appreciation */}
           {grades.filter(g => g.subject).length > 0 && (
