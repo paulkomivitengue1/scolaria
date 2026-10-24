@@ -47,11 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastDeviceReportAt = useRef(0);
 
   async function fetchProfile(u: User): Promise<SchoolProfile | null> {
-    const { data, error } = await getSupabase()
-      .from('users')
-      .select('school_id, role, email, schools(name, director_name, trial_ends_at, subscription_status, plan, subscription_amount)')
-      .eq('auth_uid', u.id)
-      .maybeSingle();
+    let data: any = null;
+    let error: any = null;
+    try {
+      const result = await getSupabase()
+        .from('users')
+        .select('school_id, role, email, schools(name, director_name, trial_ends_at, subscription_status, plan, subscription_amount)')
+        .eq('auth_uid', u.id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+    } catch (requestError) {
+      console.warn('Profil inaccessible en ligne, tentative de restauration locale :', requestError);
+    }
 
     if (error || !data) {
       // Offline fallback: reuse only the profile previously fetched for this signed-in user.
