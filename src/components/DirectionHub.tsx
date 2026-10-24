@@ -253,6 +253,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const [importPreview, setImportPreview] = useState<ImportedStudentRow[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importName, setImportName] = useState('');
+  const [importReading, setImportReading] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
 
   const loadOperations = useCallback(async () => {
@@ -315,14 +316,13 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
 
   const handleImportFile = async (file?: File) => {
     if (!file) return;
+    setImportReading(true);
     setNotice('');
-    if (!/\.csv$|\.xlsx$/i.test(file.name) && file.type !== 'text/csv' && file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-      setImportPreview([]);
-      setImportName(file.name);
-      setNotice('Choisissez un fichier Excel .xlsx ou un fichier .csv UTF-8.');
-      return;
-    }
+    setImportPreview([]);
     try {
+      if (!/\.csv$|\.xlsx$/i.test(file.name) && file.type !== 'text/csv' && file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+        throw new Error('Format non pris en charge. Choisissez un fichier Excel .xlsx ou un fichier .csv UTF-8 (pas .xls).');
+      }
       const text = /\.xlsx$/i.test(file.name) ? await parseStudentXlsx(file) : await file.text();
       const rows = parseStudentCsv(text);
       const knownClasses = new Set(classNames.map(name => name.trim().toLocaleLowerCase('fr')));
@@ -333,7 +333,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       setNotice(rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
     } catch (error) {
       setImportPreview([]);
-      setNotice(error instanceof Error ? error.message : 'Fichier illisible.');
+      setNotice(error instanceof Error ? error.message : 'Fichier illisible. Réessayez avec un .xlsx ou un CSV UTF-8.');
+    } finally {
+      setImportReading(false);
     }
   };
   const runImport = async () => {
@@ -536,10 +538,10 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
             }} />
           </label>
           {importName && <p className="mt-3 break-all rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
-          <button type="button" className={buttonClass + ' mt-3 w-full'} disabled={!importFile || importBusy} onClick={() => void handleImportFile(importFile || undefined)}>
-            <FileSpreadsheet className="h-4 w-4" />{importBusy ? 'Analyse en cours…' : 'Analyser le fichier'}
+          <button type="button" className={buttonClass + ' mt-3 w-full'} disabled={!importFile || importReading || importBusy} onClick={() => void handleImportFile(importFile || undefined)}>
+            <FileSpreadsheet className="h-4 w-4" />{importReading ? 'Lecture du fichier…' : 'Analyser le fichier'}
           </button>
-          <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('modele-import-eleves-gestilys.csv', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','75000000','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle CSV</button>
+          <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('modele-import-eleves-gestilys.csv', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle CSV</button>
         </div>
         <div className={panelClass}><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-black text-blue-950">Aperçu avant import</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{importPreview.length} ligne(s)</span></div><p className="mt-1 text-sm text-slate-700">Contrôlez l’aperçu avant d’ajouter des élèves. Les frais seront calculés selon la configuration de l’école.</p>
           <div className="mt-3 max-h-72 overflow-auto rounded-xl border border-slate-200"><table className="w-full min-w-[540px] text-left text-xs"><thead className="sticky top-0 bg-blue-100 text-blue-950"><tr>{['Prénom','Nom','Classe','Parent','Téléphone'].map(header => <th key={header} className="p-2 font-extrabold">{header}</th>)}</tr></thead><tbody>{importPreview.slice(0,100).map((row,index) => <tr key={index} className="border-t border-slate-100"><td className="p-2 font-semibold text-slate-900">{row.firstName}</td><td className="p-2 font-semibold text-slate-900">{row.lastName}</td><td className="p-2 font-semibold text-slate-900">{row.className}</td><td className="p-2 text-slate-800">{row.parentName}</td><td className="p-2 text-slate-800">{row.parentPhone}</td></tr>)}</tbody></table></div>
