@@ -4,7 +4,6 @@ import {
   MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download, Users,
 } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
-import * as XLSX from 'xlsx';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
 import type { Expense, SalaryPayment, Student, Teacher } from '../types';
 
@@ -164,7 +163,8 @@ function saveCsv(filename: string, rows: unknown[][]) {
   URL.revokeObjectURL(url);
 }
 
-function saveExcelTemplate(filename: string, rows: unknown[][]) {
+async function saveExcelTemplate(filename: string, rows: unknown[][]) {
+  const XLSX = await import('xlsx');
   const workbook = XLSX.utils.book_new();
   const sheet = XLSX.utils.aoa_to_sheet(rows as any[][]);
   sheet['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 26 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 12 }];
@@ -281,9 +281,12 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       let text = '';
       let parsedRows: ImportedStudentRow[] | null = null;
       if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
+        // Load the large spreadsheet parser only when the user chooses an Excel file.
+        // This keeps the normal app lighter on low-memory Android phones.
+        const XLSX = await import('xlsx');
         const buffer = await file.arrayBuffer();
-        // Limit parsed rows and use array-based sheets to reduce memory pressure on Android.
-        const workbook = XLSX.read(buffer, { type: 'array', dense: true, sheetRows: 5006, cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false });
+        // Restrict the worksheet size and skip expensive Excel formatting/features.
+        const workbook = XLSX.read(buffer, { type: 'array', dense: true, sheetRows: 5006, cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false, WTF: false });
         if (!workbook.SheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
         const sheetErrors: string[] = [];
         // Read cells as rows directly; avoid converting a whole sheet to a second giant CSV string.
@@ -503,7 +506,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
           <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
-          <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
+          <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => void saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']]).catch(error => setNotice(error instanceof Error ? error.message : 'Impossible de créer le modèle Excel.'))}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
         <div className={panelClass}><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-black text-blue-950">Aperçu avant import</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{importPreview.length} ligne(s)</span></div><p className="mt-1 text-sm text-slate-700">Contrôlez l’aperçu avant d’ajouter des élèves. Les frais seront calculés selon la configuration de l’école.</p>
