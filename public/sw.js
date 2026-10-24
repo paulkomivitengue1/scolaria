@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v4';
+const CACHE_NAME = 'gestilys-shell-v5';
 const SHELL_URLS = [
   '/',
   '/offline.html',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.destination === 'script' || request.destination === 'style' || request.destination === 'image' || request.destination === 'font' || url.pathname.startsWith('/assets/')) {
+  if (request.destination === 'script' || request.destination === 'style' || request.destination === 'image' || request.destination === 'font' || request.destination === 'document' || url.pathname.startsWith('/assets/')) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request);
