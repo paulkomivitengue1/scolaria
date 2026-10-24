@@ -288,8 +288,10 @@ export interface ReportCard {
 }
 
 export const DEFAULT_SUBJECTS = [
-  'Lecture', 'Calcul', 'Écriture', 'Dictée', 'Grammaire', 'Conjugaison',
-  'Histoire-Géo', 'Sciences', 'Anglais', 'EPS', 'Dessin', 'Récitation',
+  'Mathématiques', 'Physique-Chimie', 'Anglais', 'SVT', 'EPS',
+  'Dictée-Question', 'Histoire-Géographie', 'ECM', 'Dessin',
+  'Français', 'Lecture', 'Calcul', 'Écriture', 'Grammaire', 'Conjugaison',
+  'Sciences', 'Récitation',
 ];
 
 export const gradePercentage = (g: GradeRow) =>
