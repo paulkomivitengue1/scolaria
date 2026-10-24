@@ -183,9 +183,9 @@ export async function loadCurrentAcademicYear(schoolId: string): Promise<string>
   return data.current_academic_year as string;
 }
 
-export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[], tranches: TrancheDef[]): Promise<Student[]> {
+export async function loadStudents(schoolId: string, _feeConfig: FeeConfigRow[], tranches: TrancheDef[], currentAcademicYear?: string): Promise<Student[]> {
   const supa = getSupabase();
-  const currentYear = await loadCurrentAcademicYear(schoolId);
+  const currentYear = currentAcademicYear || await loadCurrentAcademicYear(schoolId);
   const { data: rows, error } = await supa
     .from('students')
     .select('id, first_name, last_name, class_name, parent_name, parent_phone, birth_date, birth_place, fees_json, matricule, sexe')
