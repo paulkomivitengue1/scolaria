@@ -401,7 +401,7 @@ export default function App() {
     }));
     const queueKey = 'gestilys-pending-students-' + profile.schoolId;
     const queued = JSON.parse(localStorage.getItem(queueKey) || '[]') as Array<{ localId: string; student: Omit<Student, 'id'> }>;
-    queued.push(...imported.map(student => ({ localId: student.id, student: (({ id: _id, ...rest }) => rest)(student) })));
+    queued.push(...imported.map(student => { const { id, ...record } = student; return { localId: id, student: record }; }));
     localStorage.setItem(queueKey, JSON.stringify(queued));
     const nextStudents = [...imported, ...students];
     setStudents(nextStudents);
