@@ -1,0 +1,47 @@
+/* Keep every help guide readable on short screens and touch devices.
+   The header stays visible while the guide content scrolls independently. */
+.gestilys-help-dialog {
+  display: flex !important;
+  flex-direction: column !important;
+  height: min(92vh, 920px) !important;
+  height: min(92dvh, 920px) !important;
+  max-height: 92vh !important;
+  max-height: 92dvh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.gestilys-help-header {
+  position: relative !important;
+  top: auto !important;
+  flex: 0 0 auto !important;
+}
+.gestilys-help-main {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin;
+  scrollbar-color: #93b4ec #e8efff;
+}
+.gestilys-help-main::-webkit-scrollbar {
+  width: 6px;
+}
+.gestilys-help-main::-webkit-scrollbar-thumb {
+  background: #93b4ec;
+  border-radius: 8px;
+}
+@media (max-width: 639px) {
+  .gestilys-help-dialog {
+    height: 94vh !important;
+    height: 94dvh !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+  }
+  .gestilys-help-main {
+    min-height: 0 !important;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    touch-action: pan-y;
+  }
+}
