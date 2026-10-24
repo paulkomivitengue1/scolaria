@@ -1280,7 +1280,7 @@ function TrialExpired({ schoolName, schoolEmail, onLogout }: { schoolName: strin
           <div className="pointer-events-none absolute left-1/2 top-12 -z-10 h-44 w-44 -translate-x-1/2 rounded-full bg-blue-200/40 blur-3xl" />
           <span className="gb-eyebrow"><Sparkles className="h-3.5 w-3.5" /> Votre école, votre espace de gestion</span>
           <h1 className="gb-title mt-5">Continuez à faire grandir <span>votre école.</span></h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">La période d’essai de <strong className="text-blue-950">{schoolName}</strong> est terminée. Choisissez la formule adaptée à votre établissement et demandez son activation en quelques échanges sur WhatsApp.</p>
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">L’accès à l’espace de <strong className="text-blue-950">{schoolName}</strong> est en attente d’activation. Choisissez la formule adaptée à votre établissement et demandez son activation en quelques échanges sur WhatsApp.</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-bold text-slate-600"><span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-blue-600" /> Vos données sont conservées</span><span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-600" /> Aucun paiement automatique</span></div>
         </section>
 
