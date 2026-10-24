@@ -76,7 +76,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     const row = lyceeScores[subject];
     return Math.round(((Number(row?.classScore || 0) + Number(row?.compositionScore || 0)) / 3) * 100) / 100;
   };
-  const lyceeMention = (average: number) => average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
+  const lyceeMention = (average: number) => average >= 18 ? 'Excellent' : average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
 
   useEffect(() => {
     try {
