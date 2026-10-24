@@ -48,7 +48,7 @@ const TABS: { id: Tab; label: string; description: string; icon: typeof Activity
   { id: 'attendance', label: 'Présences', description: 'Registre quotidien des élèves', icon: CalendarCheck },
   { id: 'messages', label: 'Parents', description: 'Messages WhatsApp préparés', icon: MessageCircle },
   { id: 'team', label: 'Équipe', description: 'Tâches et suivi interne', icon: ClipboardList },
-  { id: 'import', label: 'Import élèves', description: 'Importer un fichier CSV d’Excel', icon: FileSpreadsheet },
+  { id: 'import', label: 'Import élèves', description: 'Importer un fichier Excel ou CSV', icon: FileSpreadsheet },
 ];
 const today = () => new Date().toISOString().slice(0, 10);
 const inputClass = 'mt-1 h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
@@ -257,7 +257,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     setImportBusy(true); setNotice('');
     try {
       const count = await onImportStudents(importPreview);
-      setNotice(count + ' élève(s) importé(s). Vérifiez les fiches et les classes après import.');
+      setNotice(count + (navigator.onLine ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.' : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
       setImportPreview([]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
