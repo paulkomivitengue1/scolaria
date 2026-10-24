@@ -42,6 +42,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [formatSaved, setFormatSaved] = useState(false);
   const [showStudentPhoto, setShowStudentPhoto] = useState(false);
   const [showParentName, setShowParentName] = useState(false);
+  const [schoolMotto, setSchoolMotto] = useState('Travail – Discipline – Réussite');
   const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
   const [schoolStamp, setSchoolStamp] = useState('');
   const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
@@ -56,6 +57,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         setCustomBulletinColor(config.color || '#1d4ed8');
         setShowStudentPhoto(config.showStudentPhoto === true);
         setShowParentName(config.showParentName === true);
+        setSchoolMotto(config.schoolMotto || 'Travail – Discipline – Réussite');
       }
     } catch { /* Optional saved format */ }
   }, [schoolId]);
@@ -410,11 +412,12 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm font-700 text-slate-700">Format du bulletin
               <select value={bulletinFormat} onChange={e=>{setBulletinFormat(e.target.value);setFormatSaved(false);}} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base">
-                <option value="classique">1. Classique</option><option value="moderne">2. Moderne</option><option value="compact">3. Compact</option><option value="officiel">4. Officiel</option><option value="minimal">5. Minimaliste</option><option value="personnalise">Personnaliser mon format</option>
+                <option value="classique">1. Classique malien</option><option value="moderne">2. Moderne coloré</option><option value="compact">3. Compact</option><option value="officiel">4. Institutionnel</option><option value="minimal">5. Minimaliste</option><option value="personnalise">Personnaliser mon format</option>
               </select>
             </label>
+            <label className="flex-1 text-sm font-700 text-slate-700">Devise de l’école<input type="text" maxLength={80} value={schoolMotto} onChange={e=>{setSchoolMotto(e.target.value);setFormatSaved(false);}} placeholder="Ex. Travail – Discipline – Réussite" className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base" /></label>
             {bulletinFormat==='personnalise'&&<><label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label><div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={showStudentPhoto} onChange={e=>{setShowStudentPhoto(e.target.checked);setFormatSaved(false);}}/> Photo de l’élève</label><label className="flex items-center gap-2"><input type="checkbox" checked={showParentName} onChange={e=>{setShowParentName(e.target.checked);setFormatSaved(false);}}/> Nom du parent</label></div></>}
-            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo:true,showStudentPhoto,showParentName}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
+            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo:true,showStudentPhoto,showParentName,schoolMotto}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
           </div>
           <label className="mt-3 block rounded-xl border border-dashed border-indigo-200 bg-white p-3 text-sm font-700 text-slate-700">
             Cachet de l’école (photo ou image)
@@ -443,11 +446,18 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         {/* Printable bulletin */}
         <div id="bulletin-print" className={`mx-auto max-w-2xl bg-white shadow-card print:shadow-none print:p-0 ${bulletinFormat==='compact'?'p-3 sm:p-4':bulletinFormat==='minimal'?'p-5 sm:p-6':'rounded-2.5xl p-6 sm:p-8'}`} style={{border:formatBorder,borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'4px':'18px',fontFamily:bulletinFormat==='officiel'?'Georgia,serif':'inherit'}}>
           {/* Header */}
-          <div className={`pb-4 ${bulletinFormat==='moderne'?'flex items-center gap-4 text-left':bulletinFormat==='officiel'?'text-center uppercase tracking-wide':'text-center'}`} style={{borderBottom:bulletinFormat==='officiel'?'double 5px '+formatColor:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':'transparent',padding:bulletinFormat==='moderne'?'14px':'8px 0'}}>
-            {schoolLogo ? <img src={schoolLogo} alt="Logo de l’école" className="mx-auto mb-2 h-14 w-14 object-contain print:h-12 print:w-12" style={{margin:bulletinFormat==='moderne'?'0':'0 auto 8px'}} /> : <div className="print:hidden mx-auto mb-2 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">Ajoutez le logo dans Paramètres avant d’imprimer le bulletin.</div>}
-            <div className={bulletinFormat==='moderne'?'min-w-0 flex-1':''}><h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
-            <p className="mt-1 text-sm text-slate-500">Bulletin de notes · Année scolaire {academicYear}</p>
-            <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p></div>
+          <div className={`pb-4 ${bulletinFormat==='moderne'?'text-left':'text-center'} ${bulletinFormat==='officiel'?'uppercase tracking-wide':''}`} style={{borderBottom:bulletinFormat==='officiel'?'double 5px '+formatColor:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':bulletinFormat==='minimal'?'#ffffff':'transparent',padding:bulletinFormat==='moderne'?'14px':bulletinFormat==='compact'?'4px 0':'8px 0',borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'0':'8px'}}>
+            <div className={`flex items-center justify-center gap-3 ${bulletinFormat==='moderne'?'flex-row text-left':'flex-col text-center'}`}>
+              {schoolLogo ? <img src={schoolLogo} alt="Logo de l’école" className="h-12 w-12 shrink-0 object-contain print:h-10 print:w-10" /> : <div className="print:hidden rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">Ajoutez le logo dans Paramètres.</div>}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-800 uppercase tracking-widest text-slate-700">RÉPUBLIQUE DU MALI</p>
+                <p className="text-[10px] font-700 text-slate-600">Un Peuple – Un But – Une Foi</p>
+                <h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
+                <p className="text-xs font-700 italic text-slate-600">{schoolMotto || 'Devise de l’école'}</p>
+                <p className="mt-1 text-sm text-slate-600">Bulletin de notes · Année scolaire {academicYear}</p>
+                <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p>
+              </div>
+            </div>
           </div>
 
           {/* Student info */}
