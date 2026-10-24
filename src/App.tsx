@@ -64,6 +64,7 @@ export default function App() {
   const [classNames, setClassNames] = useState<string[]>([]);
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [loadedSchoolId, setLoadedSchoolId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine);
   const [schoolLogo, setSchoolLogo] = useState('');
   const [currentAcademicYear, setCurrentAcademicYear] = useState('');
@@ -204,6 +205,7 @@ export default function App() {
         }
       } catch (cacheError) { console.error('Impossible de restaurer les données hors ligne :', cacheError); }
     } finally {
+      setLoadedSchoolId(schoolId);
       setDataLoading(false);
     }
   }, []);
@@ -233,7 +235,7 @@ export default function App() {
   }, [profile?.schoolId]);
 
   useEffect(() => {
-    if (!profile?.schoolId || dataLoading || !user) return;
+    if (!profile?.schoolId || dataLoading || !user || loadedSchoolId !== profile.schoolId) return;
     try {
       const key = 'gestilys-offline-data-' + profile.schoolId;
       const previous = JSON.parse(localStorage.getItem(key) || '{}');
@@ -243,7 +245,7 @@ export default function App() {
         supplies, gradePeriods, expenses, teachers, salaryPayments,
       }));
     } catch (error) { console.warn('Cache local des données scolaires indisponible :', error); }
-  }, [profile?.schoolId, dataLoading, user, currentAcademicYear, feeConfig, classNames, students, uniforms, books, supplies, gradePeriods, expenses, teachers, salaryPayments]);
+  }, [profile?.schoolId, loadedSchoolId, dataLoading, user, currentAcademicYear, feeConfig, classNames, students, uniforms, books, supplies, gradePeriods, expenses, teachers, salaryPayments]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
