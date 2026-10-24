@@ -226,22 +226,52 @@ button{cursor:pointer;font-family:inherit;}button:disabled{cursor:not-allowed;}
   .lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}.lg\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}.lg\:text-7xl{font-size:72px;line-height:1;}
 }
 
-/* Print styles for bulletin PDF export */
+/* Print styles for school report cards: A4 layout, readable tables and preserved branding. */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
 @media print {
-  body { background: #fff !important; }
+  html, body {
+    width: 100% !important;
+    min-height: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body * { visibility: hidden !important; }
   #bulletin-print, #bulletin-print * { visibility: visible !important; }
   #bulletin-print {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
+    box-sizing: border-box !important;
     width: 100% !important;
-    max-width: 100% !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
+    max-width: none !important;
     margin: 0 !important;
+    padding: 7mm !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+    background: #fff !important;
   }
+  #bulletin-print table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+  #bulletin-print thead { display: table-header-group !important; }
+  #bulletin-print tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  #bulletin-print th, #bulletin-print td {
+    padding: 2mm 2.2mm !important;
+    border-bottom: 1px solid #dbe3ee !important;
+    color: #111827 !important;
+  }
+  #bulletin-print img { max-width: 100% !important; object-fit: contain !important; }
 }
 
 /* Gestilys admin: accessible contrast for pale labels and icon-only controls.
