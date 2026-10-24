@@ -157,6 +157,42 @@ function parseStudentCsv(text: string): ImportedStudentRow[] {
   }
   return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
 }
+type PendingImportFile = { blob: Blob; name: string; type: string; lastModified: number };
+const IMPORT_DB = 'gestilys-import-recovery';
+function openImportDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(IMPORT_DB, 1);
+    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains('files')) request.result.createObjectStore('files'); };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('Stockage temporaire indisponible.'));
+  });
+}
+async function savePendingImport(file: File): Promise<void> {
+  const db = await openImportDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction('files', 'readwrite');
+    tx.objectStore('files').put({ blob: file, name: file.name, type: file.type, lastModified: file.lastModified } satisfies PendingImportFile, 'pending');
+    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error || new Error('Impossible de conserver temporairement le fichier.'));
+  });
+  db.close();
+}
+async function readPendingImport(): Promise<File | null> {
+  const db = await openImportDb();
+  const record = await new Promise<PendingImportFile | undefined>((resolve, reject) => {
+    const tx = db.transaction('files', 'readonly'); const request = tx.objectStore('files').get('pending');
+    request.onsuccess = () => resolve(request.result as PendingImportFile | undefined); request.onerror = () => reject(request.error);
+  });
+  db.close();
+  return record ? new File([record.blob], record.name, { type: record.type, lastModified: record.lastModified }) : null;
+}
+async function clearPendingImport(): Promise<void> {
+  try {
+    const db = await openImportDb();
+    await new Promise<void>((resolve, reject) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('pending'); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
+    db.close();
+  } catch { /* Recovery is best-effort; normal import remains available. */ }
+}
+
 function csvEscape(value: unknown) {
   const text = String(value ?? '');
   return '"' + text.replace(/"/g, '""') + '"';
@@ -271,6 +307,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     : '';
 
   const handleImportFile = async (file?: File) => {
+    if (file) { try { await savePendingImport(file); } catch (storageError) { console.warn('Fichier non conservé pour reprise automatique :', storageError); } }
     if (!file) return;
     setNotice('');
     setImportPreview([]);
@@ -328,8 +365,25 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     } catch (error) {
       setImportPreview([]);
       setNotice(error instanceof Error ? error.message : 'Fichier illisible.');
+    } finally {
+      await clearPendingImport();
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    if (tab === 'import') {
+      void readPendingImport().then(file => {
+        if (!cancelled && file) {
+          setNotice('Reprise de la lecture de ' + file.name + '…');
+          void handleImportFile(file);
+        }
+      }).catch(error => console.warn('Reprise de fichier impossible :', error));
+    }
+    return () => { cancelled = true; };
+    // Only recover a file on component mount; tab changes must not restart an import.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const runImport = async () => {
     if (!importPreview.length) return;
     setImportBusy(true); setNotice('');
