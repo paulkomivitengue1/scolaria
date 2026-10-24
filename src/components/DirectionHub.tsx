@@ -179,7 +179,11 @@ async function saveExcelTemplate(filename: string, rows: unknown[][]) {
 }
 
 export function DirectionHub({ schoolId, schoolName, students, classNames, teachers, expenses, salaryPayments, premium, onImportStudents, onNavigate }: Props) {
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<Tab>(() => {
+    // Android may recreate the page after returning from its document picker.
+    try { return sessionStorage.getItem('gestilys-resume-direction') === '1' ? 'import' : 'overview'; }
+    catch { return 'overview'; }
+  });
   const [operations, setOperations] = useState<Operation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -343,6 +347,10 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const handleTab = (next: Tab, locked: boolean) => {
     if (locked) { setNotice('Cette rubrique est incluse dans les formules Premium et Élite. Consultez les tarifs pour faire évoluer votre abonnement.'); return; }
     setNotice(''); setTab(next);
+    try {
+      if (next === 'import') sessionStorage.setItem('gestilys-resume-direction', '1');
+      else sessionStorage.removeItem('gestilys-resume-direction');
+    } catch { /* Tab navigation still works if storage is unavailable. */ }
   };
 
   return (
