@@ -355,7 +355,7 @@ export async function generateMatricules(schoolId: string, schoolName: string, c
   if (error) throw error;
   let maxSeq = 0;
   (data || []).forEach(row => {
-    const match = String(row.matricule || '').match(/-(\\d+)$/);
+    const match = String(row.matricule || '').match(/-(\d+)$/);
     if (match) maxSeq = Math.max(maxSeq, Number(match[1]) || 0);
   });
   return Array.from({ length: count }, (_, index) => `${prefix}-${year}-${String(maxSeq + index + 1).padStart(3, '0')}`);
