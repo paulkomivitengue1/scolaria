@@ -25,6 +25,9 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   }, [schoolId]);
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
+  const [cardFormat, setCardFormat] = useState('mali-officiel');
+  const [schoolMotto, setSchoolMotto] = useState('Travail – Discipline – Réussite');
+  const [cardConfigLoaded, setCardConfigLoaded] = useState(false);
   const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
   const [fieldsSaving, setFieldsSaving] = useState(false);
   useEffect(() => { let alive = true; loadStudentCardFields(schoolId).then(fields => { if (alive) setCardFields(fields); }).catch(() => { if (alive) window.alert('Impossible de charger les options de carte.'); }); return () => { alive = false; }; }, [schoolId]);
@@ -45,6 +48,24 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
     const start = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
     return start + '-' + (start + 1);
   });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('gestilys-card-design-' + schoolId);
+      if (saved) {
+        const config = JSON.parse(saved);
+        setCardFormat(config.format || 'mali-officiel');
+        setAccent(config.accent || '#273c75');
+        setSchoolMotto(config.schoolMotto || 'Travail – Discipline – Réussite');
+      }
+    } catch { /* Optional local card design settings */ }
+    finally { setCardConfigLoaded(true); }
+  }, [schoolId]);
+  useEffect(() => {
+    if (!cardConfigLoaded) return;
+    try { localStorage.setItem('gestilys-card-design-' + schoolId, JSON.stringify({ format: cardFormat, accent, schoolMotto })); }
+    catch { /* Settings remain usable for this session */ }
+  }, [schoolId, cardConfigLoaded, cardFormat, accent, schoolMotto]);
 
   const classes = useMemo(() => [...new Set(students.map(s => s.className).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [students]);
   const eligibleStudents = useMemo(() => mode === 'individual'
@@ -222,6 +243,20 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                 <input value={academicYear} onChange={e => setAcademicYear(e.target.value)} maxLength={9} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" placeholder="2026-2027" />
               </div>
               <div>
+                <label className="mb-1.5 block text-xs font-700 text-slate-500">Modèle de carte (5 formats)</label>
+                <select value={cardFormat} onChange={e => setCardFormat(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
+                  <option value="mali-officiel">1. Institutionnel malien</option>
+                  <option value="tricolore">2. Tricolore du Mali</option>
+                  <option value="bandeau">3. Bandeau moderne</option>
+                  <option value="elegant">4. Élégant doré</option>
+                  <option value="minimal">5. Sobre et compact</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-700 text-slate-500">Devise de l'école</label>
+                <input value={schoolMotto} onChange={e => setSchoolMotto(e.target.value)} maxLength={80} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" placeholder="Ex. Travail – Discipline – Réussite" />
+              </div>
+              <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Logo de l'école (facultatif)</label>
                 <div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -284,15 +319,17 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           <div className="student-cards-print grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
-                <article className="student-id-card relative flex h-[205px] w-full max-w-[325px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card" style={{ borderTop: `5px solid ${accent}` }}>
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16 opacity-10" style={{ background: accent }} />
+                <article className={`student-id-card card-format-${cardFormat} relative flex h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '5px solid #16834a' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16" style={{ background: cardFormat === 'tricolore' ? 'linear-gradient(90deg,#16834a 0 33%,#f5cf3d 33% 66%,#c93232 66% 100%)' : accent, opacity: cardFormat === 'minimal' ? 0.03 : cardFormat === 'elegant' ? 0.07 : 0.1 }} />
                   {schoolStamp && <img src={schoolStamp} alt="Cachet de l’école" className="pointer-events-none absolute bottom-1 right-1 z-20 h-7 w-10 object-contain opacity-90 print:h-[9mm] print:w-[13mm]" />}
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
-                    <div className="student-card-header flex items-center gap-2 border-b border-slate-100 pb-2">
-                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
+                    <div className={`student-card-header flex items-center gap-2 border-b pb-1.5 ${cardFormat === 'tricolore' ? 'justify-center text-center' : ''}`} style={{ borderColor: cardFormat === 'elegant' ? '#e7d8a8' : '#e2e8f0', background: cardFormat === 'bandeau' ? accent : cardFormat === 'elegant' ? '#fff8df' : 'transparent', padding: cardFormat === 'bandeau' ? '4px 5px' : '0 0 6px' }}>
+                      {localSchoolLogo ? <img src={localSchoolLogo} alt="Logo de l’école" className="h-8 w-8 rounded-md object-contain" style={{ background: '#fff' }} /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: cardFormat === 'tricolore' ? '#16834a' : accent }}><GraduationMark /></div>}
                       <div className="student-card-details min-w-0 flex-1">
-                        <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: accent }}>{schoolName || 'Établissement scolaire'}</p>
-                        <p className="text-[8px] font-700 uppercase tracking-widest text-slate-500">CARTE SCOLAIRE</p>
+                        <p className="truncate text-[6px] font-800 uppercase tracking-wide" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#334155' }}>RÉPUBLIQUE DU MALI · UN PEUPLE – UN BUT – UNE FOI</p>
+                        <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : accent }}>{schoolName || 'Établissement scolaire'}</p>
+                        <p className="truncate text-[7px] font-700 italic" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#475569' }}>{schoolMotto || 'Devise de l’école'}</p>
+                        <p className="text-[7px] font-700 uppercase tracking-widest" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#64748b' }}>CARTE SCOLAIRE</p>
                       </div>
                     </div>
                     <div className="student-card-main mt-2 flex min-h-0 flex-1 gap-2">
