@@ -54,7 +54,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
       const saved = localStorage.getItem('gestilys-card-design-' + schoolId);
       if (saved) {
         const config = JSON.parse(saved);
-        setCardFormat(config.format || 'mali-officiel');
+        setCardFormat('tricolore');
         setAccent(config.accent || '#273c75');
         setSchoolMotto(config.schoolMotto || '');
       }
@@ -320,7 +320,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
                 <article className={`student-id-card card-format-${cardFormat} relative flex h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '0' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-0 flex h-[6px] overflow-hidden">{cardFormat === 'tricolore' ? <><span className="w-1/3 bg-[#16834a]" /><span className="w-1/3 bg-[#f5cf3d]" /><span className="w-1/3 bg-[#c93232]" /></> : <span className="h-full w-full" style={{ background: accent, opacity: cardFormat === 'minimal' ? 0.03 : cardFormat === 'elegant' ? 0.07 : 0.1 }} />}</div>
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-20 flex h-[10px] overflow-hidden" style={{ display: 'flex', background: '#16834a' }}>{cardFormat === 'tricolore' ? <><span style={{ display: 'block', width: '33.333%', height: '10px', flexShrink: 0, backgroundColor: '#16834a' }} /><span style={{ display: 'block', width: '33.333%', height: '10px', flexShrink: 0, backgroundColor: '#f5cf3d' }} /><span style={{ display: 'block', width: '33.334%', height: '10px', flexShrink: 0, backgroundColor: '#c93232' }} /></> : <span className="h-full w-full" style={{ background: accent, opacity: cardFormat === 'minimal' ? 0.18 : cardFormat === 'elegant' ? 0.3 : 0.55 }} />}</div>
                   
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
                     <div className={`student-card-header flex items-center gap-2 border-b pb-1.5 ${cardFormat === 'tricolore' ? 'justify-center text-center' : ''}`} style={{ borderColor: cardFormat === 'elegant' ? '#e7d8a8' : '#e2e8f0', background: cardFormat === 'bandeau' ? accent : cardFormat === 'elegant' ? '#fff8df' : 'transparent', padding: cardFormat === 'bandeau' ? '4px 5px' : '0 0 6px' }}>
