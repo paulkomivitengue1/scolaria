@@ -72,7 +72,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const lyceeAverage = (subject: string) => {
     if (subject === 'Conduite') return Number(lyceeScores[subject]?.classScore || 18);
     const row = lyceeScores[subject];
-    return Math.round(((Number(row?.classScore || 0) + (Number(row?.compositionScore || 0) / 20) * 2) / 3) * 100) / 100;
+    return Math.round(((Number(row?.classScore || 0) + Number(row?.compositionScore || 0)) / 3) * 100) / 100;
   };
   const lyceeMention = (average: number) => average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
 
