@@ -625,3 +625,16 @@ h1, h2, h3 {
 .text-white\/90{color:rgba(255,255,255,.9);}.bg-white\/10{background-color:rgba(255,255,255,.1);}.bg-white\/20{background-color:rgba(255,255,255,.2);}.border-white\/25{border-color:rgba(255,255,255,.25);}
 /* Hover tint remains optional; avoid an invalid escaped selector. */
 
+
+/* Improve readability on phones and on low-resolution printed school documents. */
+body { font-weight: 500; -webkit-font-smoothing: auto; }
+button, input, select, textarea { font-family: var(--font-body); }
+input, select, textarea { color: #0f172a; font-weight: 600; }
+label { color: #1e293b; }
+.student-id-card, #bulletin-print { color: #0f172a; }
+#bulletin-print table th, #bulletin-print table td { font-weight: 600; }
+#bulletin-print table th, #bulletin-print b, #bulletin-print strong { font-weight: 800; }
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+  input, select, textarea { font-size: 16px; }
+}
