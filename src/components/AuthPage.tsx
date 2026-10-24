@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, School, UserCircle, Phone,
-  Sparkles, ShieldCheck, AlertCircle,
+  ShieldCheck, AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
