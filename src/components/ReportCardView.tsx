@@ -42,7 +42,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [formatSaved, setFormatSaved] = useState(false);
   const [showStudentPhoto, setShowStudentPhoto] = useState(false);
   const [showParentName, setShowParentName] = useState(false);
-  const [schoolMotto, setSchoolMotto] = useState('Travail – Discipline – Réussite');
+  const [schoolMotto, setSchoolMotto] = useState('');
   const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
   const [schoolStamp, setSchoolStamp] = useState('');
   const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         setCustomBulletinColor(config.color || '#1d4ed8');
         setShowStudentPhoto(config.showStudentPhoto === true);
         setShowParentName(config.showParentName === true);
-        setSchoolMotto(config.schoolMotto || 'Travail – Discipline – Réussite');
+        setSchoolMotto(config.schoolMotto || '');
       }
     } catch { /* Optional saved format */ }
   }, [schoolId]);
@@ -453,7 +453,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <p className="text-[10px] font-800 uppercase tracking-widest text-slate-700">RÉPUBLIQUE DU MALI</p>
                 <p className="text-[10px] font-700 text-slate-600">Un Peuple – Un But – Une Foi</p>
                 <h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
-                <p className="text-xs font-700 italic text-slate-600">{schoolMotto || 'Devise de l’école'}</p>
+                {schoolMotto.trim() && <p className="text-xs font-700 italic text-slate-600">{schoolMotto}</p>}
                 <p className="mt-1 text-sm text-slate-600">Bulletin de notes · Année scolaire {academicYear}</p>
                 <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p>
               </div>
