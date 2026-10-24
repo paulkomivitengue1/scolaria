@@ -603,7 +603,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                       {showLyceeMention && <td className="border border-slate-500 px-1 py-1 text-center">{isConduct ? 'Bonne' : hasCompleteScore ? lyceeMention(score) : '—'}</td>}
                     </tr>;
                   })}</tbody>
-                  <tfoot><tr className="bg-slate-100 font-bold"><td colSpan={5 + (showLyceeRank ? 1 : 0)} className="border border-slate-500 px-2 py-2 text-right">TOTAL</td><td className="border border-slate-500 px-1 py-2 text-center">{totalCoefficient}</td><td className="border border-slate-500 px-1 py-2 text-center">{totalPoints.toFixed(2)}</td>{showLyceeMention && <td className="border border-slate-500 px-1 py-2 text-center">Sur {totalMax}</td>}</tr></tfoot>
+                  <tfoot><tr className="bg-slate-100 font-bold"><td colSpan={5 + (showLyceeRank ? 1 : 0)} className="border border-slate-500 px-2 py-2 text-right">TOTAL</td><td className="border border-slate-500 px-1 py-2 text-center">{totalCoefficient}</td><td className="border border-slate-500 px-1 py-2 text-center">{totalPoints.toFixed(2)}</td>{showLyceeMention && <td className="border border-slate-500 px-1 py-2 text-center">Maximum : {totalMax}</td>}</tr></tfoot>
                 </table>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
