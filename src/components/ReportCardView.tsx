@@ -42,9 +42,12 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [formatSaved, setFormatSaved] = useState(false);
   const [showStudentPhoto, setShowStudentPhoto] = useState(false);
   const [showParentName, setShowParentName] = useState(false);
+  const [schoolMotto, setSchoolMotto] = useState('');
   const [studentPhotos, setStudentPhotos] = useState<Record<string, string>>({});
   const [schoolStamp, setSchoolStamp] = useState('');
   const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
+  const [showRank, setShowRank] = useState(false);
+  const [classStats, setClassStats] = useState<{ count: number; highest: number | null; lowest: number | null; rank: number | null }>({ count: 0, highest: null, lowest: null, rank: null });
   useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
 
   useEffect(() => {
@@ -56,11 +59,33 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         setCustomBulletinColor(config.color || '#1d4ed8');
         setShowStudentPhoto(config.showStudentPhoto === true);
         setShowParentName(config.showParentName === true);
+        setShowRank(config.showRank === true);
+        setSchoolMotto(config.schoolMotto || '');
       }
     } catch { /* Optional saved format */ }
   }, [schoolId]);
 
   useEffect(() => { let alive = true; loadStudentCardPhotos(schoolId).then(data => { if (alive) setStudentPhotos(data); }).catch(err => console.warn('Student card photos unavailable for bulletins:', err)); return () => { alive = false; }; }, [schoolId]);
+
+  // Statistiques de classe issues des bulletins enregistrés.
+  useEffect(() => {
+    if (mode !== 'bulletin' || !selectedStudent) return;
+    let alive = true;
+    const classmates = students.filter(student => student.className === selectedStudent.className);
+    Promise.all(classmates.map(async student => {
+      try {
+        const cards = await loadReportCards(schoolId, student.id);
+        const card = cards.find(item => item.periodIndex === selectedPeriod && item.academicYear === academicYear);
+        return card && card.grades.some(grade => grade.subject.trim()) ? { studentId: student.id, average: gradeAverage(card.grades) } : null;
+      } catch { return null; }
+    })).then(results => {
+      if (!alive) return;
+      const ranked = results.filter((item): item is { studentId: string; average: number } => item !== null).sort((a, b) => b.average - a.average);
+      const rankIndex = ranked.findIndex(item => item.studentId === selectedStudent.id);
+      setClassStats({ count: classmates.length, highest: ranked.length ? ranked[0].average : null, lowest: ranked.length ? ranked[ranked.length - 1].average : null, rank: rankIndex >= 0 ? rankIndex + 1 : null });
+    });
+    return () => { alive = false; };
+  }, [mode, selectedStudent, selectedPeriod, academicYear, schoolId, students]);
 
   // ── Load report cards for a student ─────────────────
   const loadCards = useCallback(async (studentId: string) => {
@@ -410,11 +435,12 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm font-700 text-slate-700">Format du bulletin
               <select value={bulletinFormat} onChange={e=>{setBulletinFormat(e.target.value);setFormatSaved(false);}} className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base">
-                <option value="classique">1. Classique</option><option value="moderne">2. Moderne</option><option value="compact">3. Compact</option><option value="officiel">4. Officiel</option><option value="minimal">5. Minimaliste</option><option value="personnalise">Personnaliser mon format</option>
+                <option value="classique">1. Classique malien</option><option value="moderne">2. Moderne coloré</option><option value="compact">3. Compact</option><option value="officiel">4. Institutionnel</option><option value="minimal">5. Minimaliste</option><option value="personnalise">Personnaliser mon format</option>
               </select>
             </label>
-            {bulletinFormat==='personnalise'&&<><label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label><div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={showStudentPhoto} onChange={e=>{setShowStudentPhoto(e.target.checked);setFormatSaved(false);}}/> Photo de l’élève</label><label className="flex items-center gap-2"><input type="checkbox" checked={showParentName} onChange={e=>{setShowParentName(e.target.checked);setFormatSaved(false);}}/> Nom du parent</label></div></>}
-            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo:true,showStudentPhoto,showParentName}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
+            <label className="flex-1 text-sm font-700 text-slate-700">Devise de l’école<input type="text" maxLength={80} value={schoolMotto} onChange={e=>{setSchoolMotto(e.target.value);setFormatSaved(false);}} placeholder="Ex. Travail – Discipline – Réussite" className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base" /></label>
+            {bulletinFormat==='personnalise'&&<><label className="text-sm font-700 text-slate-700">Couleur principale<input type="color" value={customBulletinColor} onChange={e=>{setCustomBulletinColor(e.target.value);setFormatSaved(false);}} className="mt-1 block h-12 w-full rounded-lg border border-slate-300 p-1"/></label><div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-3"><label className="flex items-center gap-2"><input type="checkbox" checked={showStudentPhoto} onChange={e=>{setShowStudentPhoto(e.target.checked);setFormatSaved(false);}}/> Photo de l’élève</label><label className="flex items-center gap-2"><input type="checkbox" checked={showParentName} onChange={e=>{setShowParentName(e.target.checked);setFormatSaved(false);}}/> Nom du parent</label><label className="flex items-center gap-2"><input type="checkbox" checked={showRank} onChange={e=>{setShowRank(e.target.checked);setFormatSaved(false);}}/> Afficher le rang</label></div></>}
+            <button onClick={()=>{localStorage.setItem('gestilys-bulletin-format-'+schoolId,JSON.stringify({format:bulletinFormat,color:customBulletinColor,showSchoolLogo:true,showStudentPhoto,showParentName,showRank,schoolMotto}));setFormatSaved(true);}} className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-800 text-white">{formatSaved?'Format enregistré':'Enregistrer le format'}</button>
           </div>
           <label className="mt-3 block rounded-xl border border-dashed border-indigo-200 bg-white p-3 text-sm font-700 text-slate-700">
             Cachet de l’école (photo ou image)
@@ -437,17 +463,24 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             <h1 className="font-display text-xl font-700 text-ink">Aperçu du bulletin</h1>
             <p className="text-sm text-slate-500">{selectedStudent.firstName} {selectedStudent.lastName} · {periodLabel}</p>
           </div>
-          <button onClick={() => { if (!schoolLogo) { window.alert("Ajoutez d’abord le logo de l’école dans Paramètres."); return; } window.print(); }} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-700 px-4 text-sm font-700 text-white transition hover:bg-indigo-800 active:scale-95"><Printer className="h-4 w-4" /> Imprimer / PDF</button>
+          <button onClick={() => window.print()} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-700 px-4 text-sm font-700 text-white shadow-sm transition hover:bg-indigo-800 active:scale-95"><Printer className="h-4 w-4" /> Imprimer / PDF</button>
         </div>
 
         {/* Printable bulletin */}
         <div id="bulletin-print" className={`mx-auto max-w-2xl bg-white shadow-card print:shadow-none print:p-0 ${bulletinFormat==='compact'?'p-3 sm:p-4':bulletinFormat==='minimal'?'p-5 sm:p-6':'rounded-2.5xl p-6 sm:p-8'}`} style={{border:formatBorder,borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'4px':'18px',fontFamily:bulletinFormat==='officiel'?'Georgia,serif':'inherit'}}>
           {/* Header */}
-          <div className={`pb-4 ${bulletinFormat==='moderne'?'flex items-center gap-4 text-left':bulletinFormat==='officiel'?'text-center uppercase tracking-wide':'text-center'}`} style={{borderBottom:bulletinFormat==='officiel'?'double 5px '+formatColor:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':'transparent',padding:bulletinFormat==='moderne'?'14px':'8px 0'}}>
-            {schoolLogo ? <img src={schoolLogo} alt="Logo de l’école" className="mx-auto mb-2 h-14 w-14 object-contain print:h-12 print:w-12" style={{margin:bulletinFormat==='moderne'?'0':'0 auto 8px'}} /> : <div className="print:hidden mx-auto mb-2 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">Ajoutez le logo dans Paramètres avant d’imprimer le bulletin.</div>}
-            <div className={bulletinFormat==='moderne'?'min-w-0 flex-1':''}><h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
-            <p className="mt-1 text-sm text-slate-500">Bulletin de notes · Année scolaire {academicYear}</p>
-            <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p></div>
+          <div className={`pb-4 ${bulletinFormat==='moderne'?'text-left':'text-center'} ${bulletinFormat==='officiel'?'uppercase tracking-wide':''}`} style={{borderBottom:bulletinFormat==='officiel'?'double 5px '+formatColor:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':bulletinFormat==='minimal'?'#ffffff':'transparent',padding:bulletinFormat==='moderne'?'14px':bulletinFormat==='compact'?'4px 0':'8px 0',borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'0':'8px'}}>
+            <div className={`flex items-center justify-center gap-3 ${bulletinFormat==='moderne'?'flex-row text-left':'flex-col text-center'}`}>
+              {schoolLogo ? <img src={schoolLogo} alt="Logo de l’école" className="h-12 w-12 shrink-0 object-contain print:h-10 print:w-10" /> : <div className="print:hidden rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-800">Ajoutez le logo dans Paramètres.</div>}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-800 uppercase tracking-widest text-slate-700">RÉPUBLIQUE DU MALI</p>
+                <p className="text-[10px] font-700 text-slate-600">Un Peuple – Un But – Une Foi</p>
+                <h2 className="font-display text-xl font-800 sm:text-2xl" style={{color:formatColor}}>{schoolName || 'École'}</h2>
+                {schoolMotto.trim() && <p className="text-xs font-700 italic text-slate-600">{schoolMotto}</p>}
+                <p className="mt-1 text-sm text-slate-600">Bulletin de notes · Année scolaire {academicYear}</p>
+                <p className="mt-0.5 text-sm font-600 text-slate-700">{periodLabel}</p>
+              </div>
+            </div>
           </div>
 
           {/* Student info */}
@@ -502,6 +535,13 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <span className="text-xs font-600 text-slate-400">Appréciation</span>
                 <span className={`text-sm font-700 ${gradeColor(avg)}`}>{gradeAppreciation(avg)}</span>
               </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-lg border border-blue-100 bg-blue-50 p-2 text-center"><div className="text-[10px] font-700 uppercase text-blue-700">Total des points</div><div className="mt-1 text-sm font-800 text-blue-950">{grades.filter(g => g.subject.trim()).reduce((sum, g) => sum + g.score * g.coefficient, 0).toFixed(2)}</div></div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-center"><div className="text-[10px] font-700 uppercase text-slate-600">Effectif classe</div><div className="mt-1 text-sm font-800 text-slate-900">{classStats.count || students.filter(student => student.className === selectedStudent.className).length}</div></div>
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2 text-center"><div className="text-[10px] font-700 uppercase text-emerald-700">Moyenne la plus forte</div><div className="mt-1 text-sm font-800 text-emerald-950">{classStats.highest === null ? "—" : classStats.highest.toFixed(2) + "/20"}</div></div>
+                <div className="rounded-lg border border-rose-100 bg-rose-50 p-2 text-center"><div className="text-[10px] font-700 uppercase text-rose-700">Moyenne la plus faible</div><div className="mt-1 text-sm font-800 text-rose-950">{classStats.lowest === null ? "—" : classStats.lowest.toFixed(2) + "/20"}</div></div>
+              </div>
+              {showRank && <div className="mt-2 text-right text-xs font-700 text-slate-700">Rang : {classStats.rank ? classStats.rank + " / " + classStats.count : "non disponible"}</div>}
             </>
           )}
 
@@ -518,7 +558,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               <div className="border-t border-slate-300 pt-1">Le directeur / La directrice</div>
             </div>
             <div className="flex min-w-[110px] flex-col items-center gap-1 text-center">
-              {schoolStamp ? <img src={schoolStamp} alt="Cachet de l’établissement" className="h-16 w-20 object-contain" /> : <div className="h-12 w-20 rounded border border-dashed border-slate-300 print:hidden" />}
+              {schoolStamp ? <img src={schoolStamp} alt="Cachet de l’établissement" className="h-8 w-10 object-contain print:h-6 print:w-8" /> : <div className="h-8 w-10 rounded border border-dashed border-slate-300 print:hidden" />}
               <span>Cachet de l’école</span>
             </div>
             <div className="min-w-[100px] text-center">
