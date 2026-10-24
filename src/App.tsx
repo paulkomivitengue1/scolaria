@@ -376,6 +376,48 @@ export default function App() {
     return imported;
   };
 
+  useEffect(() => {
+    const schoolId = profile?.schoolId;
+    if (!schoolId) return;
+    let syncing = false;
+    const syncPendingStudents = async () => {
+      if (!navigator.onLine || syncing) return;
+      syncing = true;
+      const queueKey = 'gestilys-pending-students-' + schoolId;
+      try {
+        const queued = JSON.parse(localStorage.getItem(queueKey) || '[]') as Array<{ localId: string; student: Omit<Student, 'id'> }>;
+        const remaining = [...queued];
+        while (remaining.length && navigator.onLine) {
+          const item = remaining[0];
+          try {
+            const realId = await addStudentDB(schoolId, item.student);
+            setStudents(prev => {
+              const next = prev.map(st => st.id === item.localId ? { ...st, id: realId } : st);
+              try {
+                const cacheKey = 'gestilys-offline-data-' + schoolId;
+                const cached = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+                localStorage.setItem(cacheKey, JSON.stringify({ ...cached, students: next, savedAt: new Date().toISOString() }));
+              } catch { /* Local student queue is still updated below. */ }
+              return next;
+            });
+            remaining.shift();
+            localStorage.setItem(queueKey, JSON.stringify(remaining));
+          } catch (error) {
+            console.warn('Synchronisation des élèves en attente reportée :', error);
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Impossible de lire la file des élèves hors ligne :', error);
+      } finally {
+        syncing = false;
+      }
+    };
+    window.addEventListener('online', syncPendingStudents);
+    void syncPendingStudents();
+    return () => window.removeEventListener('online', syncPendingStudents);
+  }, [profile?.schoolId]);
+
   const openEdit = (s: Student) => {
     setEditStudentId(s.id);
     setEditOpen(true);
