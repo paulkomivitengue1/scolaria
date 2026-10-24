@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v6';
+const CACHE_NAME = 'gestilys-shell-v7';
 const SHELL_URLS = [
   '/',
   '/offline.html',
@@ -72,18 +72,14 @@ self.addEventListener('fetch', (event) => {
   if (request.destination === 'script' || request.destination === 'style' || request.destination === 'image' || request.destination === 'font' || request.destination === 'document' || url.pathname.startsWith('/assets/')) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(request);
-      const update = fetch(request).then(async (response) => {
+      // Network-first: never show an old app bundle when a newer deployment is online.
+      try {
+        const response = await fetch(request, { cache: 'no-cache' });
         if (response && response.ok) await cache.put(request, response.clone());
         return response;
-      });
-      if (cached) {
-        event.waitUntil(update.then(() => undefined).catch(() => undefined));
-        return cached;
-      }
-      try {
-        return await update;
       } catch {
+        const cached = await cache.match(request);
+        if (cached) return cached;
         return new Response('', { status: 503, statusText: 'Offline' });
       }
     })());
