@@ -80,6 +80,43 @@ function splitCsvLine(line: string, separator: string): string[] {
   result.push(value.trim());
   return result;
 }
+function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
+  const headerIndex = grid.slice(0, 15).findIndex(row => {
+    const headers = row.map(value => normalizeHeader(String(value ?? '')));
+    return headers.some(value => ['prenom','prenoms','firstname'].includes(value))
+      && headers.some(value => ['nom','nomdefamille','lastname'].includes(value))
+      && headers.some(value => ['classe','class','niveau'].includes(value));
+  });
+  if (headerIndex < 0) throw new Error('Colonnes obligatoires manquantes : Prénom, Nom et Classe. Vérifiez la ligne des titres du fichier Excel.');
+  const headers = grid[headerIndex].map(value => normalizeHeader(String(value ?? '')));
+  const find = (aliases: string[]) => headers.findIndex(h => aliases.includes(h));
+  const idx = {
+    first: find(['prenom','prenoms','firstname']),
+    last: find(['nom','nomdefamille','lastname']),
+    cls: find(['classe','class','niveau']),
+    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur']),
+    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone']),
+    birthDate: find(['datenaissance','naissance','birthdate']),
+    birthPlace: find(['lieunaissance','lieudenaissance','birthplace']),
+    sex: find(['sexe','genre']),
+  };
+  const rows = grid.slice(headerIndex + 1).map((cells, offset) => {
+    const get = (index: number) => index >= 0 ? String(cells[index] ?? '').trim() : '';
+    const firstName = get(idx.first), lastName = get(idx.last), className = get(idx.cls);
+    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex: headerIndex + offset + 1 };
+  }).filter(row => row.firstName || row.lastName || row.className);
+  if (rows.length > 5000) throw new Error('Ce fichier contient plus de 5 000 lignes. Séparez les élèves en plusieurs fichiers pour éviter de saturer la mémoire du téléphone.');
+  const invalid = rows.find(row => !row.firstName || !row.lastName || !row.className);
+  if (invalid) throw new Error('Ligne ' + (invalid.rowIndex + 1) + ' : Prénom, Nom et Classe doivent être renseignés.');
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const key = [row.firstName, row.lastName, row.className].join('|').toLocaleLowerCase('fr');
+    if (seen.has(key)) throw new Error('Doublon dans le fichier : ' + row.firstName + ' ' + row.lastName + ' (' + row.className + ').');
+    seen.add(key);
+  }
+  if (!rows.length) throw new Error('Aucun élève trouvé sous les titres Prénom, Nom et Classe.');
+  return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
+}
 function parseStudentCsv(text: string): ImportedStudentRow[] {
   const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
   if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne d’en-têtes et au moins un élève.');
@@ -245,17 +282,17 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       let parsedRows: ImportedStudentRow[] | null = null;
       if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
         const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array', cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false });
+        // Limit parsed rows and use array-based sheets to reduce memory pressure on Android.
+        const workbook = XLSX.read(buffer, { type: 'array', dense: true, sheetRows: 5006, cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false });
         if (!workbook.SheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
         const sheetErrors: string[] = [];
-        // A workbook may have a cover/blank first sheet; search all sheets for the student table.
+        // Read cells as rows directly; avoid converting a whole sheet to a second giant CSV string.
         for (const sheetName of workbook.SheetNames) {
           const sheet = workbook.Sheets[sheetName];
           if (!sheet || !sheet['!ref']) continue;
-          const candidate = XLSX.utils.sheet_to_csv(sheet, { FS: ';', RS: '\n', blankrows: false });
           try {
-            parsedRows = parseStudentCsv(candidate);
-            text = candidate;
+            const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '', blankrows: false }) as unknown[][];
+            parsedRows = parseStudentGrid(grid);
             break;
           } catch (sheetError) {
             sheetErrors.push(sheetError instanceof Error ? sheetError.message : 'Feuille illisible.');
