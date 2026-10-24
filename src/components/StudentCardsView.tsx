@@ -25,7 +25,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   }, [schoolId]);
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
-  const [cardFormat, setCardFormat] = useState('mali-officiel');
+  const [cardFormat, setCardFormat] = useState('tricolore');
   const [schoolMotto, setSchoolMotto] = useState('');
   const [cardConfigLoaded, setCardConfigLoaded] = useState(false);
   const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
@@ -319,7 +319,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           <div className="student-cards-print grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
-                <article className={`student-id-card card-format-${cardFormat} relative flex h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '5px solid #16834a' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
+                <article className={`student-id-card card-format-${cardFormat} relative flex h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '0' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
                   <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-0 flex h-[6px] overflow-hidden">{cardFormat === 'tricolore' ? <><span className="w-1/3 bg-[#16834a]" /><span className="w-1/3 bg-[#f5cf3d]" /><span className="w-1/3 bg-[#c93232]" /></> : <span className="h-full w-full" style={{ background: accent, opacity: cardFormat === 'minimal' ? 0.03 : cardFormat === 'elegant' ? 0.07 : 0.1 }} />}</div>
                   
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
@@ -353,11 +353,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
                     </div>}
                     {cardFields.parentName && <p className="mt-1 text-[8px] leading-tight text-slate-600">Parent : {s.parentName || '—'}</p>}
-                    {schoolStamp ? (
-                      <div className="mt-auto flex justify-end pt-1">
-                        <img src={schoolStamp} alt="Cachet de l’école" className="h-4 w-6 object-contain opacity-80 print:h-[4mm] print:w-[6mm]" />
-                      </div>
-                    ) : null}
+                    {/* Le cachet est temporairement masqué : il sera réintroduit dans la zone signature en bas de carte. */}
                   </div>
                 </article>
                 <div className="student-card-photo-upload mt-2">
