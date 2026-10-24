@@ -374,14 +374,29 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
 
   useEffect(() => {
     let cancelled = false;
-    if (tab === 'import') {
-      void readPendingImport().then(file => {
-        if (!cancelled && file) {
-          setNotice('Reprise de la lecture de ' + file.name + '…');
-          void handleImportFile(file);
+    let recovered = false;
+    const wait = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
+    const recoverPendingFile = async () => {
+      // Android can recreate this screen before the file-picker callback has
+      // finished writing the selected file to IndexedDB. Retry briefly so the
+      // new screen does not miss that write and leave the user without a preview.
+      for (let attempt = 0; attempt < 12 && !cancelled && !recovered; attempt++) {
+        try {
+          const file = await readPendingImport();
+          if (cancelled) return;
+          if (file) {
+            recovered = true;
+            setNotice('Reprise de la lecture de ' + file.name + '…');
+            void handleImportFile(file);
+            return;
+          }
+        } catch (error) {
+          console.warn('Reprise de fichier impossible :', error);
         }
-      }).catch(error => console.warn('Reprise de fichier impossible :', error));
-    }
+        if (attempt < 11) await wait(250);
+      }
+    };
+    if (tab === 'import') void recoverPendingFile();
     return () => { cancelled = true; };
     // Only recover a file on component mount; tab changes must not restart an import.
     // eslint-disable-next-line react-hooks/exhaustive-deps
