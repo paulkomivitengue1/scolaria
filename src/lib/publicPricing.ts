@@ -16,12 +16,12 @@ export async function loadPublicTrialDays(): Promise<number> {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify({ action: 'get_public_trial_days' }),
     });
-    if (!response.ok) return 14;
+    if (!response.ok) return 0;
     const result = await response.json();
     const days = result?.data?.trial_days;
-    return Number.isInteger(days) && days >= 0 && days <= 365 ? days : 14;
+    return Number.isInteger(days) && days >= 0 && days <= 365 ? days : 0;
   } catch {
-    return 14;
+    return 0;
   }
 }
 
