@@ -4,6 +4,7 @@ import {
   MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download, Users,
 } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
+import * as XLSX from 'xlsx';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
 import type { Expense, SalaryPayment, Student, Teacher } from '../types';
 
@@ -217,14 +218,22 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const handleImportFile = async (file?: File) => {
     if (!file) return;
     setNotice('');
-    if (!/\.csv$/i.test(file.name) && file.type !== 'text/csv') {
+    if (!/\.(csv|xlsx|xls)$/i.test(file.name) && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
       setImportPreview([]);
       setImportName(file.name);
-      setNotice('Pour éviter les erreurs, exportez d’abord le fichier Excel en CSV UTF-8, puis importez ce fichier .csv.');
+      setNotice('Choisissez un fichier Excel (.xlsx ou .xls) ou CSV (.csv).');
       return;
     }
     try {
-      const text = await file.text();
+      let text: string;
+      if (/\.xlsx?$/i.test(file.name)) {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const firstSheet = workbook.SheetNames[0];
+        if (!firstSheet) throw new Error('Le classeur Excel ne contient aucune feuille.');
+        text = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet], { FS: ';' });
+      } else {
+        text = await file.text();
+      }
       const rows = parseStudentCsv(text);
       const knownClasses = new Set(classNames.map(name => name.trim().toLocaleLowerCase('fr')));
       const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !knownClasses.has(name.trim().toLocaleLowerCase('fr'))))];
@@ -423,8 +432,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         </div>
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
-        <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Depuis Excel : choisissez « Enregistrer sous » puis « CSV UTF-8 ». Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier CSV<input type="file" accept=".csv,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => void handleImportFile(e.target.files?.[0])} /></label>
+        <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
+          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => void handleImportFile(e.target.files?.[0])} /></label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('modele-import-eleves-gestilys.csv', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
