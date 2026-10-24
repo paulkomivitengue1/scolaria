@@ -127,6 +127,14 @@ function saveCsv(filename: string, rows: unknown[][]) {
   URL.revokeObjectURL(url);
 }
 
+function saveExcelTemplate(filename: string, rows: unknown[][]) {
+  const workbook = XLSX.utils.book_new();
+  const sheet = XLSX.utils.aoa_to_sheet(rows as any[][]);
+  sheet['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 26 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 12 }];
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Élèves');
+  XLSX.writeFile(workbook, filename);
+}
+
 export function DirectionHub({ schoolId, schoolName, students, classNames, teachers, expenses, salaryPayments, premium, onImportStudents, onNavigate }: Props) {
   const [tab, setTab] = useState<Tab>('overview');
   const [operations, setOperations] = useState<Operation[]>([]);
@@ -452,7 +460,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
           <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
-          <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('modele-import-eleves-gestilys.csv', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle</button>
+          <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
         <div className={panelClass}><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-black text-blue-950">Aperçu avant import</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{importPreview.length} ligne(s)</span></div><p className="mt-1 text-sm text-slate-700">Contrôlez l’aperçu avant d’ajouter des élèves. Les frais seront calculés selon la configuration de l’école.</p>
