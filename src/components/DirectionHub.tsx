@@ -312,11 +312,13 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     setNotice('');
     setImportPreview([]);
     if (file.size > 10 * 1024 * 1024) {
+      await clearPendingImport();
       setImportName(file.name);
       setNotice('Ce fichier dépasse 10 Mo et risque de saturer la mémoire du téléphone. Ouvrez-le dans Excel et enregistrez uniquement la feuille des élèves dans un nouveau fichier .xlsx ou .csv, puis réessayez.');
       return;
     }
     if (!/\.(csv|xlsx|xls)$/i.test(file.name) && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
+      await clearPendingImport();
       setImportPreview([]);
       setImportName(file.name);
       setNotice('Choisissez un fichier Excel (.xlsx ou .xls) ou CSV (.csv).');
