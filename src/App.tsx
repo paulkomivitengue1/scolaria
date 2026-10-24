@@ -64,6 +64,7 @@ export default function App() {
   const [classNames, setClassNames] = useState<string[]>([]);
   const [gradePeriods, setGradePeriods] = useState<GradePeriod[]>([{ index: 1, label: 'Trimestre 1' }, { index: 2, label: 'Trimestre 2' }, { index: 3, label: 'Trimestre 3' }]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine);
   const [schoolLogo, setSchoolLogo] = useState('');
   const [currentAcademicYear, setCurrentAcademicYear] = useState('');
 
@@ -115,6 +116,14 @@ export default function App() {
     }
     setGuideMode(null);
   };
+
+  useEffect(() => {
+    const online = () => setIsOnline(true);
+    const offline = () => setIsOnline(false);
+    window.addEventListener('online', online);
+    window.addEventListener('offline', offline);
+    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline); };
+  }, []);
 
   // ── Load all school data when user logs in ────────────
   const loadAllData = useCallback(async (schoolId: string) => {
@@ -222,6 +231,19 @@ export default function App() {
     loadSchoolLogo(profile.schoolId).then(logo => { if (!cancelled) setSchoolLogo(logo); }).catch(err => console.error('Failed to load school logo:', err));
     return () => { cancelled = true; };
   }, [profile?.schoolId]);
+
+  useEffect(() => {
+    if (!profile?.schoolId || dataLoading || !user) return;
+    try {
+      const key = 'gestilys-offline-data-' + profile.schoolId;
+      const previous = JSON.parse(localStorage.getItem(key) || '{}');
+      localStorage.setItem(key, JSON.stringify({
+        ...previous, savedAt: new Date().toISOString(), currentAcademicYear,
+        schoolConfig: feeConfig, schoolClasses: classNames, students, uniforms, books,
+        supplies, gradePeriods, expenses, teachers, salaryPayments,
+      }));
+    } catch (error) { console.warn('Cache local des données scolaires indisponible :', error); }
+  }, [profile?.schoolId, dataLoading, user, currentAcademicYear, feeConfig, classNames, students, uniforms, books, supplies, gradePeriods, expenses, teachers, salaryPayments]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -790,6 +812,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-canvas bg-grid">
+      {!isOnline && <div role="status" className="fixed inset-x-0 top-0 z-[100] border-b-2 border-amber-400 bg-amber-100 px-3 py-2 text-center text-sm font-extrabold text-amber-950 shadow-md">Mode hors ligne : données mises en cache disponibles. Les nouveaux élèves importés attendent le retour d’Internet pour être synchronisés.</div>}
       <Sidebar
         current={view}
         onNavigate={handleNavigate}
