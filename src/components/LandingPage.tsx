@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
+import { loadPublicPlanPrices, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import {
   ArrowRight, Check, ShieldCheck, Wallet, GraduationCap, Calculator,
   Package, Smartphone, ChevronDown, Mail, Phone, MapPin, Users, TrendingUp, ReceiptText, Menu, X, CalendarCheck, MessageCircle,
@@ -78,8 +78,8 @@ const FAQ = [
     a: 'Oui. Enregistrez votre tableau Excel au format CSV UTF-8, vérifiez les colonnes Prénom, Nom et Classe, puis contrôlez l’aperçu avant de confirmer l’import.',
   },
   {
-    q: 'Puis-je voir Gestilys avant de m’engager ?',
-    a: 'Oui. Demandez une démonstration ou explorez l’essai disponible pour découvrir le fonctionnement avant de prendre une décision.',
+    q: 'Comment commencer avec Gestilys ?',
+    a: 'Créez le compte de votre école, choisissez une formule et contactez-nous pour activer votre abonnement. Vous pouvez aussi demander une démonstration avant de payer.',
   },
 ];
 
@@ -93,7 +93,6 @@ export function LandingPage({ onEnter }: LandingPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'mensuel'|'annuel'>('mensuel');
-  const [trialDays, setTrialDays] = useState(14);
   const [planPrices, setPlanPrices] = useState<Record<'Essentiel'|'Premium'|'Élite', number>>({
     Essentiel: 10000, Premium: 20000, 'Élite': 30000,
   });
@@ -106,13 +105,6 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         Premium: plans.find((p) => p.name === 'Premium')?.monthly ?? DEFAULT_PLAN_PRICES[1].monthly,
         'Élite': plans.find((p) => p.name === 'Élite')?.monthly ?? DEFAULT_PLAN_PRICES[2].monthly,
       });
-    });
-    return () => { cancelled = true; };
-  }, []);
-  useEffect(() => {
-    let cancelled = false;
-    loadPublicTrialDays().then((days) => {
-      if (!cancelled) setTrialDays(days);
     });
     return () => { cancelled = true; };
   }, []);
@@ -277,7 +269,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             <a className="gl-link" href="#tarifs">Tarifs</a>
             <a className="gl-link" href="#questions">Questions</a>
           </nav>
-          <button className="gl-btn gl-btn-primary gl-nav-cta" style={{ padding:'11px 15px', fontSize:12, minHeight:44, whiteSpace:'nowrap' }} onClick={onEnter}>Essai gratuit <ArrowRight size={15} /></button>
+          <button className="gl-btn gl-btn-primary gl-nav-cta" style={{ padding:'11px 15px', fontSize:12, minHeight:44, whiteSpace:'nowrap' }} onClick={onEnter}>Se connecter / S’inscrire <ArrowRight size={15} /></button>
         </div>
         {mobileMenuOpen && <nav id="gestilys-mobile-menu" className="gl-mobile-menu" aria-label="Navigation principale">
           <a href="#accueil" onClick={() => setMobileMenuOpen(false)}>Accueil <ArrowRight size={15} /></a>
@@ -287,7 +279,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <a href="#tarifs" onClick={() => setMobileMenuOpen(false)}>Formules et tarifs <ArrowRight size={15} /></a>
           <a href="#questions" onClick={() => setMobileMenuOpen(false)}>Questions fréquentes <ArrowRight size={15} /></a>
           <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact <ArrowRight size={15} /></a>
-          <button type="button" className="gl-mobile-cta" onClick={() => { setMobileMenuOpen(false); onEnter(); }}>Essai gratuit {trialDays} jours <ArrowRight size={16} /></button>
+          <button type="button" className="gl-mobile-cta" onClick={() => { setMobileMenuOpen(false); onEnter(); }}>Créer un compte <ArrowRight size={16} /></button>
         </nav>}
       </header>
 
@@ -299,7 +291,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
               <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
               <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
               <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
-                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Essai gratuit {trialDays} jours <ArrowRight size={17} /></button>
+                <button className="gl-btn gl-btn-primary" onClick={onEnter}>Créer un compte <ArrowRight size={17} /></button>
                 <a href="#demonstration" className="gl-btn" style={{ border:'1px solid #dbe3ef', color:'#172554', textDecoration:'none', background:'white' }}>Voir l’aperçu</a>
               </div>
               <div className="gl-trust">
