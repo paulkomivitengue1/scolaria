@@ -71,7 +71,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const lyceeAverage = (subject: string) => {
     if (subject === 'Conduite') return Number(lyceeScores[subject]?.classScore || 18);
     const row = lyceeScores[subject];
-    return (Number(row?.classScore || 0) + (Number(row?.compositionScore || 0) / 20) * 2) / 3;
+    return Math.round(((Number(row?.classScore || 0) + (Number(row?.compositionScore || 0) / 20) * 2) / 3) * 100) / 100;
   };
   const lyceeMention = (average: number) => average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
 
@@ -560,8 +560,8 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div><b>Moyenne :</b> {(totalCoefficient ? totalPoints / totalCoefficient : 0).toFixed(2)} / 20</div>
-                <div><b>Rang :</b> {classStats.rank ? classStats.rank + 'e / ' + classStats.count + ' élèves classés' : 'À renseigner'}</div>
-                <div><b>Moyenne du premier :</b> {classStats.highest === null ? 'À renseigner' : classStats.highest.toFixed(2)}</div>
+                <div><b>Rang :</b> <input aria-label="Rang général de l’élève" type="number" min="1" value={lyceeScores['__summary__']?.rank ?? ''} onChange={e => updateLyceeScore('__summary__','rank',e.target.value)} className="w-16 rounded border border-slate-300 p-1 print:hidden" />{lyceeScores['__summary__']?.rank && <span className="hidden print:inline">{lyceeScores['__summary__'].rank}e / {classStats.count || students.filter(s => s.className === selectedStudent.className).length} élèves classés</span>}</div>
+                <div><b>Moyenne du premier :</b> <input aria-label="Moyenne du premier de la classe" type="number" min="0" max="20" step="0.01" value={lyceeScores['__summary__']?.classScore ?? ''} onChange={e => updateLyceeScore('__summary__','classScore',e.target.value)} className="w-20 rounded border border-slate-300 p-1 print:hidden" />{lyceeScores['__summary__']?.classScore && <span className="hidden print:inline">{Number(lyceeScores['__summary__'].classScore).toFixed(2)}</span>}</div>
                 <div className="text-right"><b>{schoolName || 'École'}, le</b> {new Date().toLocaleDateString('fr-FR')}</div>
               </div>
               <p className="mt-3 text-xs italic text-slate-600">Les notes de classe et de composition sont enregistrées sur cet appareil pour ce bulletin. Les autres bulletins restent inchangés.</p>
