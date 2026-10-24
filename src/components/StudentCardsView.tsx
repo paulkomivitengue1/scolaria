@@ -54,7 +54,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
       const saved = localStorage.getItem('gestilys-card-design-' + schoolId);
       if (saved) {
         const config = JSON.parse(saved);
-        setCardFormat('tricolore');
+        setCardFormat(config.format || 'tricolore');
         setAccent(config.accent || '#273c75');
         setSchoolMotto(config.schoolMotto || '');
       }
@@ -320,7 +320,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
                 <article className={`student-id-card card-format-${cardFormat} relative flex h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '0' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[12px] overflow-hidden" style={{ background: cardFormat === 'tricolore' ? 'linear-gradient(to right, #16834a 0%, #16834a 33.333%, #f5cf3d 33.333%, #f5cf3d 66.666%, #c93232 66.666%, #c93232 100%)' : accent, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any, opacity: cardFormat === 'minimal' ? 0.35 : 1 }} />
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[12px] overflow-hidden" style={{ background: cardFormat === 'tricolore' ? 'linear-gradient(90deg, #16834a 0%, #16834a 33.3333%, #f5cf3d 33.3333%, #f5cf3d 66.6666%, #c93232 66.6666%, #c93232 100%)' : accent, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any, opacity: 1 }} />
                   
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
                     <div className={`student-card-header flex items-center gap-2 border-b pb-1.5 ${cardFormat === 'tricolore' ? 'justify-center text-center' : ''}`} style={{ borderColor: cardFormat === 'elegant' ? '#e7d8a8' : '#e2e8f0', background: cardFormat === 'bandeau' ? accent : cardFormat === 'elegant' ? '#fff8df' : 'transparent', padding: cardFormat === 'bandeau' ? '4px 5px' : '0 0 6px' }}>
