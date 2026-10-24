@@ -52,8 +52,8 @@ const TABS: { id: Tab; label: string; description: string; icon: typeof Activity
 ];
 const today = () => new Date().toISOString().slice(0, 10);
 const inputClass = 'mt-1 h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100';
-const buttonClass = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-800 to-blue-600 px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50';
-const panelClass = 'rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5';
+const buttonClass = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-800 px-4 py-3 text-base font-extrabold leading-tight text-white shadow-sm transition hover:bg-blue-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-blue-800 disabled:text-white disabled:opacity-100';
+const panelClass = 'min-w-0 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5';
 
 function normalizeHeader(value: string) {
   return value.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
@@ -226,6 +226,12 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const handleImportFile = async (file?: File) => {
     if (!file) return;
     setNotice('');
+    setImportPreview([]);
+    if (file.size > 10 * 1024 * 1024) {
+      setImportName(file.name);
+      setNotice('Ce fichier dépasse 10 Mo et risque de saturer la mémoire du téléphone. Ouvrez-le dans Excel et enregistrez uniquement la feuille des élèves dans un nouveau fichier .xlsx ou .csv, puis réessayez.');
+      return;
+    }
     if (!/\.(csv|xlsx|xls)$/i.test(file.name) && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
       setImportPreview([]);
       setImportName(file.name);
@@ -239,7 +245,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       let parsedRows: ImportedStudentRow[] | null = null;
       if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
         const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
+        const workbook = XLSX.read(buffer, { type: 'array', cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false });
         if (!workbook.SheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
         const sheetErrors: string[] = [];
         // A workbook may have a cover/blank first sheet; search all sheets for the student table.
@@ -327,8 +333,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
           {[['Frais attendus', expected, 'bg-blue-600'], ['Frais encaissés', collected, 'bg-emerald-600'], ['Reste à recouvrer', outstanding, 'bg-amber-500']].map(([label, value, color]) => <div key={String(label)}><div className="flex justify-between gap-3 text-sm"><span className="font-bold text-slate-800">{label}</span><strong className="text-slate-950">{formatFCFA(Number(value))}</strong></div><div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100"><div className={'h-full rounded-full ' + color} style={{ width: (expected ? Math.min(100, Number(value) / expected * 100) : 0) + '%' }} /></div></div>)}
         </div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => onNavigate('paiements')}>Suivi des paiements</button><button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-extrabold text-amber-950" onClick={() => onNavigate('depenses')}>Dépenses</button></div></div>
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Suivi de l’établissement</h2><div className="mt-3 grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-blue-50 p-3"><p className="text-xs font-bold text-blue-900">Enseignants</p><p className="mt-1 text-2xl font-black text-blue-950">{teachers.length}</p><button className="mt-2 text-sm font-extrabold text-blue-800 underline" onClick={() => onNavigate('enseignants')}>Gérer l’équipe</button></div>
-          <div className="rounded-xl bg-amber-50 p-3"><p className="text-xs font-bold text-amber-900">Salaires enregistrés</p><p className="mt-1 text-xl font-black text-amber-950">{formatFCFA(salaryPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</p><p className="mt-1 text-xs font-semibold text-amber-900">Consultez l’historique dans Enseignants & Salaires.</p></div>
+          <div className="rounded-xl bg-blue-50 p-3"><p className="text-sm font-bold text-blue-900">Enseignants</p><p className="mt-1 text-2xl font-black text-blue-950">{teachers.length}</p><button className="mt-2 text-sm font-extrabold text-blue-800 underline" onClick={() => onNavigate('enseignants')}>Gérer l’équipe</button></div>
+          <div className="rounded-xl bg-amber-50 p-3"><p className="text-sm font-bold text-amber-900">Salaires enregistrés</p><p className="mt-1 text-xl font-black text-amber-950">{formatFCFA(salaryPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</p><p className="mt-1 text-xs font-semibold text-amber-900">Consultez l’historique dans Enseignants & Salaires.</p></div>
           <div className="rounded-xl bg-emerald-50 p-3"><p className="text-xs font-bold text-emerald-900">Dépenses</p><p className="mt-1 text-xl font-black text-emerald-950">{formatFCFA(expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0))}</p><p className="mt-1 text-xs font-semibold text-emerald-900">Total des dépenses enregistrées.</p></div>
           <div className="rounded-xl bg-pink-50 p-3"><p className="text-xs font-bold text-pink-900">Présences aujourd’hui</p><p className="mt-1 text-2xl font-black text-pink-950">{presentToday}</p><button className="mt-2 text-sm font-extrabold text-pink-800 underline" onClick={() => handleTab('attendance', !premium)}>Ouvrir le registre</button></div>
         </div></div>
@@ -459,7 +465,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
+          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
