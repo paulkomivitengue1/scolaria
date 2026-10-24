@@ -83,21 +83,21 @@ function splitCsvLine(line: string, separator: string): string[] {
 function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
   const headerIndex = grid.slice(0, 15).findIndex(row => {
     const headers = row.map(value => normalizeHeader(String(value ?? '')));
-    return headers.some(value => ['prenom','prenoms','firstname'].includes(value))
-      && headers.some(value => ['nom','nomdefamille','lastname'].includes(value))
-      && headers.some(value => ['classe','class','niveau'].includes(value));
+    return headers.some(value => ['prenom','prenoms','firstname','prenomdeleleve','prenomdeleleve'].includes(value))
+      && headers.some(value => ['nom','nomdefamille','lastname','nomdeleleve','nomdeleleve'].includes(value))
+      && headers.some(value => ['classe','class','niveau','classedel eleve'.replace(/\s/g,'')].includes(value));
   });
   if (headerIndex < 0) throw new Error('Colonnes obligatoires manquantes : Prénom, Nom et Classe. Vérifiez la ligne des titres du fichier Excel.');
   const headers = grid[headerIndex].map(value => normalizeHeader(String(value ?? '')));
   const find = (aliases: string[]) => headers.findIndex(h => aliases.includes(h));
   const idx = {
-    first: find(['prenom','prenoms','firstname']),
-    last: find(['nom','nomdefamille','lastname']),
-    cls: find(['classe','class','niveau']),
-    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur']),
-    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone']),
-    birthDate: find(['datenaissance','naissance','birthdate']),
-    birthPlace: find(['lieunaissance','lieudenaissance','birthplace']),
+    first: find(['prenom','prenoms','firstname','prenomdeleleve','prenomdeleleve']),
+    last: find(['nom','nomdefamille','lastname','nomdeleleve','nomdeleleve']),
+    cls: find(['classe','class','niveau','classedeleve']),
+    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur','nomdupere','nomdelamere','responsablelegal']),
+    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone']),
+    birthDate: find(['datenaissance','naissance','birthdate','datedenaissance']),
+    birthPlace: find(['lieunaissance','lieudenaissance','birthplace','lieudenaissanceeleve']),
     sex: find(['sexe','genre']),
   };
   const rows = grid.slice(headerIndex + 1).map((cells, offset) => {
