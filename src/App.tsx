@@ -416,7 +416,15 @@ export default function App() {
         while (remaining.length && navigator.onLine) {
           const item = remaining[0];
           try {
-            const realId = await addStudentDB(schoolId, item.student);
+            // Avoid duplicate rows if the server accepted an earlier attempt but its response was lost.
+            const serverStudents = await loadStudents(schoolId, [], []);
+            const normalized = (value: string) => value.trim().toLocaleLowerCase('fr');
+            const alreadySaved = serverStudents.find(st =>
+              normalized(st.firstName) === normalized(item.student.firstName) &&
+              normalized(st.lastName) === normalized(item.student.lastName) &&
+              normalized(st.className) === normalized(item.student.className)
+            );
+            const realId = alreadySaved?.id || await addStudentDB(schoolId, item.student);
             setStudents(prev => {
               const next = prev.map(st => st.id === item.localId ? { ...st, id: realId } : st);
               try {
