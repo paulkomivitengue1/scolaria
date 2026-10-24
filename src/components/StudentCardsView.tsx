@@ -157,13 +157,13 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-info-column { display: block !important; grid-column: 2 !important; grid-row: 1 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: hidden !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
-          .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
+          .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5pt !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8pt !important; line-height: 1.05 !important; font-weight: 700 !important; }
           .student-id-card .student-card-info-column > .grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.35mm 1.5mm !important; margin-top: 0.6mm !important; }
           .student-id-card .student-card-info-column > .grid > div { min-width: 0 !important; overflow: visible !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6px !important; line-height: 1 !important; white-space: nowrap !important; }
-          .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7px !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
+          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6pt !important; line-height: 1 !important; white-space: nowrap !important; }
+          .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7pt !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7pt !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
           .student-id-card .student-card-main .student-photo-frame { margin: 0 !important; }
           .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
           .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
