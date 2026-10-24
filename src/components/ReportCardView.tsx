@@ -406,7 +406,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                   </div>
                   <div>
                     <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Coef.</label>
-                    <input type="number" min={1} step={0.5} value={g.coefficient || ''} onChange={e => updateGrade(i, 'coefficient', parseFloat(e.target.value) || 1)} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                    <input type="number" min={1} step={0.5} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => updateGrade(i, 'coefficient', e.target.value === '' ? 1 : parseFloat(e.target.value))} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
                   </div>
                 </div>
                 {/* Desktop: inline fields (hidden on mobile) */}
