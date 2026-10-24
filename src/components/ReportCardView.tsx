@@ -63,7 +63,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
 
   const updateLyceeScore = (subject: string, field: keyof LyceeScore, value: string) => {
     if (!selectedStudent) return;
-    const next = { ...lyceeScores, [subject]: { classScore: '', compositionScore: '', rank: '', ...(lyceeScores[subject] || {}), [field]: value } };
+    const next = { ...lyceeScores, [subject]: { ...(lyceeScores[subject] || { classScore: '', compositionScore: '', rank: '' }), [field]: value } };
     setLyceeScores(next);
     try { localStorage.setItem('gestilys-lycee-scores-' + schoolId + '-' + selectedStudent.id + '-' + selectedPeriod, JSON.stringify(next)); }
     catch { window.alert('Impossible d’enregistrer ces notes sur cet appareil.'); }
