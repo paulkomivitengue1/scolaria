@@ -159,8 +159,41 @@ export default function App() {
 
       if (results[7].status === 'fulfilled') setSalaryPayments(results[7].value);
       else console.error('Failed to load salary payments:', results[7].reason);
+
+      // Keep a local snapshot so the dashboard can reopen when the network is unavailable.
+      try {
+        localStorage.setItem('gestilys-offline-data-' + schoolId, JSON.stringify({
+          savedAt: new Date().toISOString(), schoolConfig, academicYear, schoolClasses,
+          students: results[0].status === 'fulfilled' ? results[0].value : [],
+          uniforms: results[1].status === 'fulfilled' ? results[1].value : [],
+          books: results[2].status === 'fulfilled' ? results[2].value : [],
+          supplies: results[3].status === 'fulfilled' ? results[3].value : [],
+          gradePeriods: results[4].status === 'fulfilled' ? results[4].value : [],
+          expenses: results[5].status === 'fulfilled' ? results[5].value : [],
+          teachers: results[6].status === 'fulfilled' ? results[6].value : [],
+          salaryPayments: results[7].status === 'fulfilled' ? results[7].value : [],
+        }));
+      } catch (cacheError) { console.warn('Impossible de mettre en cache les données hors ligne :', cacheError); }
     } catch (err) {
       console.error('Failed to load school data:', err);
+      // If Supabase cannot be reached, restore the most recent local snapshot.
+      try {
+        const raw = localStorage.getItem('gestilys-offline-data-' + schoolId);
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached.schoolConfig) setFeeConfig(cached.schoolConfig);
+          if (cached.academicYear) setCurrentAcademicYear(cached.academicYear);
+          if (Array.isArray(cached.schoolClasses)) setClassNames(cached.schoolClasses);
+          if (Array.isArray(cached.students)) setStudents(cached.students);
+          if (Array.isArray(cached.uniforms)) setUniforms(cached.uniforms);
+          if (Array.isArray(cached.books)) setBooks(cached.books);
+          if (Array.isArray(cached.supplies)) setSupplies(cached.supplies);
+          if (Array.isArray(cached.gradePeriods) && cached.gradePeriods.length) setGradePeriods(cached.gradePeriods);
+          if (Array.isArray(cached.expenses)) setExpenses(cached.expenses);
+          if (Array.isArray(cached.teachers)) setTeachers(cached.teachers);
+          if (Array.isArray(cached.salaryPayments)) setSalaryPayments(cached.salaryPayments);
+        }
+      } catch (cacheError) { console.error('Impossible de restaurer les données hors ligne :', cacheError); }
     } finally {
       setDataLoading(false);
     }
