@@ -140,7 +140,7 @@ export default function App() {
       setClassNames(schoolClasses);
 
       const results = await Promise.allSettled([
-        loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches),
+        loadStudents(schoolId, schoolConfig.feeConfig, schoolConfig.tranches, academicYear),
         loadUniformStock(schoolId),
         loadBookStock(schoolId),
         loadSupplyStock(schoolId),
