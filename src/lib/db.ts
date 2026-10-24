@@ -286,6 +286,27 @@ export async function addStudentDB(schoolId: string, student: Omit<Student, 'id'
   return data.id;
 }
 
+export async function addStudentsBulkDB(schoolId: string, students: Omit<Student, 'id'>[]): Promise<Array<{ id: string; matricule: string }>> {
+  if (!students.length) return [];
+  const rows = students.map(student => ({
+    school_id: schoolId,
+    first_name: student.firstName,
+    last_name: student.lastName,
+    class_name: student.className,
+    parent_name: student.parentName,
+    parent_phone: student.parentPhone,
+    birth_date: student.birthDate || null,
+    birth_place: student.birthPlace || null,
+    fees_json: student.fees.map(f => ({ feeType: f.feeType, paymentMode: f.paymentMode, totalExpected: f.totalExpected })),
+    status: 'actif',
+    matricule: student.matricule || null,
+    sexe: student.sexe,
+  }));
+  const { data, error } = await getSupabase().from('students').insert(rows).select('id,matricule');
+  if (error) throw error;
+  return (data || []).map(row => ({ id: row.id as string, matricule: String(row.matricule || '') }));
+}
+
 export async function deleteStudentDB(studentId: string): Promise<void> {
   const { error } = await getSupabase().from('students').delete().eq('id', studentId);
   if (error) throw error;
@@ -324,6 +345,20 @@ export async function updateStudentDB(studentId: string, updates: {
     })
     .eq('id', studentId);
   if (error) throw error;
+}
+
+export async function generateMatricules(schoolId: string, schoolName: string, count: number): Promise<string[]> {
+  if (count <= 0) return [];
+  const year = new Date().getFullYear();
+  const prefix = (schoolName || 'ECOLE').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5) || 'ECOLE';
+  const { data, error } = await getSupabase().from('students').select('matricule').eq('school_id', schoolId).like('matricule', `${prefix}-${year}-%`);
+  if (error) throw error;
+  let maxSeq = 0;
+  (data || []).forEach(row => {
+    const match = String(row.matricule || '').match(/-(\\d+)$/);
+    if (match) maxSeq = Math.max(maxSeq, Number(match[1]) || 0);
+  });
+  return Array.from({ length: count }, (_, index) => `${prefix}-${year}-${String(maxSeq + index + 1).padStart(3, '0')}`);
 }
 
 export async function generateMatricule(schoolId: string, schoolName: string): Promise<string> {
