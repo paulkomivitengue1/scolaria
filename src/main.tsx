@@ -35,25 +35,13 @@ class InitErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const hadController = Boolean(navigator.serviceWorker.controller);
     navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((registration) => {
-      // Check for a newer deployment each time the app opens.
+      // Check for a newer deployment when the app opens, without forcing a reload
+      // while the director may be filling a form or importing a file.
       return registration.update().catch(() => undefined);
     }).catch((error) => {
       console.error('Gestilys: service worker registration failed', error);
     });
-
-    // If an already-running PWA receives a new version, reload once automatically.
-    // This removes the need for the director to refresh manually to see updates.
-    if (hadController) {
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        try {
-          if (sessionStorage.getItem('gestilys-sw-reloaded') === '1') return;
-          sessionStorage.setItem('gestilys-sw-reloaded', '1');
-        } catch { /* Reload still works when session storage is unavailable. */ }
-        window.location.reload();
-      }, { once: true });
-    }
   });
 }
 
