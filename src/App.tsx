@@ -172,16 +172,18 @@ export default function App() {
 
       // Keep a local snapshot so the dashboard can reopen when the network is unavailable.
       try {
-        localStorage.setItem('gestilys-offline-data-' + schoolId, JSON.stringify({
-          savedAt: new Date().toISOString(), schoolConfig, academicYear, schoolClasses,
-          students: results[0].status === 'fulfilled' ? results[0].value : [],
-          uniforms: results[1].status === 'fulfilled' ? results[1].value : [],
-          books: results[2].status === 'fulfilled' ? results[2].value : [],
-          supplies: results[3].status === 'fulfilled' ? results[3].value : [],
-          gradePeriods: results[4].status === 'fulfilled' ? results[4].value : [],
-          expenses: results[5].status === 'fulfilled' ? results[5].value : [],
-          teachers: results[6].status === 'fulfilled' ? results[6].value : [],
-          salaryPayments: results[7].status === 'fulfilled' ? results[7].value : [],
+        const cacheKey = 'gestilys-offline-data-' + schoolId;
+        const previous = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+        localStorage.setItem(cacheKey, JSON.stringify({
+          ...previous, savedAt: new Date().toISOString(), schoolConfig, academicYear, schoolClasses,
+          students: results[0].status === 'fulfilled' ? results[0].value : (previous.students || []),
+          uniforms: results[1].status === 'fulfilled' ? results[1].value : (previous.uniforms || []),
+          books: results[2].status === 'fulfilled' ? results[2].value : (previous.books || []),
+          supplies: results[3].status === 'fulfilled' ? results[3].value : (previous.supplies || []),
+          gradePeriods: results[4].status === 'fulfilled' ? results[4].value : (previous.gradePeriods || []),
+          expenses: results[5].status === 'fulfilled' ? results[5].value : (previous.expenses || []),
+          teachers: results[6].status === 'fulfilled' ? results[6].value : (previous.teachers || []),
+          salaryPayments: results[7].status === 'fulfilled' ? results[7].value : (previous.salaryPayments || []),
         }));
       } catch (cacheError) { console.warn('Impossible de mettre en cache les données hors ligne :', cacheError); }
     } catch (err) {
