@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, School, UserCircle, Phone,
   ShieldCheck, AlertCircle,
