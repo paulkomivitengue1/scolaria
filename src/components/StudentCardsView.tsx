@@ -352,7 +352,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       {cardFields.matricule && <span className="truncate text-[8px] text-slate-500">Matricule : {s.matricule || '—'}</span>}
                       <span className="shrink-0 text-[8px] font-700" style={{ color: accent }}>{academicYear || 'Année scolaire'}</span>
                     </div>}
-                    {cardFields.parentName && <p className="mt-1 text-[8px] leading-tight text-slate-600">Parent : {s.parentName || '—'}</p>
+                    {cardFields.parentName && <p className="mt-1 text-[8px] leading-tight text-slate-600">Parent : {s.parentName || '—'}</p>}
                     {schoolStamp && <div className="mt-auto flex justify-end pt-1"><img src={schoolStamp} alt="Cachet de l’école" className="h-4 w-6 object-contain opacity-80 print:h-[4mm] print:w-[6mm]" /></div>}
                   </div>
                 </article>
