@@ -25,6 +25,9 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   }, [schoolId]);
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
+  const [cardFormat, setCardFormat] = useState('mali-officiel');
+  const [schoolMotto, setSchoolMotto] = useState('');
+  const [cardConfigLoaded, setCardConfigLoaded] = useState(false);
   const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
   const [fieldsSaving, setFieldsSaving] = useState(false);
   useEffect(() => { let alive = true; loadStudentCardFields(schoolId).then(fields => { if (alive) setCardFields(fields); }).catch(() => { if (alive) window.alert('Impossible de charger les options de carte.'); }); return () => { alive = false; }; }, [schoolId]);
@@ -45,6 +48,24 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
     const start = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
     return start + '-' + (start + 1);
   });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('gestilys-card-design-' + schoolId);
+      if (saved) {
+        const config = JSON.parse(saved);
+        setCardFormat(config.format || 'mali-officiel');
+        setAccent(config.accent || '#273c75');
+        setSchoolMotto(config.schoolMotto || '');
+      }
+    } catch { /* Optional local card design settings */ }
+    finally { setCardConfigLoaded(true); }
+  }, [schoolId]);
+  useEffect(() => {
+    if (!cardConfigLoaded) return;
+    try { localStorage.setItem('gestilys-card-design-' + schoolId, JSON.stringify({ format: cardFormat, accent, schoolMotto })); }
+    catch { /* Settings remain usable for this session */ }
+  }, [schoolId, cardConfigLoaded, cardFormat, accent, schoolMotto]);
 
   const classes = useMemo(() => [...new Set(students.map(s => s.className).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [students]);
   const eligibleStudents = useMemo(() => mode === 'individual'
@@ -157,13 +178,13 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           .student-id-card .student-card-info-column { display: block !important; grid-column: 2 !important; grid-row: 1 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; flex: none !important; overflow: hidden !important; overflow-wrap: anywhere !important; }
           .student-id-card .student-card-main .student-card-details { min-height: 0 !important; min-width: 0 !important; overflow: visible !important; }
           .student-id-card .student-card-main p { margin: 0 !important; padding: 0 !important; line-height: 1.05 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5px !important; line-height: 1.05 !important; }
-          .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8px !important; line-height: 1.05 !important; font-weight: 700 !important; }
+          .student-id-card .student-card-info-column > p:nth-child(odd) { font-size: 6.5pt !important; line-height: 1.05 !important; }
+          .student-id-card .student-card-info-column > p:nth-child(even) { font-size: 8pt !important; line-height: 1.05 !important; font-weight: 700 !important; }
           .student-id-card .student-card-info-column > .grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.35mm 1.5mm !important; margin-top: 0.6mm !important; }
           .student-id-card .student-card-info-column > .grid > div { min-width: 0 !important; overflow: visible !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6px !important; line-height: 1 !important; white-space: nowrap !important; }
-          .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7px !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
-          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7px !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
+          .student-id-card .student-card-info-column > .grid p:first-child { font-size: 6pt !important; line-height: 1 !important; white-space: nowrap !important; }
+          .student-id-card .student-card-info-column > .grid p:last-child { font-size: 7pt !important; line-height: 1.05 !important; font-weight: 600 !important; overflow-wrap: anywhere !important; }
+          .student-id-card .student-card-main .student-card-birth-value { display: block !important; visibility: visible !important; font-size: 7pt !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; white-space: normal !important; }
           .student-id-card .student-card-main .student-photo-frame { margin: 0 !important; }
           .student-id-card img:not(.student-photo-frame) { max-width:100% !important; }
           .student-id-card .student-photo-frame { width:18mm !important; height:23mm !important; min-width:18mm !important; min-height:23mm !important; max-width:18mm !important; max-height:23mm !important; flex:0 0 18mm !important; object-fit:cover !important; object-position:center 20% !important; }
@@ -220,6 +241,20 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Année scolaire</label>
                 <input value={academicYear} onChange={e => setAcademicYear(e.target.value)} maxLength={9} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" placeholder="2026-2027" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-700 text-slate-500">Modèle de carte (5 formats)</label>
+                <select value={cardFormat} onChange={e => setCardFormat(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm">
+                  <option value="mali-officiel">1. Institutionnel malien</option>
+                  <option value="tricolore">2. Tricolore du Mali</option>
+                  <option value="bandeau">3. Bandeau moderne</option>
+                  <option value="elegant">4. Élégant doré</option>
+                  <option value="minimal">5. Sobre et compact</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-700 text-slate-500">Devise de l'école</label>
+                <input value={schoolMotto} onChange={e => setSchoolMotto(e.target.value)} maxLength={80} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm" placeholder="Ex. Travail – Discipline – Réussite" />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-700 text-slate-500">Logo de l'école (facultatif)</label>
@@ -284,15 +319,17 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
           <div className="student-cards-print grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
-                <article className="student-id-card relative flex h-[205px] w-full max-w-[325px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card" style={{ borderTop: `5px solid ${accent}` }}>
-                  <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16 opacity-10" style={{ background: accent }} />
-                  {schoolStamp && <img src={schoolStamp} alt="Cachet de l’école" className="pointer-events-none absolute bottom-1 right-1 z-20 h-7 w-10 object-contain opacity-90 print:h-[9mm] print:w-[13mm]" />}
+                <article className={`student-id-card card-format-${cardFormat} relative flex h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '5px solid #16834a' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
+                  <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16" style={{ background: cardFormat === 'tricolore' ? 'linear-gradient(90deg,#16834a 0 33%,#f5cf3d 33% 66%,#c93232 66% 100%)' : accent, opacity: cardFormat === 'tricolore' ? 1 : cardFormat === 'minimal' ? 0.03 : cardFormat === 'elegant' ? 0.07 : 0.1 }} />
+                  {schoolStamp && <img src={schoolStamp} alt="Cachet de l’école" className="pointer-events-none absolute bottom-2 right-2 z-20 h-5 w-7 object-contain opacity-75 print:bottom-[3mm] print:right-[3mm] print:h-[5mm] print:w-[7mm]" />}
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">
-                    <div className="student-card-header flex items-center gap-2 border-b border-slate-100 pb-2">
-                      {localSchoolLogo ? <img src={localSchoolLogo} alt="" className="h-8 w-8 rounded-md object-contain" /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: accent }}><GraduationMark /></div>}
+                    <div className={`student-card-header flex items-center gap-2 border-b pb-1.5 ${cardFormat === 'tricolore' ? 'justify-center text-center' : ''}`} style={{ borderColor: cardFormat === 'elegant' ? '#e7d8a8' : '#e2e8f0', background: cardFormat === 'bandeau' ? accent : cardFormat === 'elegant' ? '#fff8df' : 'transparent', padding: cardFormat === 'bandeau' ? '4px 5px' : '0 0 6px' }}>
+                      {localSchoolLogo ? <img src={localSchoolLogo} alt="Logo de l’école" className="h-8 w-8 rounded-md object-contain" style={{ background: '#fff' }} /> : <div className="student-card-logo-fallback grid h-8 w-8 place-items-center rounded-md text-white" style={{ background: cardFormat === 'tricolore' ? '#16834a' : accent }}><GraduationMark /></div>}
                       <div className="student-card-details min-w-0 flex-1">
-                        <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: accent }}>{schoolName || 'Établissement scolaire'}</p>
-                        <p className="text-[8px] font-700 uppercase tracking-widest text-slate-500">CARTE SCOLAIRE</p>
+                        <p className="truncate text-[6px] font-800 uppercase tracking-wide" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#334155' }}>RÉPUBLIQUE DU MALI · UN PEUPLE – UN BUT – UNE FOI</p>
+                        <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : accent }}>{schoolName || 'Établissement scolaire'}</p>
+                        {schoolMotto.trim() && <p className="truncate text-[7px] font-700 italic" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#475569' }}>{schoolMotto}</p>}
+                        <p className="text-[7px] font-700 uppercase tracking-widest" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#64748b' }}>CARTE SCOLAIRE</p>
                       </div>
                     </div>
                     <div className="student-card-main mt-2 flex min-h-0 flex-1 gap-2">
