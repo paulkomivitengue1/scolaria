@@ -5,7 +5,7 @@ import {
   Search, GraduationCap, Check, ShieldCheck, CircleHelp,
 } from 'lucide-react';
 import { useAuth } from './lib/auth';
-import { generateMatricule, loadStudents, addStudentDB, recordPayment,
+import { generateMatricule, generateMatricules, loadStudents, addStudentDB, addStudentsBulkDB, recordPayment,
   loadUniformStock, loadBookStock, syncUniformStock, syncBookStock, loadSupplyStock, syncSupplyStock,
   loadSchoolFeeConfig, loadCurrentAcademicYear, saveTranches, saveFeeConfig,
   loadGradePeriods, saveGradePeriods,
@@ -355,11 +355,12 @@ export default function App() {
 
   const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
     if (!profile?.schoolId) throw new Error('École non identifiée.');
-    if (students.length >= getStudentLimit()) throw new Error(getStudentLimit() === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
+    const limit = getStudentLimit();
+    if (students.length >= limit) throw new Error(limit === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
     const existing = new Set(students.map(st => `${st.firstName}|${st.lastName}|${st.className}`.toLocaleLowerCase('fr')));
-    let imported = 0;
+    const candidates: Omit<Student, 'id'>[] = [];
     for (const row of rows) {
-      if (students.length + imported >= getStudentLimit()) break;
+      if (students.length + candidates.length >= limit) break;
       const duplicateKey = `${row.firstName}|${row.lastName}|${row.className}`.toLocaleLowerCase('fr');
       if (existing.has(duplicateKey)) continue;
       const fees = feeConfig.feeTypes.map(ft => {
@@ -369,41 +370,47 @@ export default function App() {
         else for (const tranche of feeConfig.tranches) payments[String(tranche.index)] = { paid: 0 };
         return { feeType: ft.feeType, paymentMode: ft.paymentMode, payments, totalExpected: matching.reduce((sum, config) => sum + Number(config.amount || 0), 0) };
       });
-      const matricule = navigator.onLine
-        ? await generateMatricule(profile.schoolId, profile.schoolName).catch(() => 'OFF-' + Date.now().toString().slice(-7))
-        : 'OFF-' + Date.now().toString().slice(-7) + '-' + imported;
-      const student: Omit<Student, 'id'> = {
+      candidates.push({
         firstName: row.firstName.trim(), lastName: row.lastName.trim(), className: row.className.trim(),
         parentName: row.parentName.trim(), parentPhone: row.parentPhone.trim(),
-        birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees,
-        matricule, sexe: row.sexe,
-      };
-      if (navigator.onLine) {
-        const id = await addStudentDB(profile.schoolId, student);
-        setStudents(prev => [{ ...student, id }, ...prev]);
-      } else {
-        // Keep offline imports on this device and queue them for safe upload when online.
-        const localId = 'offline-' + profile.schoolId + '-' + Date.now() + '-' + imported;
-        const queueKey = 'gestilys-pending-students-' + profile.schoolId;
-        const queued = JSON.parse(localStorage.getItem(queueKey) || '[]') as Array<{ localId: string; student: Omit<Student, 'id'> }>;
-        queued.push({ localId, student });
-        localStorage.setItem(queueKey, JSON.stringify(queued));
-        const offlineStudent = { ...student, id: localId };
-        setStudents(prev => {
-          const next = [offlineStudent, ...prev];
-          try {
-            const cacheKey = 'gestilys-offline-data-' + profile.schoolId;
-            const cached = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-            localStorage.setItem(cacheKey, JSON.stringify({ ...cached, students: next, savedAt: new Date().toISOString() }));
-          } catch { /* Pending queue remains the source of truth for this import. */ }
-          return next;
-        });
-      }
+        birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees, matricule: '', sexe: row.sexe,
+      });
       existing.add(duplicateKey);
-      imported++;
     }
-    if (imported === 0) throw new Error('Aucun nouvel élève importé : vérifiez les doublons et la limite de votre forfait.');
-    return imported;
+    if (!candidates.length) throw new Error('Aucun nouvel élève importé : vérifiez les doublons et la limite de votre forfait.');
+
+    if (navigator.onLine) {
+      const matricules = await generateMatricules(profile.schoolId, profile.schoolName, candidates.length);
+      const prepared = candidates.map((student, index) => ({ ...student, matricule: matricules[index] }));
+      const saved = await addStudentsBulkDB(profile.schoolId, prepared);
+      const idByMatricule = new Map(saved.map(item => [item.matricule, item.id]));
+      const imported = prepared.map(student => {
+        const id = idByMatricule.get(student.matricule);
+        if (!id) throw new Error('Certains élèves ont été enregistrés, mais leur confirmation est incomplète. Actualisez la liste avant de relancer l’import.');
+        return { ...student, id };
+      });
+      setStudents(prev => [...imported, ...prev]);
+      return imported.length;
+    }
+
+    const now = Date.now();
+    const imported = candidates.map((student, index) => ({
+      ...student,
+      matricule: 'OFF-' + String(now).slice(-7) + '-' + index,
+      id: 'offline-' + profile.schoolId + '-' + now + '-' + index,
+    }));
+    const queueKey = 'gestilys-pending-students-' + profile.schoolId;
+    const queued = JSON.parse(localStorage.getItem(queueKey) || '[]') as Array<{ localId: string; student: Omit<Student, 'id'> }>;
+    queued.push(...imported.map(student => ({ localId: student.id, student: (({ id: _id, ...rest }) => rest)(student) })));
+    localStorage.setItem(queueKey, JSON.stringify(queued));
+    const nextStudents = [...imported, ...students];
+    setStudents(nextStudents);
+    try {
+      const cacheKey = 'gestilys-offline-data-' + profile.schoolId;
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+      localStorage.setItem(cacheKey, JSON.stringify({ ...cached, students: nextStudents, savedAt: new Date().toISOString() }));
+    } catch { /* The pending queue remains the source of truth for this import. */ }
+    return imported.length;
   };
 
   useEffect(() => {
