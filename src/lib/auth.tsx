@@ -54,6 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (error || !data) {
+      // Offline fallback: reuse only the profile previously fetched for this signed-in user.
+      try {
+        const cached = localStorage.getItem('gestilys-profile-cache-' + u.id);
+        if (cached) {
+          const parsed = JSON.parse(cached) as SchoolProfile;
+          if (parsed.schoolId && parsed.role) {
+            setProfile(parsed);
+            return parsed;
+          }
+        }
+      } catch { /* Ignore invalid or unavailable local cache. */ }
       setProfile(null);
       return null;
     }
@@ -78,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscriptionAmount: Number(school?.subscription_amount || 0),
     };
     setProfile(p);
+    try { localStorage.setItem('gestilys-profile-cache-' + u.id, JSON.stringify(p)); } catch { /* Optional offline profile cache. */ }
     return p;
   }
 
