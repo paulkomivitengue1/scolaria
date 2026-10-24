@@ -225,16 +225,22 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       return;
     }
     try {
+      setImportName(file.name);
+      setNotice('Lecture du fichier ' + file.name + '…');
       let text: string;
-      if (/\.xlsx?$/i.test(file.name)) {
-        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
         const firstSheet = workbook.SheetNames[0];
         if (!firstSheet) throw new Error('Le classeur Excel ne contient aucune feuille.');
-        text = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet], { FS: ';' });
+        const sheet = workbook.Sheets[firstSheet];
+        if (!sheet || !sheet['!ref']) throw new Error('La première feuille Excel est vide.');
+        text = XLSX.utils.sheet_to_csv(sheet, { FS: ';', RS: '\\n', blankrows: false });
       } else {
         text = await file.text();
       }
       const rows = parseStudentCsv(text);
+      if (!rows.length) throw new Error('Aucun élève valide trouvé dans ce fichier. Vérifiez les en-têtes Prénom, Nom et Classe.');
       const knownClasses = new Set(classNames.map(name => name.trim().toLocaleLowerCase('fr')));
       const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !knownClasses.has(name.trim().toLocaleLowerCase('fr'))))];
       if (unknownClasses.length) throw new Error('Classe(s) inconnue(s) : ' + unknownClasses.join(', ') + '. Créez ces classes dans Paramètres avant l’import.');
@@ -433,7 +439,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => void handleImportFile(e.target.files?.[0])} /></label>
+          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => saveCsv('modele-import-eleves-gestilys.csv', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré','6e année','Mamadou Traoré','75000000','2013-04-12','Bamako','F']])}><Download className="h-4 w-4" />Télécharger un modèle</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
