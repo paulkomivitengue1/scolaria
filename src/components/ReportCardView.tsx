@@ -48,6 +48,8 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const [schoolStamp, setSchoolStamp] = useState('');
   const [stampCropDraft, setStampCropDraft] = useState<string | null>(null);
   const [showRank, setShowRank] = useState(false);
+  const [showLyceeRank, setShowLyceeRank] = useState(true);
+  const [showLyceeMention, setShowLyceeMention] = useState(true);
   const [lyceeScores, setLyceeScores] = useState<Record<string, LyceeScore>>({});
   const [classStats, setClassStats] = useState<{ count: number; highest: number | null; lowest: number | null; rank: number | null }>({ count: 0, highest: null, lowest: null, rank: null });
   useEffect(() => { try { setSchoolStamp(localStorage.getItem('gestilys-school-stamp-' + schoolId) || ''); } catch { setSchoolStamp(''); } }, [schoolId]);
@@ -425,14 +427,18 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         </div>
 
         {bulletinFormat === 'lycee-malien' && (
-          <section className="overflow-hidden rounded-2xl border-2 border-emerald-200 bg-white shadow-sm">
+          <section className="min-w-0 rounded-2xl border-2 border-emerald-200 bg-white shadow-sm">
             <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-3">
               <h3 className="text-base font-800 text-emerald-950">Notes du bulletin — lycée malien</h3>
-              <p className="mt-1 text-sm font-600 text-emerald-900">Les matières viennent du tableau ci-dessus. Renseigne les notes de classe, compositions sur 40 et rangs ici.</p>
+              <p className="mt-1 text-sm font-600 text-emerald-900">Les matières viennent du tableau ci-dessus. Fais défiler le tableau horizontalement sur téléphone.</p>
+              <div className="mt-3 flex flex-wrap gap-4 text-sm font-bold text-emerald-950">
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={showLyceeRank} onChange={e => setShowLyceeRank(e.target.checked)} className="h-4 w-4 accent-emerald-700" />Afficher les rangs</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={showLyceeMention} onChange={e => setShowLyceeMention(e.target.checked)} className="h-4 w-4 accent-emerald-700" />Afficher les mentions</label>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[650px] border-collapse text-sm">
-                <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40','Rang'].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
+            <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <table className="w-max min-w-[650px] border-collapse text-sm">
+                <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40',...(showLyceeRank?['Rang']:[])].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
                 <tbody>{[...grades.filter(g => g.subject.trim()), { id: '__conduite__', subject: 'Conduite', score: 18, maxScore: 20, coefficient: 1 } as GradeRow].map((g, index) => {
                   const isConduct = g.subject === 'Conduite';
                   return <tr key={g.id || g.subject}>
@@ -440,7 +446,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                     <td className="border border-slate-300 px-2 py-2 font-800 text-slate-900">{g.subject}</td>
                     <td className="border border-slate-300 p-2">{<input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? (isConduct ? '18' : '')} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-full min-w-[100px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
                     <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Composition sur 40 '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-full min-w-[100px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
-                    <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Rang de '+g.subject} type="number" min="1" value={lyceeScores[g.subject]?.rank ?? ''} onChange={e => updateLyceeScore(g.subject,'rank',e.target.value)} className="w-full min-w-[70px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
+                    {showLyceeRank && <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Rang de '+g.subject} type="number" min="1" value={lyceeScores[g.subject]?.rank ?? ''} onChange={e => updateLyceeScore(g.subject,'rank',e.target.value)} className="w-full min-w-[70px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>}
                   </tr>;
                 })}</tbody>
               </table>
