@@ -235,7 +235,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         if (!firstSheet) throw new Error('Le classeur Excel ne contient aucune feuille.');
         const sheet = workbook.Sheets[firstSheet];
         if (!sheet || !sheet['!ref']) throw new Error('La première feuille Excel est vide.');
-        text = XLSX.utils.sheet_to_csv(sheet, { FS: ';', RS: '\\n', blankrows: false });
+        text = XLSX.utils.sheet_to_csv(sheet, { FS: ';', RS: '\n', blankrows: false });
       } else {
         text = await file.text();
       }
