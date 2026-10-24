@@ -26,7 +26,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
   const [cropDraft, setCropDraft] = useState<{ image: string; target: 'logo' | string } | null>(null);
   const [accent, setAccent] = useState('#273c75');
   const [cardFormat, setCardFormat] = useState('mali-officiel');
-  const [schoolMotto, setSchoolMotto] = useState('Travail – Discipline – Réussite');
+  const [schoolMotto, setSchoolMotto] = useState('');
   const [cardConfigLoaded, setCardConfigLoaded] = useState(false);
   const [cardFields, setCardFields] = useState<StudentCardFields>(DEFAULT_STUDENT_CARD_FIELDS);
   const [fieldsSaving, setFieldsSaving] = useState(false);
@@ -56,7 +56,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
         const config = JSON.parse(saved);
         setCardFormat(config.format || 'mali-officiel');
         setAccent(config.accent || '#273c75');
-        setSchoolMotto(config.schoolMotto || 'Travail – Discipline – Réussite');
+        setSchoolMotto(config.schoolMotto || '');
       }
     } catch { /* Optional local card design settings */ }
     finally { setCardConfigLoaded(true); }
@@ -328,7 +328,7 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
                       <div className="student-card-details min-w-0 flex-1">
                         <p className="truncate text-[6px] font-800 uppercase tracking-wide" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#334155' }}>RÉPUBLIQUE DU MALI · UN PEUPLE – UN BUT – UNE FOI</p>
                         <p className="truncate text-[10px] font-800 uppercase tracking-wide" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : accent }}>{schoolName || 'Établissement scolaire'}</p>
-                        <p className="truncate text-[7px] font-700 italic" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#475569' }}>{schoolMotto || 'Devise de l’école'}</p>
+                        {schoolMotto.trim() && <p className="truncate text-[7px] font-700 italic" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#475569' }}>{schoolMotto}</p>}
                         <p className="text-[7px] font-700 uppercase tracking-widest" style={{ color: cardFormat === 'bandeau' ? '#ffffff' : '#64748b' }}>CARTE SCOLAIRE</p>
                       </div>
                     </div>
