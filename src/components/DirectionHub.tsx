@@ -367,8 +367,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     } catch (error) {
       setImportPreview([]);
       setNotice(error instanceof Error ? error.message : 'Fichier illisible.');
-    } finally {
-      await clearPendingImport();
+      // Keep the selected file available for recovery if Android recreates this screen.
     }
   };
 
@@ -408,6 +407,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       const count = await onImportStudents(importPreview);
       setNotice(count + (navigator.onLine ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.' : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
       setImportPreview([]);
+      await clearPendingImport();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
     } finally { setImportBusy(false); }
