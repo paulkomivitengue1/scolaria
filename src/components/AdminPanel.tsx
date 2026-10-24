@@ -842,15 +842,15 @@ export function AdminPanel({ onExit }: Props) {
                 <div className="flex items-start gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-amber-700"><Clock className="h-5 w-5" /></span>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-800 text-amber-950">Durée de l’essai gratuit</h3>
-                    <p className="mt-1 text-xs leading-5 text-amber-900">Cette durée sera appliquée aux nouvelles écoles qui s’inscrivent. La landing page affichera automatiquement la même valeur. Les essais déjà en cours ne seront pas modifiés.</p>
+                    <h3 className="font-800 text-amber-950">Politique d’accès sans paiement</h3>
+                    <p className="mt-1 text-xs leading-5 text-amber-900">Mettez 0 pour désactiver complètement les essais gratuits : les nouveaux comptes devront être activés après paiement. Une valeur supérieure à 0 réactive les essais. Les écoles déjà inscrites ne sont pas modifiées automatiquement.</p>
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                       <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-700 text-amber-950">
-                        <span className="shrink-0">Nombre de jours</span>
+                        <span className="shrink-0">Jours gratuits (0 = désactivé)</span>
                         <input aria-label="Durée globale de l’essai gratuit en jours" type="number" min="0" max="365" step="1" inputMode="numeric" value={publicTrialDays} onChange={e => setPublicTrialDays(e.target.value)} className="h-11 min-w-0 w-full rounded-lg border border-amber-300 bg-white px-3 text-sm font-700 text-slate-900" />
                       </label>
                       <button type="button" onClick={() => void savePublicTrialDuration()} disabled={actionLoading === 'public-trial-days'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-800 text-amber-950 disabled:opacity-60">
-                        {actionLoading === 'public-trial-days' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer la durée
+                        {actionLoading === 'public-trial-days' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enregistrer la politique
                       </button>
                     </div>
                   </div>
