@@ -567,8 +567,9 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           {/* Grades table */}
           {bulletinFormat === 'lycee-malien' ? (() => {
             const subjectRows = [...grades.filter(g => g.subject.trim()), { id: '__conduite__', subject: 'Conduite', score: 18, maxScore: 20, coefficient: 1 } as GradeRow];
-            const totalCoefficient = subjectRows.reduce((sum, g) => sum + (Number(g.coefficient) || 1), 0);
-            const totalPoints = subjectRows.reduce((sum, g) => sum + lyceeAverage(g.subject) * (Number(g.coefficient) || 1), 0);
+            const scoredRows = subjectRows.filter(g => g.subject === 'Conduite' || (lyceeScores[g.subject]?.classScore !== undefined && lyceeScores[g.subject].classScore !== '' && lyceeScores[g.subject]?.compositionScore !== undefined && lyceeScores[g.subject].compositionScore !== ''));
+            const totalCoefficient = scoredRows.reduce((sum, g) => sum + (Number(g.coefficient) || 1), 0);
+            const totalPoints = scoredRows.reduce((sum, g) => sum + lyceeAverage(g.subject) * (Number(g.coefficient) || 1), 0);
             const totalMax = totalCoefficient * 20;
             return <div className="mt-4">
               <div className="mb-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
@@ -608,7 +609,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <div><b>Moyenne du premier :</b> {lyceeScores['__summary__']?.classScore ? Number(lyceeScores['__summary__'].classScore).toFixed(2) : 'À renseigner'}</div>
                 <div className="text-right"><b>{schoolName || 'École'}, le</b> {new Date().toLocaleDateString('fr-FR')}</div>
               </div>
-              <p className="mt-3 text-xs italic text-slate-600">Les notes de classe et de composition sont enregistrées sur cet appareil pour ce bulletin. Les autres bulletins restent inchangés.</p>
+              <p className="mt-3 text-xs italic text-slate-600"></p>
             </div>;
           })() : <table className={`mt-4 w-full border-collapse ${bulletinFormat==='compact'?'text-xs':'text-sm'}`} style={{border:bulletinFormat==='minimal'?'none':undefined}}>
             <thead>
