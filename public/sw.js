@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v5';
+const CACHE_NAME = 'gestilys-shell-v6';
 const SHELL_URLS = [
   '/',
   '/offline.html',
@@ -12,6 +12,27 @@ self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(SHELL_URLS);
+    // Also cache the current Vite HTML shell and its hashed JS/CSS files.
+    // These are required for the installed PWA to start after the network disappears.
+    try {
+      const response = await fetch('/', { cache: 'reload' });
+      if (response.ok) {
+        const html = await response.clone().text();
+        await cache.put('/', response.clone());
+        const assets = [...html.matchAll(/(?:src|href)="([^"]*\/assets\/[^"]+)"/g)]
+          .map((match) => new URL(match[1], self.location.origin).href);
+        await Promise.all(assets.map(async (assetUrl) => {
+          try {
+            const assetResponse = await fetch(assetUrl);
+            if (assetResponse.ok) await cache.put(assetUrl, assetResponse);
+          } catch {
+            // Keep installation successful if one optional asset cannot be fetched.
+          }
+        }));
+      }
+    } catch {
+      // The shell URLs above remain the minimum offline fallback.
+    }
     await self.skipWaiting();
   })());
 });
