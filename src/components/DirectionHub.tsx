@@ -227,19 +227,31 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     try {
       setImportName(file.name);
       setNotice('Lecture du fichier ' + file.name + '…');
-      let text: string;
+      let text = '';
+      let parsedRows: ImportedStudentRow[] | null = null;
       if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
         const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
-        const firstSheet = workbook.SheetNames[0];
-        if (!firstSheet) throw new Error('Le classeur Excel ne contient aucune feuille.');
-        const sheet = workbook.Sheets[firstSheet];
-        if (!sheet || !sheet['!ref']) throw new Error('La première feuille Excel est vide.');
-        text = XLSX.utils.sheet_to_csv(sheet, { FS: ';', RS: '\n', blankrows: false });
+        if (!workbook.SheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
+        const sheetErrors: string[] = [];
+        // A workbook may have a cover/blank first sheet; search all sheets for the student table.
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName];
+          if (!sheet || !sheet['!ref']) continue;
+          const candidate = XLSX.utils.sheet_to_csv(sheet, { FS: ';', RS: '\n', blankrows: false });
+          try {
+            parsedRows = parseStudentCsv(candidate);
+            text = candidate;
+            break;
+          } catch (sheetError) {
+            sheetErrors.push(sheetError instanceof Error ? sheetError.message : 'Feuille illisible.');
+          }
+        }
+        if (!parsedRows) throw new Error(sheetErrors[0] || 'Aucune feuille Excel ne contient un tableau avec Prénom, Nom et Classe.');
       } else {
         text = await file.text();
       }
-      const rows = parseStudentCsv(text);
+      const rows = parsedRows || parseStudentCsv(text);
       if (!rows.length) throw new Error('Aucun élève valide trouvé dans ce fichier. Vérifiez les en-têtes Prénom, Nom et Classe.');
       const knownClasses = new Set(classNames.map(name => name.trim().toLocaleLowerCase('fr')));
       const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !knownClasses.has(name.trim().toLocaleLowerCase('fr'))))];
