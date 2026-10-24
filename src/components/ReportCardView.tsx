@@ -579,16 +579,18 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                     const coef = Number(g.coefficient) || 1;
                     const points = score * coef;
                     const isConduct = g.subject === 'Conduite';
+                    const scoreEntry = lyceeScores[g.subject];
+                    const hasCompleteScore = isConduct || (scoreEntry?.classScore !== undefined && scoreEntry.classScore !== '' && scoreEntry?.compositionScore !== undefined && scoreEntry.compositionScore !== '');
                     return <tr key={g.id || g.subject}>
                       <td className="border border-slate-500 px-1 py-1 text-center">{index + 1}</td>
                       <td className="border border-slate-500 px-2 py-1 font-semibold">{g.subject}</td>
                       <td className="border border-slate-500 p-1 text-center">{isConduct ? Number(lyceeScores.Conduite?.classScore ?? 18).toFixed(2) : (lyceeScores[g.subject]?.classScore === undefined || lyceeScores[g.subject]?.classScore === '' ? '—' : Number(lyceeScores[g.subject].classScore).toFixed(2))}</td>
                       <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : (lyceeScores[g.subject]?.compositionScore === undefined || lyceeScores[g.subject]?.compositionScore === '' ? '—' : Number(lyceeScores[g.subject].compositionScore).toFixed(2))}</td>
                       <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : (lyceeScores[g.subject]?.rank ? lyceeScores[g.subject].rank + 'e' : '—')}</td>
-                      <td className="border border-slate-500 px-1 py-1 text-center font-bold">{score.toFixed(2)}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center font-bold">{hasCompleteScore ? score.toFixed(2) : '—'}</td>
                       <td className="border border-slate-500 px-1 py-1 text-center">{coef}</td>
-                      <td className="border border-slate-500 px-1 py-1 text-center font-bold">{points.toFixed(2)}</td>
-                      <td className="border border-slate-500 px-1 py-1 text-center">{isConduct ? 'Bonne' : lyceeMention(score)}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center font-bold">{hasCompleteScore ? points.toFixed(2) : '—'}</td>
+                      <td className="border border-slate-500 px-1 py-1 text-center">{isConduct ? 'Bonne' : hasCompleteScore ? lyceeMention(score) : '—'}</td>
                     </tr>;
                   })}</tbody>
                   <tfoot><tr className="bg-slate-100 font-bold"><td colSpan={6} className="border border-slate-500 px-2 py-2 text-right">TOTAL</td><td className="border border-slate-500 px-1 py-2 text-center">{totalCoefficient}</td><td className="border border-slate-500 px-1 py-2 text-center">{totalPoints.toFixed(2)}</td><td className="border border-slate-500 px-1 py-2 text-center">Sur {totalMax}</td></tr></tfoot>
