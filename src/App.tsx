@@ -339,14 +339,36 @@ export default function App() {
         else for (const tranche of feeConfig.tranches) payments[String(tranche.index)] = { paid: 0 };
         return { feeType: ft.feeType, paymentMode: ft.paymentMode, payments, totalExpected: matching.reduce((sum, config) => sum + Number(config.amount || 0), 0) };
       });
+      const matricule = navigator.onLine
+        ? await generateMatricule(profile.schoolId, profile.schoolName).catch(() => 'OFF-' + Date.now().toString().slice(-7))
+        : 'OFF-' + Date.now().toString().slice(-7) + '-' + imported;
       const student: Omit<Student, 'id'> = {
         firstName: row.firstName.trim(), lastName: row.lastName.trim(), className: row.className.trim(),
         parentName: row.parentName.trim(), parentPhone: row.parentPhone.trim(),
         birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees,
-        matricule: await generateMatricule(profile.schoolId, profile.schoolName), sexe: row.sexe,
+        matricule, sexe: row.sexe,
       };
-      const id = await addStudentDB(profile.schoolId, student);
-      setStudents(prev => [{ ...student, id }, ...prev]);
+      if (navigator.onLine) {
+        const id = await addStudentDB(profile.schoolId, student);
+        setStudents(prev => [{ ...student, id }, ...prev]);
+      } else {
+        // Keep offline imports on this device and queue them for safe upload when online.
+        const localId = 'offline-' + profile.schoolId + '-' + Date.now() + '-' + imported;
+        const queueKey = 'gestilys-pending-students-' + profile.schoolId;
+        const queued = JSON.parse(localStorage.getItem(queueKey) || '[]') as Array<{ localId: string; student: Omit<Student, 'id'> }>;
+        queued.push({ localId, student });
+        localStorage.setItem(queueKey, JSON.stringify(queued));
+        const offlineStudent = { ...student, id: localId };
+        setStudents(prev => {
+          const next = [offlineStudent, ...prev];
+          try {
+            const cacheKey = 'gestilys-offline-data-' + profile.schoolId;
+            const cached = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+            localStorage.setItem(cacheKey, JSON.stringify({ ...cached, students: next, savedAt: new Date().toISOString() }));
+          } catch { /* Pending queue remains the source of truth for this import. */ }
+          return next;
+        });
+      }
       existing.add(duplicateKey);
       imported++;
     }
