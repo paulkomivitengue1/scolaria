@@ -256,7 +256,10 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     setMode('bulletin');
   };
 
-  const avg = gradeAverage(grades);
+  const lyceeScoredGrades = grades.filter(g => g.subject.trim() && lyceeScores[g.subject]?.classScore !== undefined && lyceeScores[g.subject].classScore !== '' && lyceeScores[g.subject]?.compositionScore !== undefined && lyceeScores[g.subject].compositionScore !== '');
+  const lyceeCoefficientTotal = lyceeScoredGrades.reduce((sum, g) => sum + (Number(g.coefficient) || 1), 0);
+  const lyceeWeightedTotal = lyceeScoredGrades.reduce((sum, g) => sum + lyceeAverage(g.subject) * (Number(g.coefficient) || 1), 0);
+  const avg = bulletinFormat === 'lycee-malien' ? (lyceeCoefficientTotal ? lyceeWeightedTotal / lyceeCoefficientTotal : 0) : gradeAverage(grades);
 
   if (students.length === 0) {
     return (
