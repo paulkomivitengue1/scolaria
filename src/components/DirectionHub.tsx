@@ -319,22 +319,43 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       let text = '';
       let parsedRows: ImportedStudentRow[] | null = null;
       if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
-        // Load the large spreadsheet parser only when the user chooses an Excel file.
-        // This keeps the normal app lighter on low-memory Android phones.
+        // Sur Android, lire toutes les feuilles d'un classeur d'un coup peut
+        // multiplier fortement la mémoire utilisée (fichier + classeur + grille).
+        // Première lecture : récupérer uniquement les noms des feuilles, sans les cellules.
         const XLSX = await import('xlsx');
         const buffer = await file.arrayBuffer();
-        // Restrict the worksheet size and skip expensive Excel formatting/features.
-        const workbook = XLSX.read(buffer, { type: 'array', dense: true, sheetRows: 5006, cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false, WTF: false });
-        if (!workbook.SheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
+        const readOptions = {
+          type: 'array' as const,
+          dense: true,
+          sheetRows: 5006,
+          cellDates: false,
+          cellFormula: false,
+          cellHTML: false,
+          cellStyles: false,
+          bookVBA: false,
+          WTF: false,
+        };
+        const workbookIndex = XLSX.read(buffer, { ...readOptions, bookSheets: true });
+        const sheetNames = workbookIndex.SheetNames || [];
+        if (!sheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
         const sheetErrors: string[] = [];
-        // Read cells as rows directly; avoid converting a whole sheet to a second giant CSV string.
-        for (const sheetName of workbook.SheetNames) {
-          const sheet = workbook.Sheets[sheetName];
-          if (!sheet || !sheet['!ref']) continue;
+        // Analyse une seule feuille à la fois et limite la grille aux 5 006
+        // premières lignes et 26 colonnes. Les colonnes habituelles d'élèves
+        // (jusqu'à la date, au lieu de naissance et au sexe) sont ainsi couvertes.
+        for (const sheetName of sheetNames) {
           try {
-            const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '', blankrows: false }) as unknown[][];
+            const workbook = XLSX.read(buffer, { ...readOptions, sheets: [sheetName] });
+            const sheet = workbook.Sheets[sheetName];
+            if (!sheet || !sheet['!ref']) continue;
+            const grid = XLSX.utils.sheet_to_json(sheet, {
+              header: 1,
+              raw: true,
+              defval: '',
+              blankrows: false,
+              range: { s: { r: 0, c: 0 }, e: { r: 5005, c: 25 } },
+            }) as unknown[][];
             parsedRows = parseStudentGrid(grid);
-            break;
+            if (parsedRows) break;
           } catch (sheetError) {
             sheetErrors.push(sheetError instanceof Error ? sheetError.message : 'Feuille illisible.');
           }
