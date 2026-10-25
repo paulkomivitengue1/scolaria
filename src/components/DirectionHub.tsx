@@ -330,6 +330,11 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     void savePendingImport(file).catch(storageError => {
       console.warn('Fichier non conservé pour reprise automatique :', storageError);
     });
+    try {
+      sessionStorage.removeItem('gestilys-import-preview');
+      sessionStorage.removeItem('gestilys-import-preview-name');
+      sessionStorage.removeItem('gestilys-import-preview-notice');
+    } catch { /* Session storage is optional. */ }
     setNotice('');
     setImportPreview([]);
     if (file.size > 10 * 1024 * 1024) {
@@ -396,6 +401,11 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       setNotice(rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
     } catch (error) {
       setImportPreview([]);
+      try {
+        sessionStorage.removeItem('gestilys-import-preview');
+        sessionStorage.removeItem('gestilys-import-preview-name');
+        sessionStorage.setItem('gestilys-import-preview-notice', error instanceof Error ? error.message : 'Fichier illisible.');
+      } catch { /* Error message still appears in the current screen. */ }
       setNotice(error instanceof Error ? error.message : 'Fichier illisible.');
       // Keep the selected file available for recovery if Android recreates this screen.
     }
