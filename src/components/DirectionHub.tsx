@@ -136,8 +136,21 @@ function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
 function parseStudentCsv(text: string): ImportedStudentRow[] {
   const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
   if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne de titres et au moins un élève.');
-  const firstLine = lines.slice(0, 20).find(line => line.includes(';') || line.includes(',')) || lines[0];
-  const separator = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+  let separator = ',';
+  let headerFound = false;
+  for (const line of lines.slice(0, 20)) {
+    for (const candidate of [';', ',']) {
+      const headers = splitCsvLine(line, candidate).map(normalizeHeader);
+      if (headers.some(value => STUDENT_HEADERS.first.includes(value))
+        && headers.some(value => STUDENT_HEADERS.last.includes(value))
+        && headers.some(value => STUDENT_HEADERS.cls.includes(value))) {
+        separator = candidate;
+        headerFound = true;
+        break;
+      }
+    }
+    if (headerFound) break;
+  }
   const grid = lines.map(line => splitCsvLine(line, separator));
   return parseStudentGrid(grid);
 }
