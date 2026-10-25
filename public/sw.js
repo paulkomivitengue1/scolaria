@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v7';
+const CACHE_NAME = 'gestilys-shell-v8';
 const SHELL_URLS = [
   '/',
   '/offline.html',
@@ -80,7 +80,11 @@ self.addEventListener('fetch', (event) => {
       } catch {
         const cached = await cache.match(request);
         if (cached) return cached;
-        return new Response('', { status: 503, statusText: 'Offline' });
+        // No cached copy (e.g. the Excel reader chunk was never downloaded on
+        // this device). Return a real network error instead of an empty 503:
+        // the app then shows "module de lecture Excel indisponible" and offers
+        // the CSV fallback, instead of a blank/failed import screen.
+        return Response.error();
       }
     })());
   }
