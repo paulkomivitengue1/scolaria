@@ -90,7 +90,7 @@ const STUDENT_HEADERS = {
   last: ['nom','nomdefamille','lastname','surname','familyname','nomdeleleve','nomdeleve','nomeleve','elevenom'],
   cls: ['classe','class','niveau','classedeleleve','classedeseleve','classeeleve','niveauclasse','section'],
   parent: ['parent','nomparent','nomduparent','nomdututeur','tuteur','nomdupere','nomdelamere','responsablelegal','nomresponsable','nomparentdeleve','nomduparentdeleve','parentdeleve','nompere','nommere','responsable'],
-  phone: ['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone','numerodutelephoneparent','numerotelephoneparent','numeropportableparent','telephoneportableparent','mobileparent','gsmparent','whatsappparent','contact','mobile','gsm','whatsapp','numerodumobile','telephoneportable','numeroportable'],
+  phone: ['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numeroduparent','numerodutelephone','numerodutelephoneparent','numerotelephoneparent','numeropportableparent','telephoneportableparent','mobileparent','gsmparent','whatsappparent','contact','mobile','gsm','whatsapp','numerodumobile','telephoneportable','numeroportable'],
   birthDate: ['datenaissance','naissance','birthdate','datedenaissance'],
   birthPlace: ['lieunaissance','lieudenaissance','birthplace','lieudenaissanceeleve'],
   sex: ['sexe','genre'],
