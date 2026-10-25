@@ -71,9 +71,15 @@ export default function App() {
 
   const [query, setQuery] = useState('');
   const [view, setView] = useState<AppView>(() => {
-    // Keep the Direction area open if Android/Chrome restores the page after the file picker.
-    try { return sessionStorage.getItem('gestilys-resume-direction') === '1' ? 'direction' : 'dashboard'; }
-    catch { return 'dashboard'; }
+    // Android may recreate the installed PWA with a fresh session after the file picker.
+    // localStorage survives that lifecycle change; sessionStorage remains a fallback.
+    try {
+      if (localStorage.getItem('gestilys-resume-direction') === '1') return 'direction';
+      return sessionStorage.getItem('gestilys-resume-direction') === '1' ? 'direction' : 'dashboard';
+    } catch {
+      try { return sessionStorage.getItem('gestilys-resume-direction') === '1' ? 'direction' : 'dashboard'; }
+      catch { return 'dashboard'; }
+    }
   });
   const [guideMode, setGuideMode] = useState<'onboarding' | 'module' | 'help' | null>(null);
   const [guideView, setGuideView] = useState<AppView>('dashboard');
@@ -709,6 +715,10 @@ export default function App() {
     }
     setPayError(null);
     setView(v);
+    try {
+      if (v === 'direction') localStorage.setItem('gestilys-resume-direction', '1');
+      else localStorage.removeItem('gestilys-resume-direction');
+    } catch { /* localStorage may be disabled; session storage is the fallback. */ }
     try {
       if (v === 'direction') sessionStorage.setItem('gestilys-resume-direction', '1');
       else sessionStorage.removeItem('gestilys-resume-direction');
