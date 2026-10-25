@@ -33,6 +33,12 @@ class InitErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
+// Demande un stockage durable : l'aperçu d'import et la file des élèves hors
+// ligne reposent sur IndexedDB, qu'Android peut sinon évincer sous pression.
+if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.persist === 'function') {
+  navigator.storage.persist().catch(() => undefined);
+}
+
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((registration) => {

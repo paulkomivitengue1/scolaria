@@ -1,11 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, CalendarCheck, Check, ClipboardList, FileSpreadsheet,
   MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download, Users,
 } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
+import {
+  StudentImportError, buildImportPreview, prepareImportFromBytes, prepareImportFromFile,
+} from '../lib/studentImport';
+import type { ImportedStudentRow, ImportPreview } from '../lib/studentImport';
+import {
+  clearImportSession, loadImportFileBytes, loadImportSnapshot, saveImportFileBytes, saveImportSnapshot,
+} from '../lib/importSession';
+import type { StoredImportFile } from '../lib/importSession';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
 import type { Expense, SalaryPayment, Student, Teacher } from '../types';
+
+// Le type est réexporté pour les appelants (App.tsx) qui s'appuient dessus.
+export type { ImportedStudentRow } from '../lib/studentImport';
 
 type Tab = 'overview' | 'cash' | 'attendance' | 'messages' | 'team' | 'import';
 type OperationKind = 'cash' | 'attendance' | 'task' | 'announcement';
@@ -18,16 +29,6 @@ interface Operation {
   occurred_on: string;
   details: Record<string, any>;
   created_at: string;
-}
-export interface ImportedStudentRow {
-  firstName: string;
-  lastName: string;
-  className: string;
-  parentName: string;
-  parentPhone: string;
-  birthDate?: string;
-  birthPlace?: string;
-  sexe: 'M' | 'F';
 }
 interface Props {
   schoolId: string;
@@ -54,145 +55,6 @@ const inputClass = 'mt-1 h-11 w-full rounded-xl border border-blue-200 bg-white 
 const buttonClass = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-800 px-4 py-3 text-base font-extrabold leading-tight text-white shadow-sm transition hover:bg-blue-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-blue-800 disabled:text-white disabled:opacity-100';
 const panelClass = 'min-w-0 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:p-5';
 
-function normalizeHeader(value: string) {
-  return value.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-}
-function normalizeClassName(value: string) {
-  return value.trim().toLocaleLowerCase('fr')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/(\d+)(?:ere|er|eme|e|ieme|ie)?/g, '$1')
-    .replace(/[^a-z0-9]/g, '');
-}
-function normalizeDate(value: string): string {
-  const text = value.trim();
-  if (!text) return '';
-  const european = text.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
-  if (european) return european[3] + '-' + european[2].padStart(2, '0') + '-' + european[1].padStart(2, '0');
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-  throw new Error('Date de naissance invalide : « ' + text + ' ». Utilisez JJ/MM/AAAA ou AAAA-MM-JJ.');
-}
-function splitCsvLine(line: string, separator: string): string[] {
-  const result: string[] = [];
-  let value = '';
-  let quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"' && quoted && line[i + 1] === '"') { value += '"'; i++; }
-    else if (char === '"') quoted = !quoted;
-    else if (char === separator && !quoted) { result.push(value.trim()); value = ''; }
-    else value += char;
-  }
-  result.push(value.trim());
-  return result;
-}
-function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
-  const headerIndex = grid.slice(0, 15).findIndex(row => {
-    const headers = row.map(value => normalizeHeader(String(value ?? '')));
-    return headers.some(value => ['prenom','prenoms','firstname','prenomdeleleve'].includes(value))
-      && headers.some(value => ['nom','nomdefamille','lastname','nomdeleleve'].includes(value))
-      && headers.some(value => ['classe','class','niveau','classedeleleve'].includes(value));
-  });
-  if (headerIndex < 0) throw new Error('Colonnes obligatoires manquantes : Prénom, Nom et Classe. Vérifiez la ligne des titres du fichier Excel.');
-  const headers = grid[headerIndex].map(value => normalizeHeader(String(value ?? '')));
-  const find = (aliases: string[]) => headers.findIndex(h => aliases.includes(h));
-  const idx = {
-    first: find(['prenom','prenoms','firstname','prenomdeleleve']),
-    last: find(['nom','nomdefamille','lastname','nomdeleleve']),
-    cls: find(['classe','class','niveau','classedeleleve']),
-    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur','nomdupere','nomdelamere','responsablelegal']),
-    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone']),
-    birthDate: find(['datenaissance','naissance','birthdate','datedenaissance']),
-    birthPlace: find(['lieunaissance','lieudenaissance','birthplace','lieudenaissanceeleve']),
-    sex: find(['sexe','genre']),
-  };
-  const rows = grid.slice(headerIndex + 1).map((cells, offset) => {
-    const get = (index: number) => index >= 0 ? String(cells[index] ?? '').trim() : '';
-    const firstName = get(idx.first), lastName = get(idx.last), className = get(idx.cls);
-    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex: headerIndex + offset + 1 };
-  }).filter(row => row.firstName || row.lastName || row.className);
-  if (rows.length > 5000) throw new Error('Ce fichier contient plus de 5 000 lignes. Séparez les élèves en plusieurs fichiers pour éviter de saturer la mémoire du téléphone.');
-  const invalid = rows.find(row => !row.firstName || !row.lastName || !row.className);
-  if (invalid) throw new Error('Ligne ' + (invalid.rowIndex + 1) + ' : Prénom, Nom et Classe doivent être renseignés.');
-  const seen = new Set<string>();
-  for (const row of rows) {
-    const key = [row.firstName, row.lastName, row.className].join('|').toLocaleLowerCase('fr');
-    if (seen.has(key)) throw new Error('Doublon dans le fichier : ' + row.firstName + ' ' + row.lastName + ' (' + row.className + ').');
-    seen.add(key);
-  }
-  if (!rows.length) throw new Error('Aucun élève trouvé sous les titres Prénom, Nom et Classe.');
-  return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
-}
-function parseStudentCsv(text: string): ImportedStudentRow[] {
-  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
-  if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne d’en-têtes et au moins un élève.');
-  const separator = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ',';
-  const headers = splitCsvLine(lines[0], separator).map(normalizeHeader);
-  const find = (aliases: string[]) => headers.findIndex(h => aliases.includes(h));
-  const idx = {
-    first: find(['prenom','prenoms','firstname']),
-    last: find(['nom','nomdefamille','lastname']),
-    cls: find(['classe','class','niveau']),
-    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur']),
-    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone']),
-    birthDate: find(['datenaissance','naissance','birthdate']),
-    birthPlace: find(['lieunaissance','lieudenaissance','birthplace']),
-    sex: find(['sexe','genre']),
-  };
-  if (idx.first < 0 || idx.last < 0 || idx.cls < 0) {
-    throw new Error('Colonnes obligatoires manquantes : Prénom, Nom et Classe. Les colonnes Parent et Téléphone sont recommandées.');
-  }
-  const rows = lines.slice(1).map((line, rowIndex) => {
-    const cells = splitCsvLine(line, separator);
-    const get = (index: number) => index >= 0 ? (cells[index] || '').trim() : '';
-    const firstName = get(idx.first), lastName = get(idx.last), className = get(idx.cls);
-    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex };
-  }).filter(row => row.firstName || row.lastName || row.className);
-  const invalid = rows.find(row => !row.firstName || !row.lastName || !row.className);
-  if (invalid) throw new Error('Ligne ' + (invalid.rowIndex + 2) + ' : Prénom, Nom et Classe doivent être renseignés.');
-  const seen = new Set<string>();
-  for (const row of rows) {
-    const key = [row.firstName, row.lastName, row.className].join('|').toLocaleLowerCase('fr');
-    if (seen.has(key)) throw new Error('Doublon dans le fichier : ' + row.firstName + ' ' + row.lastName + ' (' + row.className + ').');
-    seen.add(key);
-  }
-  return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
-}
-type PendingImportFile = { blob: Blob; name: string; type: string; lastModified: number };
-const IMPORT_DB = 'gestilys-import-recovery';
-function openImportDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(IMPORT_DB, 1);
-    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains('files')) request.result.createObjectStore('files'); };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Stockage temporaire indisponible.'));
-  });
-}
-async function savePendingImport(file: File): Promise<void> {
-  const db = await openImportDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction('files', 'readwrite');
-    tx.objectStore('files').put({ blob: file, name: file.name, type: file.type, lastModified: file.lastModified } satisfies PendingImportFile, 'pending');
-    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error || new Error('Impossible de conserver temporairement le fichier.'));
-  });
-  db.close();
-}
-async function readPendingImport(): Promise<File | null> {
-  const db = await openImportDb();
-  const record = await new Promise<PendingImportFile | undefined>((resolve, reject) => {
-    const tx = db.transaction('files', 'readonly'); const request = tx.objectStore('files').get('pending');
-    request.onsuccess = () => resolve(request.result as PendingImportFile | undefined); request.onerror = () => reject(request.error);
-  });
-  db.close();
-  return record ? new File([record.blob], record.name, { type: record.type, lastModified: record.lastModified }) : null;
-}
-async function clearPendingImport(): Promise<void> {
-  try {
-    const db = await openImportDb();
-    await new Promise<void>((resolve, reject) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('pending'); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
-    db.close();
-  } catch { /* Recovery is best-effort; normal import remains available. */ }
-}
-
 function csvEscape(value: unknown) {
   const text = String(value ?? '');
   return '"' + text.replace(/"/g, '""') + '"';
@@ -212,6 +74,24 @@ async function saveExcelTemplate(filename: string, rows: unknown[][]) {
   sheet['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 26 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(workbook, sheet, 'Élèves');
   XLSX.writeFile(workbook, filename);
+}
+
+/** Phrase résumant l'aperçu affichée à l'utilisateur. */
+function describeImportPreview(preview: ImportPreview): string {
+  const skipped: string[] = [];
+  if (preview.duplicateInFileCount) skipped.push(preview.duplicateInFileCount + ' doublon(s) dans le fichier');
+  if (preview.alreadyRegisteredCount) skipped.push(preview.alreadyRegisteredCount + ' déjà inscrit(s)');
+  if (preview.unknownClasses.length) {
+    const unknownCount = preview.rows.filter(row => preview.unknownClasses.includes(row.className)).length;
+    skipped.push(unknownCount + ' ligne(s) en classe inconnue (' + preview.unknownClasses.join(', ') + ')');
+  }
+  if (preview.invalidCount) skipped.push(preview.invalidCount + ' ligne(s) incomplète(s)');
+  if (!preview.importableCount) {
+    return 'Aucun élève à importer : ' + (skipped.length ? skipped.join(' · ') : 'vérifiez les colonnes Prénom, Nom et Classe') + '.';
+  }
+  return preview.importableCount + ' élève(s) prêt(s) à être importé(s)'
+    + (skipped.length ? ' · ignoré(s) : ' + skipped.join(' · ') : '')
+    + '. Rien n’a encore été ajouté.';
 }
 
 export function DirectionHub({ schoolId, schoolName, students, classNames, teachers, expenses, salaryPayments, premium, onImportStudents, onNavigate }: Props) {
@@ -244,26 +124,24 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const [payrollNote, setPayrollNote] = useState('');
   const [messageStudent, setMessageStudent] = useState('');
   const [messageText, setMessageText] = useState('Bonjour, nous vous contactons au sujet de la scolarité de votre enfant. Merci de prendre contact avec l’administration de l’école.');
-  const [importPreview, setImportPreview] = useState<ImportedStudentRow[]>(() => {
-    // Keep the parsed preview across Android file-picker page restoration.
-    try {
-      const saved = sessionStorage.getItem('gestilys-import-preview');
-      const parsed = saved ? JSON.parse(saved) as { rows?: ImportedStudentRow[] } : null;
-      return Array.isArray(parsed?.rows) ? parsed.rows : [];
-    } catch { return []; }
-  });
-  const [importName, setImportName] = useState(() => {
-    try { return sessionStorage.getItem('gestilys-import-preview-name') || ''; }
-    catch { return ''; }
-  });
+  // ── Import d'élèves ──────────────────────────────────────────────────────
+  // `status` décrit ce que l'écran doit afficher. L'aperçu complet vit dans
+  // `importPreview` (aucune donnée n'est dupliquée dans le state React).
+  const [importStatus, setImportStatus] = useState<'restoring' | 'idle' | 'reading' | 'ready' | 'error'>('restoring');
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [importFileName, setImportFileName] = useState('');
+  const [importError, setImportError] = useState('');
+  const [importErrorDetails, setImportErrorDetails] = useState<string[]>([]);
   const [importBusy, setImportBusy] = useState(false);
-
-  useEffect(() => {
-    try {
-      const savedNotice = sessionStorage.getItem('gestilys-import-preview-notice');
-      if (importPreview.length && savedNotice) setNotice(savedNotice);
-    } catch { /* Session recovery is best-effort. */ }
-  }, []);
+  const [importHint, setImportHint] = useState('');
+  const importFileInputRef = useRef<HTMLInputElement | null>(null);
+  // Horodatage de l'ouverture du sélecteur de fichiers Android.
+  const importPickerOpenedRef = useRef(0);
+  // Un seul import analysé à la fois : un fichier plus récent annule le précédent.
+  const importRunRef = useRef(0);
+  const importSubmittingRef = useRef(false);
+  // Empêche la reprise automatique d'écraser un choix effectué par l'utilisateur.
+  const importUserActionRef = useRef(false);
 
   const loadOperations = useCallback(async () => {
     setLoading(true);
@@ -323,139 +201,205 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     ? 'https://wa.me/' + (() => { const digits = currentStudent.parentPhone.replace(/\D/g, ''); return digits.length === 8 ? '223' + digits : digits; })() + '?text=' + encodeURIComponent(messageText)
     : '';
 
-  const handleImportFile = async (file?: File) => {
-    if (!file) return;
-    // Do not wait for IndexedDB before reading the file: Android can recreate
-    // the screen while that write is pending, which used to lose the preview.
-    void savePendingImport(file).catch(storageError => {
-      console.warn('Fichier non conservé pour reprise automatique :', storageError);
+  // ── Import : analyse du fichier choisi ───────────────────────────────────
+
+  /** Affiche un aperçu validé et le mémorise pour la reprise après rechargement. */
+  const showImportPreview = (preview: ImportPreview) => {
+    setImportPreview(preview);
+    setImportFileName(preview.fileName);
+    setImportStatus('ready');
+    setImportError('');
+    setImportErrorDetails([]);
+    setNotice(describeImportPreview(preview));
+    void saveImportSnapshot({
+      savedAt: Date.now(),
+      status: 'ready',
+      fileName: preview.fileName,
+      kind: preview.kind,
+      invalid: preview.invalidRows,
+      rows: preview.rows.map(row => ({
+        firstName: row.firstName, lastName: row.lastName, className: row.className,
+        parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate,
+        birthPlace: row.birthPlace, sexe: row.sexe,
+      })),
     });
+  };
+
+  /** Affiche une erreur lisible et la mémorise (utile si la page est recréée). */
+  const showImportError = (error: unknown, fileName: string) => {
+    const message = error instanceof Error && error.message ? error.message : 'Le fichier n’a pas pu être lu.';
+    const details = error instanceof StudentImportError ? error.details.slice(0, 8) : [];
+    setImportPreview(null);
+    setImportStatus('error');
+    setImportError(message);
+    setImportErrorDetails(details);
+    setImportFileName(fileName);
+    setNotice(message);
+    void saveImportSnapshot({ savedAt: Date.now(), status: 'error', fileName, message, details });
+  };
+
+  /** Analyse un fichier choisi par l'utilisateur (ne lève jamais d'exception). */
+  const handleImportFile = async (file: File) => {
+    importUserActionRef.current = true;
+    importPickerOpenedRef.current = 0;
+    setImportHint('');
+    const runId = ++importRunRef.current;
+    setImportStatus('reading');
+    setImportFileName(file.name);
+    setImportPreview(null);
+    setImportError('');
+    setImportErrorDetails([]);
+    setNotice('Lecture du fichier « ' + file.name + ' »…');
     try {
-      sessionStorage.removeItem('gestilys-import-preview');
-      sessionStorage.removeItem('gestilys-import-preview-name');
-      sessionStorage.removeItem('gestilys-import-preview-notice');
-    } catch { /* Session storage is optional. */ }
-    setNotice('');
-    setImportPreview([]);
-    if (file.size > 10 * 1024 * 1024) {
-      await clearPendingImport();
-      setImportName(file.name);
-      setNotice('Ce fichier dépasse 10 Mo et risque de saturer la mémoire du téléphone. Ouvrez-le dans Excel et enregistrez uniquement la feuille des élèves dans un nouveau fichier .xlsx ou .csv, puis réessayez.');
-      return;
-    }
-    if (!/\.(csv|xlsx|xls)$/i.test(file.name) && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
-      await clearPendingImport();
-      setImportPreview([]);
-      setImportName(file.name);
-      setNotice('Choisissez un fichier Excel (.xlsx ou .xls) ou CSV (.csv).');
-      return;
-    }
-    try {
-      setImportName(file.name);
-      setNotice('Lecture du fichier ' + file.name + '…');
-      let text = '';
-      let parsedRows: ImportedStudentRow[] | null = null;
-      if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
-        // Load the large spreadsheet parser only when the user chooses an Excel file.
-        // This keeps the normal app lighter on low-memory Android phones.
-        const XLSX = await import('xlsx');
-        const buffer = await file.arrayBuffer();
-        // Restrict the worksheet size and skip expensive Excel formatting/features.
-        const workbook = XLSX.read(buffer, { type: 'array', dense: true, sheetRows: 5006, cellDates: false, cellFormula: false, cellHTML: false, cellStyles: false, bookVBA: false, WTF: false });
-        if (!workbook.SheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
-        const sheetErrors: string[] = [];
-        // Read cells as rows directly; avoid converting a whole sheet to a second giant CSV string.
-        for (const sheetName of workbook.SheetNames) {
-          const sheet = workbook.Sheets[sheetName];
-          if (!sheet || !sheet['!ref']) continue;
-          try {
-            const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '', blankrows: false }) as unknown[][];
-            parsedRows = parseStudentGrid(grid);
-            break;
-          } catch (sheetError) {
-            sheetErrors.push(sheetError instanceof Error ? sheetError.message : 'Feuille illisible.');
-          }
-        }
-        if (!parsedRows) throw new Error(sheetErrors[0] || 'Aucune feuille Excel ne contient un tableau avec Prénom, Nom et Classe.');
-      } else {
-        text = await file.text();
-      }
-      const rows = parsedRows || parseStudentCsv(text);
-      if (!rows.length) throw new Error('Aucun élève valide trouvé dans ce fichier. Vérifiez les en-têtes Prénom, Nom et Classe.');
-      const classByNormalizedName = new Map(classNames.map(name => [normalizeClassName(name), name]));
-      const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !classByNormalizedName.has(normalizeClassName(name))))];
-      if (unknownClasses.length) throw new Error('Classe(s) inconnue(s) : ' + unknownClasses.join(', ') + '. Créez ces classes dans Paramètres avant l’import.');
-      // Store the exact class label configured by the school, even if the Excel file uses "6e" instead of "6ème".
-      const normalizedRows = rows.map(row => ({ ...row, className: classByNormalizedName.get(normalizeClassName(row.className)) || row.className }));
-      // Persist the parsed rows before updating React state: Android may restore
-      // the page after the document picker and discard in-memory component state.
-      try {
-        sessionStorage.setItem('gestilys-import-preview', JSON.stringify({ rows: normalizedRows }));
-        sessionStorage.setItem('gestilys-import-preview-name', file.name);
-        sessionStorage.setItem('gestilys-import-preview-notice', rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
-      } catch (storageError) {
-        console.warn('Aperçu non conservé dans la session :', storageError);
-      }
-      setImportPreview(normalizedRows);
-      setImportName(file.name);
-      setNotice(rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
+      // Le fichier qui vient d'être choisi remplace l'état mémorisé, même si
+      // son analyse échoue : sinon un ancien aperçu pourrait réapparaître.
+      await clearImportSession();
+      if (runId !== importRunRef.current) return;
+      const preview = await prepareImportFromFile(file, {
+        classNames,
+        existingStudents: students,
+        onBytes: async bytes => {
+          // Sauvegarde des octets dès qu'ils sont lus : si Android recrée la
+          // page pendant l'analyse, celle-ci pourra reprendre sans le fichier.
+          await saveImportFileBytes({
+            name: file.name,
+            type: file.type,
+            lastModified: file.lastModified || Date.now(),
+            bytes,
+          });
+        },
+      });
+      if (runId !== importRunRef.current) return;
+      showImportPreview(preview);
     } catch (error) {
-      setImportPreview([]);
-      try {
-        sessionStorage.removeItem('gestilys-import-preview');
-        sessionStorage.removeItem('gestilys-import-preview-name');
-        sessionStorage.setItem('gestilys-import-preview-notice', error instanceof Error ? error.message : 'Fichier illisible.');
-      } catch { /* Error message still appears in the current screen. */ }
-      setNotice(error instanceof Error ? error.message : 'Fichier illisible.');
-      // Keep the selected file available for recovery if Android recreates this screen.
+      if (runId !== importRunRef.current) return;
+      console.error('Import élèves : analyse impossible.', error);
+      showImportError(error, file.name);
+    }
+  };
+
+  /** Reprend une analyse à partir des octets mémorisés (page recréée par Android). */
+  const analyseStoredFile = async (stored: StoredImportFile) => {
+    if (importUserActionRef.current) return;
+    const runId = ++importRunRef.current;
+    setImportStatus('reading');
+    setImportFileName(stored.name);
+    setNotice('Reprise de la lecture de « ' + stored.name + ' »…');
+    try {
+      const preview = await prepareImportFromBytes(stored.bytes, stored.name, { classNames, existingStudents: students });
+      if (runId !== importRunRef.current || importUserActionRef.current) return;
+      showImportPreview(preview);
+    } catch (error) {
+      if (runId !== importRunRef.current) return;
+      console.error('Import élèves : reprise impossible.', error);
+      showImportError(error, stored.name);
     }
   };
 
   useEffect(() => {
     let cancelled = false;
-    let recovered = false;
-    const wait = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
-    const recoverPendingFile = async () => {
-      // Android can recreate this screen before the file-picker callback has
-      // finished writing the selected file to IndexedDB. Retry briefly so the
-      // new screen does not miss that write and leave the user without a preview.
-      for (let attempt = 0; attempt < 30 && !cancelled && !recovered; attempt++) {
-        try {
-          const file = await readPendingImport();
-          if (cancelled) return;
-          if (file) {
-            recovered = true;
-            setNotice('Reprise de la lecture de ' + file.name + '…');
-            void handleImportFile(file);
-            return;
-          }
-        } catch (error) {
-          console.warn('Reprise de fichier impossible :', error);
+    const restoreImport = async () => {
+      try {
+        const snapshot = await loadImportSnapshot();
+        if (cancelled || importUserActionRef.current) return;
+        if (snapshot && snapshot.status === 'ready' && snapshot.rows?.length) {
+          // Un aperçu déjà calculé est réaffiché sans relire le fichier : sur
+          // Android, le fichier d'origine peut ne plus être lisible.
+          const preview = buildImportPreview(
+            snapshot.rows.map((row, index) => ({ ...row, lineNumber: index + 2, alreadyRegistered: false, duplicateInFile: false })),
+            {
+              fileName: snapshot.fileName,
+              kind: snapshot.kind || 'xlsx',
+              classNames,
+              existingStudents: students,
+              invalidRows: snapshot.invalid || [],
+            },
+          );
+          setImportPreview(preview);
+          setImportFileName(snapshot.fileName);
+          setImportStatus('ready');
+          setNotice(describeImportPreview(preview));
+          setTab('import');
+          return;
         }
-        if (attempt < 29) await wait(400);
+        if (snapshot && snapshot.status === 'error' && snapshot.message) {
+          setImportStatus('error');
+          setImportError(snapshot.message);
+          setImportErrorDetails(snapshot.details || []);
+          setImportFileName(snapshot.fileName || '');
+          setNotice(snapshot.message);
+          setTab('import');
+          return;
+        }
+        const stored = await loadImportFileBytes();
+        if (cancelled || importUserActionRef.current) return;
+        if (!stored) { setImportStatus('idle'); return; }
+        // Les octets ont été enregistrés mais l'analyse a été interrompue.
+        setTab('import');
+        await analyseStoredFile(stored);
+      } catch (error) {
+        console.warn('Reprise de l’import impossible :', error);
+        if (!cancelled) setImportStatus('idle');
       }
     };
-    if (tab === 'import') void recoverPendingFile();
+    void restoreImport();
     return () => { cancelled = true; };
-    // Only recover a file on component mount; tab changes must not restart an import.
+    // Une seule tentative au montage : changer d'onglet ne doit pas relancer une analyse.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Certains sélecteurs Android (fichiers « cloud », WhatsApp, cartes SD)
+  // reviennent à l'application sans transmettre le fichier : aucun événement
+  // `change` n'est alors déclenché et l'écran semblait ne rien faire. On
+  // affiche une consigne claire au lieu de laisser la direction sans réponse.
+  useEffect(() => {
+    const checkReturnFromPicker = () => {
+      if (document.visibilityState && document.visibilityState !== 'visible') return;
+      const openedAt = importPickerOpenedRef.current;
+      if (!openedAt) return;
+      window.setTimeout(() => {
+        if (importPickerOpenedRef.current !== openedAt) return;
+        importPickerOpenedRef.current = 0;
+        if (importUserActionRef.current) return;
+        setImportHint('Aucun fichier n’a été reçu du sélecteur Android. Réessayez, ou enregistrez d’abord le fichier dans « Téléchargements » (utile pour Google Drive et WhatsApp) puis sélectionnez-le ici.');
+      }, 2500);
+    };
+    document.addEventListener('visibilitychange', checkReturnFromPicker);
+    window.addEventListener('focus', checkReturnFromPicker);
+    return () => {
+      document.removeEventListener('visibilitychange', checkReturnFromPicker);
+      window.removeEventListener('focus', checkReturnFromPicker);
+    };
+  }, []);
+
   const runImport = async () => {
-    if (!importPreview.length) return;
-    setImportBusy(true); setNotice('');
+    if (!importPreview || !importPreview.importableCount) return;
+    // Garde-fou : sur Android, un double appui peut déclencher deux imports.
+    if (importSubmittingRef.current) return;
+    importSubmittingRef.current = true;
+    setImportBusy(true);
+    setImportError('');
+    setNotice('');
     try {
-      const count = await onImportStudents(importPreview);
-      setNotice(count + (navigator.onLine ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.' : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
-      setImportPreview([]);
-      try {
-        sessionStorage.removeItem('gestilys-import-preview');
-        sessionStorage.removeItem('gestilys-import-preview-name');
-        sessionStorage.removeItem('gestilys-import-preview-notice');
-      } catch { /* Ignore session storage failures after a successful import. */ }
-      await clearPendingImport();
+      const count = await onImportStudents(importPreview.importableRows);
+      setNotice(count + (navigator.onLine
+        ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.'
+        : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
+      setImportPreview(null);
+      setImportStatus('idle');
+      setImportFileName('');
+      await clearImportSession();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
-    } finally { setImportBusy(false); }
+      const message = error instanceof Error && error.message
+        ? error.message
+        : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.';
+      // L'aperçu reste affiché pour permettre de réessayer sans relire le fichier.
+      setImportError(message);
+      setNotice(message);
+    } finally {
+      importSubmittingRef.current = false;
+      setImportBusy(false);
+    }
   };
 
   const pageTitle = TABS.find(item => item.id === tab)!;
@@ -636,15 +580,104 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         </div>
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
-        <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
+        <div className={panelClass}>
+          <h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-700">Choisissez directement un fichier Excel (.xlsx, .xls) ou CSV (.csv). Préparez les colonnes <strong>Prénom, Nom, Classe</strong>. Vous pouvez aussi ajouter Parent, Téléphone, Date naissance, Lieu naissance et Sexe.</p>
+          <label className="mt-4 block text-sm font-bold text-slate-900" htmlFor="gestilys-import-file">Fichier Excel ou CSV
+            <input
+              id="gestilys-import-file"
+              ref={importFileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.xlsm,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.ms-excel.sheet.macroEnabled.12,text/csv,text/plain"
+              className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white"
+              onClick={() => { importPickerOpenedRef.current = Date.now(); setImportHint(''); }}
+              onChange={event => {
+                const input = event.currentTarget;
+                const file = input.files?.[0];
+                if (!file) return;
+                // Le champ n'est vidé qu'une fois le fichier lu : sur Android,
+                // remettre sa valeur à zéro tout de suite peut rendre le fichier illisible.
+                void handleImportFile(file).finally(() => { try { input.value = ''; } catch { /* sans effet */ } });
+              }}
+            />
+          </label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => void saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré',classNames[0] || '','Mamadou Traoré','75000000','2013-04-12','Bamako','F']]).catch(error => setNotice(error instanceof Error ? error.message : 'Impossible de créer le modèle Excel.'))}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
-          {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
+          {importFileName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importFileName}</p>}
+          {importStatus === 'restoring' && <p className="mt-3 text-sm font-semibold text-blue-900">Vérification d’un import précédent…</p>}
+          {importHint && <p role="status" data-testid="import-hint" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">{importHint}</p>}
+          <p className="mt-3 text-xs leading-5 text-slate-600">Astuce Android : si le fichier vient de Google Drive ou WhatsApp, enregistrez-le d’abord dans « Téléchargements » puis sélectionnez-le ici.</p>
         </div>
-        <div className={panelClass}><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-black text-blue-950">Aperçu avant import</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{importPreview.length} ligne(s)</span></div><p className="mt-1 text-sm text-slate-700">Contrôlez l’aperçu avant d’ajouter des élèves. Les frais seront calculés selon la configuration de l’école.</p>
-          <div className="mt-3 max-h-72 overflow-auto rounded-xl border border-slate-200"><table className="w-full min-w-[540px] text-left text-xs"><thead className="sticky top-0 bg-blue-100 text-blue-950"><tr>{['Prénom','Nom','Classe','Parent','Téléphone'].map(header => <th key={header} className="p-2 font-extrabold">{header}</th>)}</tr></thead><tbody>{importPreview.slice(0,100).map((row,index) => <tr key={index} className="border-t border-slate-100"><td className="p-2 font-semibold text-slate-900">{row.firstName}</td><td className="p-2 font-semibold text-slate-900">{row.lastName}</td><td className="p-2 font-semibold text-slate-900">{row.className}</td><td className="p-2 text-slate-800">{row.parentName}</td><td className="p-2 text-slate-800">{row.parentPhone}</td></tr>)}</tbody></table></div>
-          {importPreview.length > 100 && <p className="mt-2 text-xs font-bold text-slate-700">Les 100 premières lignes sont affichées ; l’import prendra en compte les {importPreview.length} lignes valides.</p>}
-          <button type="button" className={buttonClass + ' mt-4 w-full'} disabled={!importPreview.length || importBusy} onClick={() => void runImport()}><FileSpreadsheet className="h-4 w-4" />{importBusy ? 'Import en cours…' : 'Confirmer l’import de ' + importPreview.length + ' élève(s)'}</button>
+        <div className={panelClass}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-black text-blue-950">Aperçu avant import</h2>
+            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{importPreview ? importPreview.rows.length : 0} ligne(s)</span>
+          </div>
+          <p className="mt-1 text-sm text-slate-700">Contrôlez l’aperçu avant d’ajouter des élèves. Les frais seront calculés selon la configuration de l’école.</p>
+
+          {importStatus === 'reading' && <p role="status" className="mt-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Lecture et analyse du fichier…</p>}
+
+          {importStatus === 'error' && importError && (
+            <div role="alert" data-testid="import-error" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <p className="font-extrabold">L’import n’a pas pu continuer</p>
+              <p className="mt-1 leading-6">{importError}</p>
+              {importErrorDetails.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 font-semibold">{importErrorDetails.map(detail => <li key={detail}>{detail}</li>)}</ul>}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => importFileInputRef.current?.click()} className="rounded-xl bg-blue-800 px-4 py-2 text-sm font-extrabold text-white">Choisir un autre fichier</button>
+                <button type="button" onClick={() => { setImportStatus('idle'); setImportError(''); setImportErrorDetails([]); setNotice(''); void clearImportSession(); }} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-extrabold text-red-800">Fermer</button>
+              </div>
+            </div>
+          )}
+
+          {importStatus === 'ready' && importPreview && (
+            <>
+              <div data-testid="import-summary" className="mt-3 flex flex-wrap gap-2 text-xs font-extrabold">
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900">{importPreview.importableCount} à importer</span>
+                {importPreview.alreadyRegisteredCount > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">{importPreview.alreadyRegisteredCount} déjà inscrit(s)</span>}
+                {importPreview.duplicateInFileCount > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">{importPreview.duplicateInFileCount} doublon(s) dans le fichier</span>}
+                {importPreview.unknownClasses.length > 0 && <span className="rounded-full bg-red-100 px-3 py-1 text-red-800">{importPreview.unknownClasses.length} classe(s) inconnue(s)</span>}
+              </div>
+              {importPreview.warnings.length > 0 && <ul className="mt-2 space-y-1 text-xs font-semibold text-amber-900">{importPreview.warnings.map(warning => <li key={warning}>• {warning}</li>)}</ul>}
+              {importError && <p role="alert" className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">{importError}</p>}
+              <div className="mt-3 max-h-72 overflow-auto rounded-xl border border-slate-200">
+                <table data-testid="import-preview" className="w-full min-w-[560px] text-left text-xs">
+                  <thead className="sticky top-0 bg-blue-100 text-blue-950">
+                    <tr>{['Prénom', 'Nom', 'Classe', 'Parent', 'Téléphone', 'Date naiss.', 'État'].map(header => <th key={header} className="p-2 font-extrabold">{header}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {importPreview.rows.slice(0, 100).map(row => {
+                      const blocked = row.duplicateInFile || row.alreadyRegistered || importPreview.unknownClasses.includes(row.className);
+                      const state = row.duplicateInFile ? 'doublon' : row.alreadyRegistered ? 'déjà inscrit' : importPreview.unknownClasses.includes(row.className) ? 'classe inconnue' : 'à importer';
+                      return <tr key={row.lineNumber + '-' + row.firstName + row.lastName} data-status={blocked ? 'blocked' : 'ok'} className={'border-t border-slate-100 ' + (blocked ? 'text-slate-400' : '')}>
+                        <td className="p-2 font-semibold">{row.firstName}</td>
+                        <td className="p-2 font-semibold">{row.lastName}</td>
+                        <td className="p-2 font-semibold">{row.className}</td>
+                        <td className="p-2">{row.parentName}</td>
+                        <td className="p-2">{row.parentPhone}</td>
+                        <td className="p-2">{row.birthDate || ''}</td>
+                        <td className={'p-2 font-bold ' + (blocked ? 'text-amber-700' : 'text-emerald-700')}>{state}</td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {importPreview.rows.length > 100 && <p className="mt-2 text-xs font-bold text-slate-700">Les 100 premières lignes sont affichées ; l’import prendra en compte les {importPreview.importableCount} élèves importables.</p>}
+              {importPreview.invalidRows.length > 0 && (
+                <div data-testid="import-invalid" className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">
+                  <p className="font-extrabold">{importPreview.invalidCount} ligne(s) de ce fichier ne seront pas importées :</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {importPreview.invalidRows.slice(0, 5).map(row => <li key={row.lineNumber}>ligne {row.lineNumber} : {row.reason}</li>)}
+                  </ul>
+                  {importPreview.invalidRows.length > 5 && <p className="mt-1">… et {importPreview.invalidRows.length - 5} autre(s).</p>}
+                </div>
+              )}
+              {importPreview.unknownClasses.length > 0 && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-800">Les lignes des classes {importPreview.unknownClasses.map(name => '« ' + name + ' »').join(', ')} ne seront pas importées. Créez ces classes dans Paramètres, puis relisez le fichier pour les ajouter.</p>}
+              <button type="button" className={buttonClass + ' mt-4 w-full'} disabled={!importPreview.importableCount || importBusy} onClick={() => void runImport()}><FileSpreadsheet className="h-4 w-4" />{importBusy ? 'Import en cours…' : 'Confirmer l’import de ' + importPreview.importableCount + ' élève(s)'}</button>
+            </>
+          )}
+
+          {importStatus === 'idle' && (
+            <p className="mt-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Aucun fichier sélectionné. Choisissez un fichier Excel ou CSV : les élèves s’afficheront ici avant tout enregistrement.</p>
+          )}
         </div>
       </div>}
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpenText, Sparkles, Filter, UserPlus, BarChart3, Users, CreditCard,
   LogOut, Lock, AlertTriangle, ArrowRight, Phone,
@@ -33,6 +33,7 @@ import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
 import { UserGuide } from './components/UserGuide';
 import { DirectionHub, type ImportedStudentRow } from './components/DirectionHub';
+import { studentDuplicateKey } from './lib/studentImport';
 import { ClassView } from './components/ClassView';
 import { StudentCardsView } from './components/StudentCardsView';
 import { UnpaidTranchesView } from './components/UnpaidTranchesView';
@@ -353,16 +354,21 @@ export default function App() {
     }
   };
 
-  const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
+  const bulkImportInFlightRef = useRef(false);
+
+  const bulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
     if (!profile?.schoolId) throw new Error('École non identifiée.');
     const limit = getStudentLimit();
     if (students.length >= limit) throw new Error(limit === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
-    const existing = new Set(students.map(st => `${st.firstName}|${st.lastName}|${st.className}`.toLocaleLowerCase('fr')));
+    // Comparaison insensible à la casse, aux accents et aux espaces multiples :
+    // « Aminata  TRAORE » et « aminata Traoré » sont le même élève.
+    const existing = new Set(students.map(student => studentDuplicateKey(student)));
     const candidates: Omit<Student, 'id'>[] = [];
+    let skipped = 0;
     for (const row of rows) {
       if (students.length + candidates.length >= limit) break;
-      const duplicateKey = `${row.firstName}|${row.lastName}|${row.className}`.toLocaleLowerCase('fr');
-      if (existing.has(duplicateKey)) continue;
+      const duplicateKey = studentDuplicateKey(row);
+      if (existing.has(duplicateKey)) { skipped += 1; continue; }
       const fees = feeConfig.feeTypes.map(ft => {
         const matching = feeConfig.feeConfig.filter(config => config.feeType === ft.feeType && config.className === row.className);
         const payments: Record<string, { paid: number }> = {};
@@ -372,12 +378,17 @@ export default function App() {
       });
       candidates.push({
         firstName: row.firstName.trim(), lastName: row.lastName.trim(), className: row.className.trim(),
-        parentName: row.parentName.trim(), parentPhone: row.parentPhone.trim(),
+        parentName: (row.parentName || '').trim(), parentPhone: (row.parentPhone || '').trim(),
         birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees, matricule: '', sexe: row.sexe,
       });
       existing.add(duplicateKey);
     }
-    if (!candidates.length) throw new Error('Aucun nouvel élève importé : vérifiez les doublons et la limite de votre forfait.');
+    if (!candidates.length) {
+      throw new Error(skipped
+        ? 'Aucun nouvel élève importé : les ' + skipped + ' élève(s) du fichier sont déjà inscrits dans cette école.'
+        : 'Aucun nouvel élève importé : vérifiez les doublons et la limite de votre forfait.');
+    }
+    if (skipped) console.info('Import élèves : ' + skipped + ' doublon(s) ignoré(s).');
 
     if (navigator.onLine) {
       const matricules = await generateMatricules(profile.schoolId, profile.schoolName, candidates.length);
@@ -413,6 +424,18 @@ export default function App() {
     return imported.length;
   };
 
+  const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
+    // Un double appui sur Android pouvait lancer deux imports simultanés, donc
+    // créer des doublons : un seul import à la fois.
+    if (bulkImportInFlightRef.current) throw new Error('Un import est déjà en cours. Attendez la fin de l’enregistrement avant de recommencer.');
+    bulkImportInFlightRef.current = true;
+    try {
+      return await bulkImportStudents(rows);
+    } finally {
+      bulkImportInFlightRef.current = false;
+    }
+  };
+
   useEffect(() => {
     const schoolId = profile?.schoolId;
     if (!schoolId) return;
@@ -429,12 +452,8 @@ export default function App() {
           try {
             // Avoid duplicate rows if the server accepted an earlier attempt but its response was lost.
             const serverStudents = await loadStudents(schoolId, [], []);
-            const normalized = (value: string) => value.trim().toLocaleLowerCase('fr');
-            const alreadySaved = serverStudents.find(st =>
-              normalized(st.firstName) === normalized(item.student.firstName) &&
-              normalized(st.lastName) === normalized(item.student.lastName) &&
-              normalized(st.className) === normalized(item.student.className)
-            );
+            const itemKey = studentDuplicateKey(item.student);
+            const alreadySaved = serverStudents.find(st => studentDuplicateKey(st) === itemKey);
             const realId = alreadySaved?.id || await addStudentDB(schoolId, item.student);
             setStudents(prev => {
               const next = prev.map(st => st.id === item.localId ? { ...st, id: realId } : st);
