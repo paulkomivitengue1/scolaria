@@ -244,9 +244,26 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const [payrollNote, setPayrollNote] = useState('');
   const [messageStudent, setMessageStudent] = useState('');
   const [messageText, setMessageText] = useState('Bonjour, nous vous contactons au sujet de la scolarité de votre enfant. Merci de prendre contact avec l’administration de l’école.');
-  const [importPreview, setImportPreview] = useState<ImportedStudentRow[]>([]);
-  const [importName, setImportName] = useState('');
+  const [importPreview, setImportPreview] = useState<ImportedStudentRow[]>(() => {
+    // Keep the parsed preview across Android file-picker page restoration.
+    try {
+      const saved = sessionStorage.getItem('gestilys-import-preview');
+      const parsed = saved ? JSON.parse(saved) as { rows?: ImportedStudentRow[] } : null;
+      return Array.isArray(parsed?.rows) ? parsed.rows : [];
+    } catch { return []; }
+  });
+  const [importName, setImportName] = useState(() => {
+    try { return sessionStorage.getItem('gestilys-import-preview-name') || ''; }
+    catch { return ''; }
+  });
   const [importBusy, setImportBusy] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedNotice = sessionStorage.getItem('gestilys-import-preview-notice');
+      if (importPreview.length && savedNotice) setNotice(savedNotice);
+    } catch { /* Session recovery is best-effort. */ }
+  }, []);
 
   const loadOperations = useCallback(async () => {
     setLoading(true);
@@ -365,6 +382,15 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       if (unknownClasses.length) throw new Error('Classe(s) inconnue(s) : ' + unknownClasses.join(', ') + '. Créez ces classes dans Paramètres avant l’import.');
       // Store the exact class label configured by the school, even if the Excel file uses "6e" instead of "6ème".
       const normalizedRows = rows.map(row => ({ ...row, className: classByNormalizedName.get(normalizeClassName(row.className)) || row.className }));
+      // Persist the parsed rows before updating React state: Android may restore
+      // the page after the document picker and discard in-memory component state.
+      try {
+        sessionStorage.setItem('gestilys-import-preview', JSON.stringify({ rows: normalizedRows }));
+        sessionStorage.setItem('gestilys-import-preview-name', file.name);
+        sessionStorage.setItem('gestilys-import-preview-notice', rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
+      } catch (storageError) {
+        console.warn('Aperçu non conservé dans la session :', storageError);
+      }
       setImportPreview(normalizedRows);
       setImportName(file.name);
       setNotice(rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
@@ -411,6 +437,11 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       const count = await onImportStudents(importPreview);
       setNotice(count + (navigator.onLine ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.' : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
       setImportPreview([]);
+      try {
+        sessionStorage.removeItem('gestilys-import-preview');
+        sessionStorage.removeItem('gestilys-import-preview-name');
+        sessionStorage.removeItem('gestilys-import-preview-notice');
+      } catch { /* Ignore session storage failures after a successful import. */ }
       await clearPendingImport();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
