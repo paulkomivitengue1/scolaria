@@ -85,34 +85,45 @@ function splitCsvLine(line: string, separator: string): string[] {
   result.push(value.trim());
   return result;
 }
+const STUDENT_HEADERS = {
+  first: ['prenom','prenoms','firstname','givenname','prenomdeleleve','prenomdeleve','prenomeleve','eleveprenom','prenomsdeleleve'],
+  last: ['nom','nomdefamille','lastname','surname','familyname','nomdeleleve','nomdeleve','nomeleve','elevenom'],
+  cls: ['classe','class','niveau','classedeleleve','classedeseleve','classeeleve','niveauclasse','section'],
+  parent: ['parent','nomparent','nomduparent','nomdututeur','tuteur','nomdupere','nomdelamere','responsablelegal','nomresponsable','nomparentdeleve','nomduparentdeleve','parentdeleve','nompere','nommere','responsable'],
+  phone: ['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone','numerodutelephoneparent','numerotelephoneparent','numeropportableparent','telephoneportableparent','mobileparent','gsmparent','whatsappparent','contact','mobile','gsm','whatsapp','numerodumobile','telephoneportable','numeroportable','numero'],
+  birthDate: ['datenaissance','naissance','birthdate','datedenaissance'],
+  birthPlace: ['lieunaissance','lieudenaissance','birthplace','lieudenaissanceeleve'],
+  sex: ['sexe','genre'],
+};
 function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
-  const headerIndex = grid.slice(0, 15).findIndex(row => {
+  const findHeader = (headers: string[], aliases: string[]) => headers.findIndex(value => aliases.includes(value));
+  const headerIndex = grid.slice(0, 20).findIndex(row => {
     const headers = row.map(value => normalizeHeader(String(value ?? '')));
-    return headers.some(value => ['prenom','prenoms','firstname','prenomdeleleve'].includes(value))
-      && headers.some(value => ['nom','nomdefamille','lastname','nomdeleleve'].includes(value))
-      && headers.some(value => ['classe','class','niveau','classedeleleve'].includes(value));
+    return findHeader(headers, STUDENT_HEADERS.first) >= 0
+      && findHeader(headers, STUDENT_HEADERS.last) >= 0
+      && findHeader(headers, STUDENT_HEADERS.cls) >= 0;
   });
-  if (headerIndex < 0) throw new Error('Colonnes obligatoires manquantes : Prénom, Nom et Classe. Vérifiez la ligne des titres du fichier Excel.');
+  if (headerIndex < 0) throw new Error('Titres non reconnus. Le fichier doit contenir les colonnes Prénom, Nom et Classe. Les colonnes Parent et Téléphone sont reconnues aussi sous des noms proches.');
   const headers = grid[headerIndex].map(value => normalizeHeader(String(value ?? '')));
-  const find = (aliases: string[]) => headers.findIndex(h => aliases.includes(h));
+  const find = (aliases: string[]) => findHeader(headers, aliases);
   const idx = {
-    first: find(['prenom','prenoms','firstname','prenomdeleleve']),
-    last: find(['nom','nomdefamille','lastname','nomdeleleve']),
-    cls: find(['classe','class','niveau','classedeleleve']),
-    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur','nomdupere','nomdelamere','responsablelegal']),
-    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone']),
-    birthDate: find(['datenaissance','naissance','birthdate','datedenaissance']),
-    birthPlace: find(['lieunaissance','lieudenaissance','birthplace','lieudenaissanceeleve']),
-    sex: find(['sexe','genre']),
+    first: find(STUDENT_HEADERS.first),
+    last: find(STUDENT_HEADERS.last),
+    cls: find(STUDENT_HEADERS.cls),
+    parent: find(STUDENT_HEADERS.parent),
+    phone: find(STUDENT_HEADERS.phone),
+    birthDate: find(STUDENT_HEADERS.birthDate),
+    birthPlace: find(STUDENT_HEADERS.birthPlace),
+    sex: find(STUDENT_HEADERS.sex),
   };
   const rows = grid.slice(headerIndex + 1).map((cells, offset) => {
     const get = (index: number) => index >= 0 ? String(cells[index] ?? '').trim() : '';
     const firstName = get(idx.first), lastName = get(idx.last), className = get(idx.cls);
-    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex: headerIndex + offset + 1 };
+    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex: headerIndex + offset + 2 };
   }).filter(row => row.firstName || row.lastName || row.className);
   if (rows.length > 5000) throw new Error('Ce fichier contient plus de 5 000 lignes. Séparez les élèves en plusieurs fichiers pour éviter de saturer la mémoire du téléphone.');
   const invalid = rows.find(row => !row.firstName || !row.lastName || !row.className);
-  if (invalid) throw new Error('Ligne ' + (invalid.rowIndex + 1) + ' : Prénom, Nom et Classe doivent être renseignés.');
+  if (invalid) throw new Error('Ligne ' + invalid.rowIndex + ' : Prénom, Nom et Classe doivent être renseignés.');
   const seen = new Set<string>();
   for (const row of rows) {
     const key = [row.firstName, row.lastName, row.className].join('|').toLocaleLowerCase('fr');
@@ -123,39 +134,12 @@ function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
   return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
 }
 function parseStudentCsv(text: string): ImportedStudentRow[] {
-  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
-  if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne d’en-têtes et au moins un élève.');
-  const separator = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ',';
-  const headers = splitCsvLine(lines[0], separator).map(normalizeHeader);
-  const find = (aliases: string[]) => headers.findIndex(h => aliases.includes(h));
-  const idx = {
-    first: find(['prenom','prenoms','firstname']),
-    last: find(['nom','nomdefamille','lastname']),
-    cls: find(['classe','class','niveau']),
-    parent: find(['parent','nomparent','nomduparent','nomdututeur','tuteur']),
-    phone: find(['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone']),
-    birthDate: find(['datenaissance','naissance','birthdate']),
-    birthPlace: find(['lieunaissance','lieudenaissance','birthplace']),
-    sex: find(['sexe','genre']),
-  };
-  if (idx.first < 0 || idx.last < 0 || idx.cls < 0) {
-    throw new Error('Colonnes obligatoires manquantes : Prénom, Nom et Classe. Les colonnes Parent et Téléphone sont recommandées.');
-  }
-  const rows = lines.slice(1).map((line, rowIndex) => {
-    const cells = splitCsvLine(line, separator);
-    const get = (index: number) => index >= 0 ? (cells[index] || '').trim() : '';
-    const firstName = get(idx.first), lastName = get(idx.last), className = get(idx.cls);
-    return { firstName, lastName, className, parentName: get(idx.parent), parentPhone: get(idx.phone), birthDate: normalizeDate(get(idx.birthDate)), birthPlace: get(idx.birthPlace), sexe: /^f|feminin|féminin$/i.test(get(idx.sex)) ? 'F' as const : 'M' as const, rowIndex };
-  }).filter(row => row.firstName || row.lastName || row.className);
-  const invalid = rows.find(row => !row.firstName || !row.lastName || !row.className);
-  if (invalid) throw new Error('Ligne ' + (invalid.rowIndex + 2) + ' : Prénom, Nom et Classe doivent être renseignés.');
-  const seen = new Set<string>();
-  for (const row of rows) {
-    const key = [row.firstName, row.lastName, row.className].join('|').toLocaleLowerCase('fr');
-    if (seen.has(key)) throw new Error('Doublon dans le fichier : ' + row.firstName + ' ' + row.lastName + ' (' + row.className + ').');
-    seen.add(key);
-  }
-  return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
+  const lines = text.replace(/^\\uFEFF/, '').split(/\\r?\\n/).filter(line => line.trim());
+  if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne de titres et au moins un élève.');
+  const firstLine = lines.slice(0, 20).find(line => line.includes(';') || line.includes(',')) || lines[0];
+  const separator = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+  const grid = lines.map(line => splitCsvLine(line, separator));
+  return parseStudentGrid(grid);
 }
 type PendingImportFile = { blob: Blob; name: string; type: string; lastModified: number };
 const IMPORT_DB = 'gestilys-import-recovery';
