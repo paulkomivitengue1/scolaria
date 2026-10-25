@@ -375,6 +375,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       importUserActionRef.current = false;
     }
     const runId = ++importRunRef.current;
+    // La vérification initiale est terminée : un seul statut doit s'afficher.
+    setImportRestoring(false);
     setImportReading(true);
     setImportFileName(source.name);
     setImportError('');

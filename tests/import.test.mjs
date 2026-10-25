@@ -296,6 +296,81 @@ await test('Signale un fichier Excel corrompu', async () => {
   app.unmount();
 });
 
+// ── 3 bis. Enregistrement : succès, échec, imports successifs ───────────────
+
+await test('Enregistrement confirmé : message clair et aperçu vidé', async () => {
+  const app = await mountAndOpen({ students: [], onImportStudents: async (rows) => rows.length });
+  await pickAndWaitPreview(app.container, fx.templateWorkbook());
+  const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
+  confirm.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await waitFor(() => previewRows(app.container).length === 0, { label: 'aperçu vidé après succès' });
+  const notice = textOf(app.container.querySelector('[role="status"]'));
+  assert.match(notice, /3 élève\(s\) importé\(s\)/, 'le nombre réellement enregistré doit être annoncé');
+  assert.equal(app.container.querySelector('[data-testid="import-error"]'), null, 'aucune erreur ne doit rester affichée');
+  app.unmount();
+});
+
+await test('Enregistrement échoué : message explicite, aperçu conservé, nouvelle tentative possible', async () => {
+  let calls = 0;
+  const app = await mountAndOpen({
+    students: [],
+    onImportStudents: async () => { calls += 1; throw new Error('Connexion perdue pendant l’enregistrement.'); },
+  });
+  await pickAndWaitPreview(app.container, fx.templateWorkbook());
+  const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
+  confirm.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await waitFor(() => app.container.querySelector('[data-testid="import-error"]'), { label: 'erreur d’enregistrement' });
+  assert.match(alertText(app.container), /Connexion perdue/, 'la cause réelle doit être affichée');
+  assert.equal(previewRows(app.container).length, 3, 'l’aperçu doit rester affiché pour réessayer');
+  const retry = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
+  assert.equal(retry.disabled, false, 'une nouvelle tentative doit être possible');
+  assert.doesNotMatch(textOf(app.container.querySelector('[role="status"]')), /importé\(s\)/, 'ne jamais annoncer un succès inexistant');
+  retry.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await waitFor(() => calls === 2, { label: 'seconde tentative' });
+  app.unmount();
+});
+
+await test('Deux imports successifs fonctionnent sans perdre l’interface', async () => {
+  const recus = [];
+  const app = await mountAndOpen({
+    students: [],
+    onImportStudents: async (rows) => { recus.push(rows.map((row) => row.firstName)); return rows.length; },
+  });
+  // Premier fichier
+  await pickAndWaitPreview(app.container, fx.templateWorkbook());
+  [...app.container.querySelectorAll('button')].find((n) => /Confirmer/.test(n.textContent || ''))
+    .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await waitFor(() => recus.length === 1, { label: 'premier import' });
+  await waitFor(() => previewRows(app.container).length === 0, { label: 'aperçu vidé' });
+
+  // Second fichier, sans recharger l'écran
+  await pickAndWaitPreview(app.container, fx.dateCellsWorkbook());
+  [...app.container.querySelectorAll('button')].find((n) => /Confirmer/.test(n.textContent || ''))
+    .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await waitFor(() => recus.length === 2, { label: 'second import' });
+
+  assert.deepEqual(recus[0].sort(), ['Aminata', 'Fatoumata', 'Moussa']);
+  assert.deepEqual(recus[1].sort(), ['Aminata', 'Moussa']);
+  assert.equal(app.container.querySelector('[data-testid="import-error"]'), null, 'aucune erreur ne doit subsister');
+  assert.ok(app.container.querySelector('input[type="file"]'), 'l’écran d’import doit rester utilisable');
+  app.unmount();
+});
+
+await test('Non-régression : les autres onglets de la Direction s’ouvrent toujours', async () => {
+  const app = mountDirectionHub(props());
+  await waitFor(() => [...app.container.querySelectorAll('button')].some((n) => /Import élèves/.test(n.textContent || '')), { label: 'écran Direction' });
+  for (const onglet of ['Caisse', 'Présences', 'Parents', 'Équipe', 'Pilotage']) {
+    const bouton = [...app.container.querySelectorAll('button')].find((n) => new RegExp('^' + onglet).test(textOf(n)));
+    assert.ok(bouton, `l’onglet ${onglet} doit exister`);
+    bouton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await sleep(60);
+    assert.ok(textOf(app.container).length > 200, `l’onglet ${onglet} doit s’afficher`);
+  }
+  await openImportTab(app.container);
+  assert.ok(app.container.querySelector('input[type="file"]'), 'le retour sur Import élèves doit fonctionner');
+  app.unmount();
+});
+
 // ── 4. Reprise après recréation de la page (Android) ────────────────────────
 
 await test('Réaffiche l’aperçu après recréation de l’écran (sans relire le fichier)', async () => {
