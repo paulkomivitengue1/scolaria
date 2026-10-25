@@ -90,7 +90,7 @@ const STUDENT_HEADERS = {
   last: ['nom','nomdefamille','lastname','surname','familyname','nomdeleleve','nomdeleve','nomeleve','elevenom'],
   cls: ['classe','class','niveau','classedeleleve','classedeseleve','classeeleve','niveauclasse','section'],
   parent: ['parent','nomparent','nomduparent','nomdututeur','tuteur','nomdupere','nomdelamere','responsablelegal','nomresponsable','nomparentdeleve','nomduparentdeleve','parentdeleve','nompere','nommere','responsable'],
-  phone: ['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone','numerodutelephoneparent','numerotelephoneparent','numeropportableparent','telephoneportableparent','mobileparent','gsmparent','whatsappparent','contact','mobile','gsm','whatsapp','numerodumobile','telephoneportable','numeroportable','numero'],
+  phone: ['telephoneparent','telephoneduparent','telephone','tel','telephonepere','contactparent','phone','telephonepereoumere','numeroparent','numerodutelephone','numerodutelephoneparent','numerotelephoneparent','numeropportableparent','telephoneportableparent','mobileparent','gsmparent','whatsappparent','contact','mobile','gsm','whatsapp','numerodumobile','telephoneportable','numeroportable'],
   birthDate: ['datenaissance','naissance','birthdate','datedenaissance'],
   birthPlace: ['lieunaissance','lieudenaissance','birthplace','lieudenaissanceeleve'],
   sex: ['sexe','genre'],
@@ -134,7 +134,7 @@ function parseStudentGrid(grid: unknown[][]): ImportedStudentRow[] {
   return rows.map(row => ({ firstName: row.firstName, lastName: row.lastName, className: row.className, parentName: row.parentName, parentPhone: row.parentPhone, birthDate: row.birthDate, birthPlace: row.birthPlace, sexe: row.sexe }));
 }
 function parseStudentCsv(text: string): ImportedStudentRow[] {
-  const lines = text.replace(/^\\uFEFF/, '').split(/\\r?\\n/).filter(line => line.trim());
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim());
   if (lines.length < 2) throw new Error('Le fichier doit contenir une ligne de titres et au moins un élève.');
   const firstLine = lines.slice(0, 20).find(line => line.includes(';') || line.includes(',')) || lines[0];
   const separator = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
