@@ -154,41 +154,6 @@ function parseStudentCsv(text: string): ImportedStudentRow[] {
   const grid = lines.map(line => splitCsvLine(line, separator));
   return parseStudentGrid(grid);
 }
-type PendingImportFile = { blob: Blob; name: string; type: string; lastModified: number };
-const IMPORT_DB = 'gestilys-import-recovery';
-function openImportDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(IMPORT_DB, 1);
-    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains('files')) request.result.createObjectStore('files'); };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Stockage temporaire indisponible.'));
-  });
-}
-async function savePendingImport(file: File): Promise<void> {
-  const db = await openImportDb();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction('files', 'readwrite');
-    tx.objectStore('files').put({ blob: file, name: file.name, type: file.type, lastModified: file.lastModified } satisfies PendingImportFile, 'pending');
-    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error || new Error('Impossible de conserver temporairement le fichier.'));
-  });
-  db.close();
-}
-async function readPendingImport(): Promise<File | null> {
-  const db = await openImportDb();
-  const record = await new Promise<PendingImportFile | undefined>((resolve, reject) => {
-    const tx = db.transaction('files', 'readonly'); const request = tx.objectStore('files').get('pending');
-    request.onsuccess = () => resolve(request.result as PendingImportFile | undefined); request.onerror = () => reject(request.error);
-  });
-  db.close();
-  return record ? new File([record.blob], record.name, { type: record.type, lastModified: record.lastModified }) : null;
-}
-async function clearPendingImport(): Promise<void> {
-  try {
-    const db = await openImportDb();
-    await new Promise<void>((resolve, reject) => { const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').delete('pending'); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); });
-    db.close();
-  } catch { /* Recovery is best-effort; normal import remains available. */ }
-}
 
 function csvEscape(value: unknown) {
   const text = String(value ?? '');
@@ -327,11 +292,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
 
   const handleImportFile = async (file?: File) => {
     if (!file) return;
-    // Do not wait for IndexedDB before reading the file: Android can recreate
-    // the screen while that write is pending, which used to lose the preview.
-    void savePendingImport(file).catch(storageError => {
-      console.warn('Fichier non conservé pour reprise automatique :', storageError);
-    });
+    // Avoid duplicating the selected file in IndexedDB: on low-memory Android
+    // devices this extra copy can compete with XLSX parsing and trigger an OS
+    // "insufficient memory" failure. Parse the selected File only once.
     try {
       sessionStorage.removeItem('gestilys-import-preview');
       sessionStorage.removeItem('gestilys-import-preview-name');
@@ -340,13 +303,11 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     setNotice('');
     setImportPreview([]);
     if (file.size > 10 * 1024 * 1024) {
-      await clearPendingImport();
       setImportName(file.name);
       setNotice('Ce fichier dépasse 10 Mo et risque de saturer la mémoire du téléphone. Ouvrez-le dans Excel et enregistrez uniquement la feuille des élèves dans un nouveau fichier .xlsx ou .csv, puis réessayez.');
       return;
     }
     if (!/\.(csv|xlsx|xls)$/i.test(file.name) && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
-      await clearPendingImport();
       setImportPreview([]);
       setImportName(file.name);
       setNotice('Choisissez un fichier Excel (.xlsx ou .xls) ou CSV (.csv).');
@@ -413,35 +374,6 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    let recovered = false;
-    const wait = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
-    const recoverPendingFile = async () => {
-      // Android can recreate this screen before the file-picker callback has
-      // finished writing the selected file to IndexedDB. Retry briefly so the
-      // new screen does not miss that write and leave the user without a preview.
-      for (let attempt = 0; attempt < 30 && !cancelled && !recovered; attempt++) {
-        try {
-          const file = await readPendingImport();
-          if (cancelled) return;
-          if (file) {
-            recovered = true;
-            setNotice('Reprise de la lecture de ' + file.name + '…');
-            void handleImportFile(file);
-            return;
-          }
-        } catch (error) {
-          console.warn('Reprise de fichier impossible :', error);
-        }
-        if (attempt < 29) await wait(400);
-      }
-    };
-    if (tab === 'import') void recoverPendingFile();
-    return () => { cancelled = true; };
-    // Only recover a file on component mount; tab changes must not restart an import.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const runImport = async () => {
     if (!importPreview.length) return;
     setImportBusy(true); setNotice('');
@@ -454,7 +386,6 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         sessionStorage.removeItem('gestilys-import-preview-name');
         sessionStorage.removeItem('gestilys-import-preview-notice');
       } catch { /* Ignore session storage failures after a successful import. */ }
-      await clearPendingImport();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
     } finally { setImportBusy(false); }
