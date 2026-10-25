@@ -108,6 +108,19 @@ export function unknownClassWorkbook(filename = 'classe-inconnue.xlsx') {
   });
 }
 
+/** Two rows: one already registered in the school, one new. */
+export function alreadyRegisteredWorkbook(filename = 'deja-inscrits.xlsx') {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheetFromRows([
+    ['Prénom', 'Nom', 'Classe'],
+    ['Fatoumata', 'Keïta', '5ème B'],
+    ['Moussa', 'Diarra', '6ème A'],
+  ]), 'Élèves');
+  return new File([workbookToBytes(workbook)], filename, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
 /** One row in a configured class, one row in an unknown class. */
 export function mixedClassWorkbook(filename = 'classes-mixtes.xlsx') {
   const workbook = XLSX.utils.book_new();

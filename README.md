@@ -28,5 +28,19 @@ npm run build
 
 Les tests couvrent : fichiers Excel propres, vraies cellules date, `.xls`, CSV
 Windows-1252/UTF-8, fichier mal nommé, en-têtes variantes, doublons, classes
-inconnues, fichiers illisibles, reprise après recréation de l'écran Android, et
-double appui sur « Confirmer ».
+inconnues, fichiers illisibles, reprise après recréation de l'écran Android,
+conservation d'un aperçu valide quand un nouveau fichier échoue, affichage de
+l'erreur dans le panneau, défilement automatique sur téléphone, garde-fou
+anti-boucle de reprise, journal de diagnostic, et double appui sur « Confirmer ».
+
+### Comportement en cas de problème
+
+- Les erreurs s'affichent **dans** le panneau d'aperçu (rouge), et l'écran défile
+  automatiquement vers le résultat sur téléphone.
+- Un aperçu déjà validé n'est **jamais** effacé par l'échec d'un nouveau fichier.
+- Le fichier choisi est mémorisé **avant** sa lecture (IndexedDB) : si Android
+  recrée la page pendant l'analyse, l'import reprend automatiquement (2 essais
+  maximum, puis un bouton « Relancer l'analyse »).
+- Un bloc **Diagnostic** (repliable) enregistre les étapes techniques, le nom du
+  fichier et le message d'erreur — jamais de donnée d'élève — et se copie en un
+  appui pour le support.

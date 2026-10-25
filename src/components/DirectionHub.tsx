@@ -6,12 +6,16 @@ import {
 import { getSupabase } from '../lib/supabase';
 import {
   StudentImportError, buildImportPreview, prepareImportFromBytes, prepareImportFromFile,
+  readFileBytes, studentDuplicateKey,
 } from '../lib/studentImport';
 import type { ImportedStudentRow, ImportPreview } from '../lib/studentImport';
 import {
-  clearImportSession, loadImportFileBytes, loadImportSnapshot, saveImportFileBytes, saveImportSnapshot,
+  MAX_AUTO_ANALYSIS_ATTEMPTS, clearImportSession, loadFileHandle, loadImportFileBytes, loadImportSnapshot,
+  noteAnalysisAttempt, resetAnalysisAttempts, saveFileHandle, saveImportFileBytes, saveImportSnapshot,
 } from '../lib/importSession';
-import type { StoredImportFile } from '../lib/importSession';
+import {
+  clearImportDiagnostics, formatImportDiagnostics, logImportEvent,
+} from '../lib/importDiagnostics';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
 import type { Expense, SalaryPayment, Student, Teacher } from '../types';
 
@@ -76,21 +80,25 @@ async function saveExcelTemplate(filename: string, rows: unknown[][]) {
   XLSX.writeFile(workbook, filename);
 }
 
-/** Phrase résumant l'aperçu affichée à l'utilisateur. */
+/** Phrase résumant l'aperçu affichée à l'utilisateur (bandeau + écran). */
 function describeImportPreview(preview: ImportPreview): string {
-  const skipped: string[] = [];
-  if (preview.duplicateInFileCount) skipped.push(preview.duplicateInFileCount + ' doublon(s) dans le fichier');
-  if (preview.alreadyRegisteredCount) skipped.push(preview.alreadyRegisteredCount + ' déjà inscrit(s)');
-  if (preview.unknownClasses.length) {
-    const unknownCount = preview.rows.filter(row => preview.unknownClasses.includes(row.className)).length;
-    skipped.push(unknownCount + ' ligne(s) en classe inconnue (' + preview.unknownClasses.join(', ') + ')');
+  const problems: string[] = [];
+  if (preview.invalidCount) problems.push(preview.invalidCount + ' ligne(s) incomplète(s)');
+  if (preview.duplicateInFileCount) problems.push(preview.duplicateInFileCount + ' doublon(s) dans le fichier');
+  if (preview.unknownClasses.length) problems.push('classe(s) inconnue(s) : ' + preview.unknownClasses.join(', '));
+
+  // Règle métier conservée : tant que le fichier contient une ligne incorrecte
+  // (ou un doublon interne, ou une classe inconnue), rien n'est importé.
+  if (problems.length) {
+    return 'Fichier à corriger avant import : ' + problems.join(' · ') + '. Aucun élève n’a été ajouté.';
   }
-  if (preview.invalidCount) skipped.push(preview.invalidCount + ' ligne(s) incomplète(s)');
   if (!preview.importableCount) {
-    return 'Aucun élève à importer : ' + (skipped.length ? skipped.join(' · ') : 'vérifiez les colonnes Prénom, Nom et Classe') + '.';
+    return preview.alreadyRegisteredCount
+      ? 'Aucun nouvel élève : les ' + preview.alreadyRegisteredCount + ' élève(s) de ce fichier sont déjà inscrits.'
+      : 'Aucun élève importable dans ce fichier. Vérifiez les colonnes Prénom, Nom et Classe.';
   }
   return preview.importableCount + ' élève(s) prêt(s) à être importé(s)'
-    + (skipped.length ? ' · ignoré(s) : ' + skipped.join(' · ') : '')
+    + (preview.alreadyRegisteredCount ? ' · ' + preview.alreadyRegisteredCount + ' déjà inscrit(s) seront ignorés' : '')
     + '. Rien n’a encore été ajouté.';
 }
 
@@ -125,16 +133,21 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const [messageStudent, setMessageStudent] = useState('');
   const [messageText, setMessageText] = useState('Bonjour, nous vous contactons au sujet de la scolarité de votre enfant. Merci de prendre contact avec l’administration de l’école.');
   // ── Import d'élèves ──────────────────────────────────────────────────────
-  // `status` décrit ce que l'écran doit afficher. L'aperçu complet vit dans
-  // `importPreview` (aucune donnée n'est dupliquée dans le state React).
-  const [importStatus, setImportStatus] = useState<'restoring' | 'idle' | 'reading' | 'ready' | 'error'>('restoring');
+  // Règle : un aperçu déjà validé reste affiché tant qu'un nouveau fichier n'a
+  // pas été analysé AVEC SUCCÈS. Une erreur ne doit jamais effacer un travail
+  // en cours, ni faire croire que l'aperçu a disparu.
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [importFileName, setImportFileName] = useState('');
+  const [importReading, setImportReading] = useState(false);
+  const [importRestoring, setImportRestoring] = useState(true);
   const [importError, setImportError] = useState('');
   const [importErrorDetails, setImportErrorDetails] = useState<string[]>([]);
   const [importBusy, setImportBusy] = useState(false);
   const [importHint, setImportHint] = useState('');
+  const [importAutoRetryBlocked, setImportAutoRetryBlocked] = useState(false);
+  const [importDiagTick, setImportDiagTick] = useState(0);
   const importFileInputRef = useRef<HTMLInputElement | null>(null);
+  const importResultRef = useRef<HTMLDivElement | null>(null);
   // Horodatage de l'ouverture du sélecteur de fichiers Android.
   const importPickerOpenedRef = useRef(0);
   // Un seul import analysé à la fois : un fichier plus récent annule le précédent.
@@ -142,6 +155,15 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const importSubmittingRef = useRef(false);
   // Empêche la reprise automatique d'écraser un choix effectué par l'utilisateur.
   const importUserActionRef = useRef(false);
+  // Copie de l'aperçu courant, lisible hors du cycle de rendu (effets, timers).
+  const importPreviewRef = useRef<ImportPreview | null>(null);
+  // Dernière source mémorisée, pour proposer « Relancer l'analyse ».
+  const importRetrySourceRef = useRef<{ name: string; bytes?: Uint8Array; file?: File } | null>(null);
+  // Données à jour, lisibles par l'effet de reprise (qui ne dépend d'aucune prop).
+  const studentsRef = useRef(students);
+  const classNamesRef = useRef(classNames);
+  studentsRef.current = students;
+  classNamesRef.current = classNames;
 
   const loadOperations = useCallback(async () => {
     setLoading(true);
@@ -203,14 +225,46 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
 
   // ── Import : analyse du fichier choisi ───────────────────────────────────
 
+  /** Journalise une étape (et rafraîchit le bloc « Diagnostic »). */
+  const logImport = useCallback((step: string, info: { file?: string; size?: number; detail?: string } = {}) => {
+    logImportEvent(step, info);
+    setImportDiagTick(tick => tick + 1);
+  }, []);
+
+  /**
+   * Sur téléphone, l'aperçu se trouve sous le champ fichier : sans défilement,
+   * l'utilisateur ne voit ni les élèves ni le message d'erreur.
+   */
+  const focusImportResult = () => {
+    try {
+      const node = importResultRef.current;
+      if (!node || typeof node.scrollIntoView !== 'function') return;
+      const isMobile = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 1023px)').matches
+        : window.innerWidth < 1024;
+      if (isMobile) node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {
+      /* Le défilement est un confort : son absence ne bloque pas l'import. */
+    }
+  };
+
   /** Affiche un aperçu validé et le mémorise pour la reprise après rechargement. */
   const showImportPreview = (preview: ImportPreview) => {
     setImportPreview(preview);
+    importPreviewRef.current = preview;
     setImportFileName(preview.fileName);
-    setImportStatus('ready');
+    setImportReading(false);
+    setImportRestoring(false);
     setImportError('');
     setImportErrorDetails([]);
+    setImportAutoRetryBlocked(false);
     setNotice(describeImportPreview(preview));
+    logImport('aperçu prêt', {
+      file: preview.fileName,
+      detail: `${preview.importableCount} importable(s), ${preview.invalidCount} incomplète(s), `
+        + `${preview.duplicateInFileCount} doublon(s), ${preview.alreadyRegisteredCount} déjà inscrit(s)`,
+    });
+    // L'aperçu remplace les données mémorisées du fichier en cours d'examen.
     void saveImportSnapshot({
       savedAt: Date.now(),
       status: 'ready',
@@ -223,19 +277,32 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         birthPlace: row.birthPlace, sexe: row.sexe,
       })),
     });
+    focusImportResult();
   };
 
-  /** Affiche une erreur lisible et la mémorise (utile si la page est recréée). */
+  /**
+   * Affiche une erreur AU-DESSUS de l'aperçu, sans jamais effacer un aperçu
+   * déjà valide (règle : un échec ne doit pas faire disparaître le travail).
+   */
   const showImportError = (error: unknown, fileName: string) => {
     const message = error instanceof Error && error.message ? error.message : 'Le fichier n’a pas pu être lu.';
     const details = error instanceof StudentImportError ? error.details.slice(0, 8) : [];
-    setImportPreview(null);
-    setImportStatus('error');
+    const keptPrevious = Boolean(importPreviewRef.current);
+    setImportReading(false);
+    setImportRestoring(false);
     setImportError(message);
     setImportErrorDetails(details);
     setImportFileName(fileName);
-    setNotice(message);
-    void saveImportSnapshot({ savedAt: Date.now(), status: 'error', fileName, message, details });
+    setNotice(keptPrevious
+      ? message + ' L’aperçu précédent est conservé.'
+      : message);
+    logImport('échec de lecture', { file: fileName, detail: message });
+    // On ne remplace l'enregistrement d'aperçu que s'il n'y en a pas : sinon un
+    // échec écraserait la reprise d'un aperçu pourtant valide.
+    if (!keptPrevious) {
+      void saveImportSnapshot({ savedAt: Date.now(), status: 'error', fileName, message, details });
+    }
+    focusImportResult();
   };
 
   /** Analyse un fichier choisi par l'utilisateur (ne lève jamais d'exception). */
@@ -244,23 +311,25 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     importPickerOpenedRef.current = 0;
     setImportHint('');
     const runId = ++importRunRef.current;
-    setImportStatus('reading');
+    setImportReading(true);
+    setImportRestoring(false);
     setImportFileName(file.name);
-    setImportPreview(null);
     setImportError('');
     setImportErrorDetails([]);
+    setImportAutoRetryBlocked(false);
     setNotice('Lecture du fichier « ' + file.name + ' »…');
+    logImport('fichier choisi', { file: file.name, size: file.size });
+    // 1) Garder le fichier AVANT de le lire : si Android recrée la page pendant
+    //    la lecture, l'import reste récupérable (aucune donnée n'est perdue).
+    void saveFileHandle(file).catch(() => undefined);
+    void resetAnalysisAttempts();
     try {
-      // Le fichier qui vient d'être choisi remplace l'état mémorisé, même si
-      // son analyse échoue : sinon un ancien aperçu pourrait réapparaître.
-      await clearImportSession();
-      if (runId !== importRunRef.current) return;
       const preview = await prepareImportFromFile(file, {
         classNames,
         existingStudents: students,
         onBytes: async bytes => {
-          // Sauvegarde des octets dès qu'ils sont lus : si Android recrée la
-          // page pendant l'analyse, celle-ci pourra reprendre sans le fichier.
+          // 2) Les octets sont conservés dès qu'ils ont été lus avec succès.
+          logImport('octets lus', { file: file.name, size: bytes.byteLength });
           await saveImportFileBytes({
             name: file.name,
             type: file.type,
@@ -278,24 +347,70 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     }
   };
 
-  /** Reprend une analyse à partir des octets mémorisés (page recréée par Android). */
-  const analyseStoredFile = async (stored: StoredImportFile) => {
-    if (importUserActionRef.current) return;
+  /**
+   * Reprend l'analyse d'un fichier mémorisé (octets ou fichier gardé), par
+   * exemple après que Android a recréé l'écran pendant la lecture.
+   * `automatic` = reprise au démarrage (soumise au garde-fou anti-boucle).
+   */
+  const analyseStoredSource = async (
+    source: { name: string; bytes?: Uint8Array; file?: File },
+    automatic: boolean,
+  ) => {
+    if (automatic && importUserActionRef.current) return;
+    importRetrySourceRef.current = source;
+    const signature = `${source.name}|${source.bytes?.byteLength ?? source.file?.size ?? 0}`;
+    if (automatic) {
+      const attempts = await noteAnalysisAttempt(signature);
+      if (attempts > MAX_AUTO_ANALYSIS_ATTEMPTS) {
+        // Guarde-fou : ne jamais relancer indéfiniment une analyse qui échoue.
+        setImportReading(false);
+        setImportRestoring(false);
+        setImportAutoRetryBlocked(true);
+        setImportFileName(source.name);
+        logImport('reprise suspendue', { file: source.name, detail: `${attempts} tentatives` });
+        return;
+      }
+    } else {
+      await resetAnalysisAttempts();
+      importUserActionRef.current = false;
+    }
     const runId = ++importRunRef.current;
-    setImportStatus('reading');
-    setImportFileName(stored.name);
-    setNotice('Reprise de la lecture de « ' + stored.name + ' »…');
+    setImportReading(true);
+    setImportFileName(source.name);
+    setImportError('');
+    setImportErrorDetails([]);
+    setNotice('Reprise de la lecture de « ' + source.name + ' »…');
+    logImport(automatic ? 'reprise automatique' : 'reprise demandée', { file: source.name });
     try {
-      const preview = await prepareImportFromBytes(stored.bytes, stored.name, { classNames, existingStudents: students });
+      let bytes = source.bytes;
+      if (!bytes && source.file) {
+        // Le fichier gardé n'est plus lisible ? L'erreur est explicite.
+        bytes = await readFileBytes(source.file);
+        logImport('octets relus', { file: source.name, size: bytes.byteLength });
+        await saveImportFileBytes({
+          name: source.name,
+          type: source.file.type,
+          lastModified: source.file.lastModified || Date.now(),
+          bytes,
+        });
+      }
+      if (!bytes) throw new StudentImportError('Le fichier mémorisé n’est plus disponible. Sélectionnez-le à nouveau.');
+      const preview = await prepareImportFromBytes(bytes, source.name, {
+        classNames: classNamesRef.current,
+        existingStudents: studentsRef.current,
+      });
       if (runId !== importRunRef.current || importUserActionRef.current) return;
+      importRetrySourceRef.current = null;
       showImportPreview(preview);
     } catch (error) {
       if (runId !== importRunRef.current) return;
       console.error('Import élèves : reprise impossible.', error);
-      showImportError(error, stored.name);
+      showImportError(error, source.name);
     }
   };
 
+  // Reprise au montage : aperçu mémorisé d'abord (aucune lecture), puis octets,
+  // puis fichier gardé. C'est ce qui répare l'écran vide au retour d'Android.
   useEffect(() => {
     let cancelled = false;
     const restoreImport = async () => {
@@ -303,43 +418,53 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         const snapshot = await loadImportSnapshot();
         if (cancelled || importUserActionRef.current) return;
         if (snapshot && snapshot.status === 'ready' && snapshot.rows?.length) {
-          // Un aperçu déjà calculé est réaffiché sans relire le fichier : sur
-          // Android, le fichier d'origine peut ne plus être lisible.
           const preview = buildImportPreview(
             snapshot.rows.map((row, index) => ({ ...row, lineNumber: index + 2, alreadyRegistered: false, duplicateInFile: false })),
             {
               fileName: snapshot.fileName,
               kind: snapshot.kind || 'xlsx',
-              classNames,
-              existingStudents: students,
+              classNames: classNamesRef.current,
+              existingStudents: studentsRef.current,
               invalidRows: snapshot.invalid || [],
             },
           );
           setImportPreview(preview);
+          importPreviewRef.current = preview;
           setImportFileName(snapshot.fileName);
-          setImportStatus('ready');
+          setImportRestoring(false);
           setNotice(describeImportPreview(preview));
           setTab('import');
+          logImport('aperçu restauré', { file: snapshot.fileName });
           return;
         }
         if (snapshot && snapshot.status === 'error' && snapshot.message) {
-          setImportStatus('error');
           setImportError(snapshot.message);
           setImportErrorDetails(snapshot.details || []);
           setImportFileName(snapshot.fileName || '');
+          setImportRestoring(false);
           setNotice(snapshot.message);
           setTab('import');
+          logImport('erreur restaurée', { file: snapshot.fileName, detail: snapshot.message });
           return;
         }
-        const stored = await loadImportFileBytes();
+        const storedBytes = await loadImportFileBytes();
         if (cancelled || importUserActionRef.current) return;
-        if (!stored) { setImportStatus('idle'); return; }
-        // Les octets ont été enregistrés mais l'analyse a été interrompue.
-        setTab('import');
-        await analyseStoredFile(stored);
+        if (storedBytes) {
+          setTab('import');
+          await analyseStoredSource({ name: storedBytes.name, bytes: storedBytes.bytes }, true);
+          return;
+        }
+        const storedFile = await loadFileHandle();
+        if (cancelled || importUserActionRef.current) return;
+        if (storedFile) {
+          setTab('import');
+          await analyseStoredSource({ name: storedFile.name, file: storedFile }, true);
+          return;
+        }
+        setImportRestoring(false);
       } catch (error) {
         console.warn('Reprise de l’import impossible :', error);
-        if (!cancelled) setImportStatus('idle');
+        if (!cancelled) { setImportRestoring(false); setImportReading(false); }
       }
     };
     void restoreImport();
@@ -347,6 +472,26 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     // Une seule tentative au montage : changer d'onglet ne doit pas relancer une analyse.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Les compteurs « déjà inscrit(s) » doivent suivre la liste réelle des élèves :
+  // au remontage, elle peut encore être vide au moment de la reprise.
+  const studentsKey = students.map(student => studentDuplicateKey(student)).join('|');
+  const classNamesKey = classNames.join('|');
+  useEffect(() => {
+    const current = importPreviewRef.current;
+    if (!current) return;
+    const rebuilt = buildImportPreview(current.rows, {
+      fileName: current.fileName,
+      kind: current.kind,
+      classNames: classNamesRef.current,
+      existingStudents: studentsRef.current,
+      invalidRows: current.invalidRows,
+    });
+    importPreviewRef.current = rebuilt;
+    setImportPreview(rebuilt);
+    // Volontairement limité aux clés de données (pas l'aperçu) : pas de boucle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentsKey, classNamesKey]);
 
   // Certains sélecteurs Android (fichiers « cloud », WhatsApp, cartes SD)
   // reviennent à l'application sans transmettre le fichier : aucun événement
@@ -372,22 +517,41 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     };
   }, []);
 
+  /** Points qui, comme en production, empêchent l'import de tout le fichier. */
+  const importBlockingReasons: string[] = [];
+  if (importPreview) {
+    if (importPreview.invalidCount) {
+      importBlockingReasons.push(`${importPreview.invalidCount} ligne(s) incomplète(s) ou avec une date invalide`);
+    }
+    if (importPreview.duplicateInFileCount) {
+      importBlockingReasons.push(`${importPreview.duplicateInFileCount} doublon(s) dans le fichier`);
+    }
+    if (importPreview.unknownClasses.length) {
+      const count = importPreview.rows.filter(row => importPreview.unknownClasses.includes(row.className)).length;
+      importBlockingReasons.push(`${count} ligne(s) en classe inconnue (${importPreview.unknownClasses.join(', ')})`);
+    }
+  }
+
   const runImport = async () => {
-    if (!importPreview || !importPreview.importableCount) return;
+    if (!importPreview || !importPreview.importableCount || importBlockingReasons.length) return;
     // Garde-fou : sur Android, un double appui peut déclencher deux imports.
     if (importSubmittingRef.current) return;
     importSubmittingRef.current = true;
     setImportBusy(true);
     setImportError('');
     setNotice('');
+    logImport('import soumis', { file: importPreview.fileName, detail: `${importPreview.importableCount} élève(s)` });
     try {
       const count = await onImportStudents(importPreview.importableRows);
       setNotice(count + (navigator.onLine
         ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.'
         : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
+      logImport('import terminé', { file: importPreview.fileName, detail: `${count} élève(s) confirmé(s)` });
       setImportPreview(null);
-      setImportStatus('idle');
+      importPreviewRef.current = null;
       setImportFileName('');
+      setImportError('');
+      setImportErrorDetails([]);
       await clearImportSession();
     } catch (error) {
       const message = error instanceof Error && error.message
@@ -396,9 +560,11 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       // L'aperçu reste affiché pour permettre de réessayer sans relire le fichier.
       setImportError(message);
       setNotice(message);
+      logImport('import en échec', { detail: message });
     } finally {
       importSubmittingRef.current = false;
       setImportBusy(false);
+      focusImportResult();
     }
   };
 
@@ -602,42 +768,97 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
             />
           </label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => void saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom','Nom','Classe','Parent','Téléphone parent','Date naissance','Lieu naissance','Sexe'],['Aminata','Traoré',classNames[0] || '','Mamadou Traoré','75000000','2013-04-12','Bamako','F']]).catch(error => setNotice(error instanceof Error ? error.message : 'Impossible de créer le modèle Excel.'))}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
-          {importFileName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importFileName}</p>}
-          {importStatus === 'restoring' && <p className="mt-3 text-sm font-semibold text-blue-900">Vérification d’un import précédent…</p>}
+          {importFileName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier choisi : {importFileName}</p>}
+          {importRestoring && <p className="mt-3 text-sm font-semibold text-blue-900">Vérification d’un import précédent…</p>}
           {importHint && <p role="status" data-testid="import-hint" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">{importHint}</p>}
           <p className="mt-3 text-xs leading-5 text-slate-600">Astuce Android : si le fichier vient de Google Drive ou WhatsApp, enregistrez-le d’abord dans « Téléchargements » puis sélectionnez-le ici.</p>
         </div>
-        <div className={panelClass}>
+
+        {/* Panneau de résultat : c'est ici que l'utilisateur doit voir l'aperçu ET les erreurs. */}
+        <div ref={importResultRef} data-testid="import-preview-panel" className={panelClass + ' scroll-mt-4'}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-black text-blue-950">Aperçu avant import</h2>
             <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-extrabold text-blue-950">{importPreview ? importPreview.rows.length : 0} ligne(s)</span>
           </div>
           <p className="mt-1 text-sm text-slate-700">Contrôlez l’aperçu avant d’ajouter des élèves. Les frais seront calculés selon la configuration de l’école.</p>
 
-          {importStatus === 'reading' && <p role="status" className="mt-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Lecture et analyse du fichier…</p>}
+          {importReading && <p role="status" className="mt-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Lecture et analyse du fichier…</p>}
 
-          {importStatus === 'error' && importError && (
-            <div role="alert" data-testid="import-error" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {/* Erreur : toujours dans le panneau, en rouge, au-dessus de l'aperçu. */}
+          {importError && (
+            <div role="alert" data-testid="import-error" className="mt-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
               <p className="font-extrabold">L’import n’a pas pu continuer</p>
               <p className="mt-1 leading-6">{importError}</p>
               {importErrorDetails.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 font-semibold">{importErrorDetails.map(detail => <li key={detail}>{detail}</li>)}</ul>}
+              {importPreview && (
+                <p className="mt-2 rounded-lg bg-white/70 px-3 py-2 font-semibold text-blue-950">
+                  L’aperçu du fichier « {importPreview.fileName} » est conservé plus bas : vous pouvez le confirmer, ou choisir un autre fichier.
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" onClick={() => importFileInputRef.current?.click()} className="rounded-xl bg-blue-800 px-4 py-2 text-sm font-extrabold text-white">Choisir un autre fichier</button>
-                <button type="button" onClick={() => { setImportStatus('idle'); setImportError(''); setImportErrorDetails([]); setNotice(''); void clearImportSession(); }} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-extrabold text-red-800">Fermer</button>
+                {importRetrySourceRef.current && (
+                  <button type="button" onClick={() => { const source = importRetrySourceRef.current; if (source) void analyseStoredSource(source, false); }} className="rounded-xl border border-blue-300 bg-white px-4 py-2 text-sm font-extrabold text-blue-900">Relancer l’analyse</button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportError('');
+                    setImportErrorDetails([]);
+                    // Sans aperçu conservé, fermer efface aussi l'état mémorisé.
+                    if (!importPreview) { setNotice(''); void clearImportSession(); }
+                  }}
+                  className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-extrabold text-red-800"
+                >{importPreview ? 'Masquer ce message' : 'Fermer'}</button>
               </div>
             </div>
           )}
 
-          {importStatus === 'ready' && importPreview && (
+          {/* Garde-fou : l'analyse automatique a échoué plusieurs fois. */}
+          {importAutoRetryBlocked && (
+            <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-extrabold">La reprise automatique s’est arrêtée</p>
+              <p className="mt-1 leading-6">Le fichier n’a pas pu être analysé après {MAX_AUTO_ANALYSIS_ATTEMPTS} tentatives. Rien n’a été enregistré. Vous pouvez relancer l’analyse, ou choisir un autre fichier.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => { const source = importRetrySourceRef.current; if (source) void analyseStoredSource(source, false); }} className="rounded-xl bg-blue-800 px-4 py-2 text-sm font-extrabold text-white">Relancer l’analyse</button>
+                <button type="button" onClick={() => importFileInputRef.current?.click()} className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-extrabold text-amber-900">Choisir un autre fichier</button>
+              </div>
+            </div>
+          )}
+
+          {importPreview && (
             <>
               <div data-testid="import-summary" className="mt-3 flex flex-wrap gap-2 text-xs font-extrabold">
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900">{importPreview.importableCount} à importer</span>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-950">{importPreview.importableCount} à importer</span>
                 {importPreview.alreadyRegisteredCount > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">{importPreview.alreadyRegisteredCount} déjà inscrit(s)</span>}
                 {importPreview.duplicateInFileCount > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">{importPreview.duplicateInFileCount} doublon(s) dans le fichier</span>}
+                {importPreview.invalidCount > 0 && <span className="rounded-full bg-red-100 px-3 py-1 text-red-800">{importPreview.invalidCount} incomplète(s)</span>}
                 {importPreview.unknownClasses.length > 0 && <span className="rounded-full bg-red-100 px-3 py-1 text-red-800">{importPreview.unknownClasses.length} classe(s) inconnue(s)</span>}
               </div>
-              {importPreview.warnings.length > 0 && <ul className="mt-2 space-y-1 text-xs font-semibold text-amber-900">{importPreview.warnings.map(warning => <li key={warning}>• {warning}</li>)}</ul>}
-              {importError && <p role="alert" className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">{importError}</p>}
+              <p className="mt-2 break-all text-xs font-bold text-slate-600">Fichier : {importPreview.fileName}</p>
+
+              {importBlockingReasons.length > 0 && (
+                <div data-testid="import-blocking" className="mt-2 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-900">
+                  <p className="font-extrabold">Corrigez ces points dans le fichier, puis relisez-le :</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5">{importBlockingReasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
+                  <p className="mt-1">Aucun élève de ce fichier ne sera enregistré tant que ces points restent.</p>
+                </div>
+              )}
+
+              {importPreview.invalidRows.length > 0 && (
+                <div data-testid="import-invalid" className="mt-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-800">
+                  <p className="font-extrabold">Lignes à corriger :</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4">
+                    {importPreview.invalidRows.slice(0, 5).map(row => <li key={row.lineNumber}>ligne {row.lineNumber} : {row.reason}</li>)}
+                  </ul>
+                  {importPreview.invalidRows.length > 5 && <p className="mt-1">… et {importPreview.invalidRows.length - 5} autre(s).</p>}
+                </div>
+              )}
+
+              {importPreview.alreadyRegisteredCount > 0 && importBlockingReasons.length === 0 && (
+                <p className="mt-2 text-xs font-semibold text-amber-900">{importPreview.alreadyRegisteredCount} élève(s) de ce fichier sont déjà inscrits dans cette école : ils seront ignorés, les autres seront importés.</p>
+              )}
+
               <div className="mt-3 max-h-72 overflow-auto rounded-xl border border-slate-200">
                 <table data-testid="import-preview" className="w-full min-w-[560px] text-left text-xs">
                   <thead className="sticky top-0 bg-blue-100 text-blue-950">
@@ -645,8 +866,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
                   </thead>
                   <tbody>
                     {importPreview.rows.slice(0, 100).map(row => {
-                      const blocked = row.duplicateInFile || row.alreadyRegistered || importPreview.unknownClasses.includes(row.className);
-                      const state = row.duplicateInFile ? 'doublon' : row.alreadyRegistered ? 'déjà inscrit' : importPreview.unknownClasses.includes(row.className) ? 'classe inconnue' : 'à importer';
+                      const unknownClass = importPreview.unknownClasses.includes(row.className);
+                      const blocked = row.duplicateInFile || row.alreadyRegistered || unknownClass;
+                      const state = row.duplicateInFile ? 'doublon' : row.alreadyRegistered ? 'déjà inscrit' : unknownClass ? 'classe inconnue' : 'à importer';
                       return <tr key={row.lineNumber + '-' + row.firstName + row.lastName} data-status={blocked ? 'blocked' : 'ok'} className={'border-t border-slate-100 ' + (blocked ? 'text-slate-400' : '')}>
                         <td className="p-2 font-semibold">{row.firstName}</td>
                         <td className="p-2 font-semibold">{row.lastName}</td>
@@ -654,30 +876,56 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
                         <td className="p-2">{row.parentName}</td>
                         <td className="p-2">{row.parentPhone}</td>
                         <td className="p-2">{row.birthDate || ''}</td>
-                        <td className={'p-2 font-bold ' + (blocked ? 'text-amber-700' : 'text-emerald-700')}>{state}</td>
+                        <td className={'p-2 font-bold ' + (blocked ? 'text-amber-700' : 'text-blue-800')}>{state}</td>
                       </tr>;
                     })}
                   </tbody>
                 </table>
               </div>
               {importPreview.rows.length > 100 && <p className="mt-2 text-xs font-bold text-slate-700">Les 100 premières lignes sont affichées ; l’import prendra en compte les {importPreview.importableCount} élèves importables.</p>}
-              {importPreview.invalidRows.length > 0 && (
-                <div data-testid="import-invalid" className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">
-                  <p className="font-extrabold">{importPreview.invalidCount} ligne(s) de ce fichier ne seront pas importées :</p>
-                  <ul className="mt-1 list-disc space-y-1 pl-4">
-                    {importPreview.invalidRows.slice(0, 5).map(row => <li key={row.lineNumber}>ligne {row.lineNumber} : {row.reason}</li>)}
-                  </ul>
-                  {importPreview.invalidRows.length > 5 && <p className="mt-1">… et {importPreview.invalidRows.length - 5} autre(s).</p>}
-                </div>
-              )}
-              {importPreview.unknownClasses.length > 0 && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-800">Les lignes des classes {importPreview.unknownClasses.map(name => '« ' + name + ' »').join(', ')} ne seront pas importées. Créez ces classes dans Paramètres, puis relisez le fichier pour les ajouter.</p>}
-              <button type="button" className={buttonClass + ' mt-4 w-full'} disabled={!importPreview.importableCount || importBusy} onClick={() => void runImport()}><FileSpreadsheet className="h-4 w-4" />{importBusy ? 'Import en cours…' : 'Confirmer l’import de ' + importPreview.importableCount + ' élève(s)'}</button>
+
+              <button
+                type="button"
+                className={buttonClass + ' mt-4 w-full'}
+                disabled={!importPreview.importableCount || importBusy || importBlockingReasons.length > 0}
+                onClick={() => void runImport()}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                {importBusy ? 'Import en cours…' : 'Confirmer l’import de ' + importPreview.importableCount + ' élève(s)'}
+              </button>
             </>
           )}
 
-          {importStatus === 'idle' && (
+          {!importPreview && !importError && !importReading && !importRestoring && (
             <p className="mt-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-950">Aucun fichier sélectionné. Choisissez un fichier Excel ou CSV : les élèves s’afficheront ici avant tout enregistrement.</p>
           )}
+
+          {/* Diagnostic local : permet de comprendre un échec sans ordinateur. */}
+          <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+            <summary className="cursor-pointer font-bold text-blue-900">Diagnostic de l’import (à copier en cas de problème)</summary>
+            <p className="mt-2 leading-5">Aucune donnée d’élève n’est enregistrée ici : uniquement les étapes techniques, le nom du fichier et le message d’erreur.</p>
+            <pre key={'diag-' + importDiagTick} data-testid="import-diagnostics" className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-white p-2 font-mono text-[11px] leading-4 text-slate-800">{formatImportDiagnostics()}</pre>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = formatImportDiagnostics();
+                  const done = () => setNotice('Diagnostic copié. Vous pouvez le coller dans un message au support Gestilys.');
+                  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    void navigator.clipboard.writeText(text).then(done).catch(() => setNotice('Copie impossible : sélectionnez le texte du diagnostic à la main.'));
+                  } else {
+                    setNotice('Copie impossible : sélectionnez le texte du diagnostic à la main.');
+                  }
+                }}
+                className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 font-bold text-blue-900"
+              >Copier</button>
+              <button
+                type="button"
+                onClick={() => { clearImportDiagnostics(); setImportDiagTick(tick => tick + 1); }}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-bold text-slate-700"
+              >Effacer</button>
+            </div>
+          </details>
         </div>
       </div>}
 

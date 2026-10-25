@@ -252,14 +252,16 @@ export function cellText(value: unknown): string {
   return String(value).trim();
 }
 
-/** Téléphone : conserve un « + » initial puis les chiffres uniquement. */
+/**
+ * Téléphone : le texte est conservé tel qu'il est écrit dans le fichier
+ * (uniquement débarrassé des espaces insécables et des espaces superflus).
+ *
+ * Règle métier inchangée par rapport à la production : on ne supprime ni la
+ * mise en forme (« 75 00 00 00 »), ni un éventuel « +223 », ni un suffixe.
+ * Les zéros initiaux sont préservés dès lors que la cellule est du texte.
+ */
 export function normalizePhone(value: unknown): string {
-  const text = cellText(value);
-  if (!text) return '';
-  const plus = text.trim().startsWith('+');
-  const digits = text.replace(/\D/g, '');
-  if (!digits) return text;
-  return (plus ? '+' : '') + digits;
+  return cellText(value);
 }
 
 function normalizeSex(value: unknown): 'M' | 'F' {

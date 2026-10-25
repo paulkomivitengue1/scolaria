@@ -162,26 +162,41 @@ await test('Trouve les en-têtes sous un titre, avec « NOM(S) » et « PRÉNOMS
 
 // ── 2. Doublons ─────────────────────────────────────────────────────────────
 
-await test('Marque les doublons du fichier et les élèves déjà inscrits, sans les importer', async () => {
+await test('Un doublon dans le fichier bloque l’import et l’explique (règle de production)', async () => {
   let submitted = null;
   const app = await mountAndOpen({ onImportStudents: async (rows) => { submitted = rows; return rows.length; } });
   const rows = await pickAndWaitPreview(app.container, fx.duplicatesWorkbook());
   assert.equal(rows.length, 4);
-  const statuses = rows.map((row) => row.getAttribute('data-status'));
-  assert.deepEqual(statuses, ['ok', 'blocked', 'ok', 'blocked'], 'doublon Aminata + Fatoumata déjà inscrite');
+  assert.deepEqual(rows.map((row) => row.getAttribute('data-status')), ['ok', 'blocked', 'ok', 'blocked'],
+    'doublon Aminata + Fatoumata déjà inscrite');
   assert.equal(cells(rows[1])[6], 'doublon');
   assert.equal(cells(rows[3])[6], 'déjà inscrit');
   const summary = textOf(app.container.querySelector('[data-testid="import-summary"]'));
   assert.match(summary, /2 à importer/);
   assert.match(summary, /1 déjà inscrit/);
   assert.match(summary, /1 doublon/);
+  assert.match(textOf(app.container.querySelector('[data-testid="import-blocking"]')), /1 doublon\(s\) dans le fichier/);
 
   const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
-  assert.match(textOf(confirm), /Confirmer l’import de 2 élève/);
+  assert.equal(confirm.disabled, true, 'le bouton doit être bloqué tant que le doublon est présent');
+  confirm.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await sleep(150);
+  assert.equal(submitted, null, 'aucun envoi ne doit avoir lieu');
+  app.unmount();
+});
+
+await test('Un élève déjà inscrit est ignoré, les autres sont importés', async () => {
+  let submitted = null;
+  const app = await mountAndOpen({ onImportStudents: async (rows) => { submitted = rows; return rows.length; } });
+  const rows = await pickAndWaitPreview(app.container, fx.alreadyRegisteredWorkbook());
+  assert.equal(rows.length, 2);
+  assert.equal(cells(rows[0])[6], 'déjà inscrit');
+  const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
+  assert.equal(confirm.disabled, false);
+  assert.match(textOf(confirm), /Confirmer l’import de 1 élève/);
   confirm.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
   await waitFor(() => submitted, { label: 'appel onImportStudents' });
-  assert.equal(submitted.length, 2, 'seuls les 2 nouveaux élèves sont envoyés');
-  assert.deepEqual(submitted.map((row) => row.firstName).sort(), ['Aminata', 'Moussa']);
+  assert.deepEqual(submitted.map((row) => row.firstName), ['Moussa']);
   app.unmount();
 });
 
@@ -228,38 +243,38 @@ await test('Signale une classe inconnue et bloque l’import', async () => {
   app.unmount();
 });
 
-await test('Importe les lignes valides et ignore celles des classes inconnues', async () => {
+await test('Une classe inconnue bloque tout le fichier et l’explique (règle de production)', async () => {
   let submitted = null;
   const app = await mountAndOpen({ students: [], onImportStudents: async (rows) => { submitted = rows; return rows.length; } });
   const rows = await pickAndWaitPreview(app.container, fx.mixedClassWorkbook());
   assert.deepEqual(rows.map((row) => row.getAttribute('data-status')), ['ok', 'blocked']);
   assert.equal(cells(rows[1])[6], 'classe inconnue');
-  const summary = textOf(app.container.querySelector('[data-testid="import-summary"]'));
-  assert.match(summary, /1 à importer/);
-  assert.match(summary, /1 classe\(s\) inconnue\(s\)/);
+  assert.match(textOf(app.container.querySelector('[data-testid="import-summary"]')), /1 classe\(s\) inconnue\(s\)/);
+  const blocking = textOf(app.container.querySelector('[data-testid="import-blocking"]'));
+  assert.match(blocking, /Terminale C/, 'la classe fautive doit être nommée');
+  assert.match(blocking, /Aucun élève de ce fichier ne sera enregistré/);
   const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
-  assert.equal(confirm.disabled, false, 'les lignes valides restent importables');
-  assert.match(textOf(confirm), /Confirmer l’import de 1 élève/);
+  assert.equal(confirm.disabled, true);
   confirm.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await waitFor(() => submitted, { label: 'appel onImportStudents' });
-  assert.deepEqual(submitted.map((row) => row.firstName), ['Aminata']);
+  await sleep(150);
+  assert.equal(submitted, null);
   app.unmount();
 });
 
-await test('Liste les lignes incomplètes et importe les autres', async () => {
+await test('Liste les lignes incomplètes et bloque l’import (règle de production)', async () => {
   let submitted = null;
   const app = await mountAndOpen({ students: [], onImportStudents: async (rows) => { submitted = rows; return rows.length; } });
   await pickAndWaitPreview(app.container, fx.partlyInvalidWorkbook());
   assert.equal(previewRows(app.container).length, 1, 'une seule ligne complète');
   const invalid = textOf(app.container.querySelector('[data-testid="import-invalid"]'));
-  assert.match(invalid, /2 ligne\(s\) de ce fichier ne seront pas importées/);
   assert.match(invalid, /ligne 3 : Classe manquante/);
   assert.match(invalid, /ligne 4 : Date de naissance invalide/);
+  assert.match(textOf(app.container.querySelector('[data-testid="import-blocking"]')), /2 ligne\(s\) incomplète\(s\)/);
   const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
-  assert.match(textOf(confirm), /Confirmer l’import de 1 élève/);
+  assert.equal(confirm.disabled, true);
   confirm.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await waitFor(() => submitted, { label: 'appel onImportStudents' });
-  assert.deepEqual(submitted.map((row) => row.firstName), ['Aminata']);
+  await sleep(150);
+  assert.equal(submitted, null, 'rien ne doit être importé partiellement');
   app.unmount();
 });
 
@@ -314,18 +329,53 @@ await test('Reprend l’analyse depuis les octets mémorisés si la page a été
   app.unmount();
 });
 
-await test('Un nouvel import en erreur ne ressuscite pas l’ancien aperçu', async () => {
+await test('Un nouveau fichier illisible conserver l’aperçu précédent et l’explique', async () => {
   const app = await mountAndOpen();
   await pickAndWaitPreview(app.container, fx.templateWorkbook());
-  app.unmount();
-  document.body.innerHTML = '';
+  const before = previewRows(app.container).length;
+  assert.ok(before > 0);
 
-  const app2 = mountDirectionHub(props());
-  await waitFor(() => previewRows(app2.container).length > 0, { label: 'aperçu restauré', timeout: 8000 });
-  selectFile(app2.container, fx.headerlessWorkbook());
-  await waitFor(() => app2.container.querySelector('[data-testid="import-error"]'), { label: 'erreur du nouveau fichier' });
-  assert.equal(previewRows(app2.container).length, 0, 'l’ancien aperçu doit disparaître');
-  app2.unmount();
+  selectFile(app.container, fx.headerlessWorkbook());
+  await waitFor(() => app.container.querySelector('[data-testid="import-error"]'), { label: 'erreur du nouveau fichier' });
+  assert.equal(previewRows(app.container).length, before, 'l’aperçu valide doit rester affiché');
+  assert.match(alertText(app.container), /en-têtes/);
+  assert.match(textOf(app.container), /aperçu du fichier « eleves.xlsx » est conservé/i);
+  // Le bouton de confirmation reste disponible pour le fichier conservé.
+  const confirm = [...app.container.querySelectorAll('button')].find((node) => /Confirmer/.test(node.textContent || ''));
+  assert.equal(confirm.disabled, false);
+  app.unmount();
+});
+
+await test('L’erreur s’affiche DANS le panneau d’aperçu (visible sur téléphone)', async () => {
+  const app = await mountAndOpen();
+  selectFile(app.container, fx.corruptedWorkbook());
+  await waitFor(() => app.container.querySelector('[data-testid="import-error"]'), { label: 'message d’erreur' });
+  const panel = app.container.querySelector('[data-testid="import-preview-panel"]');
+  assert.ok(panel, 'le panneau d’aperçu doit exister');
+  assert.ok(panel.querySelector('[data-testid="import-error"] > p'), 'l’erreur doit être dans le panneau, pas seulement en haut de page');
+  assert.match(textOf(panel.querySelector('[data-testid="import-error"]')), /illisible/);
+  app.unmount();
+});
+
+await test('Sur téléphone, l’écran défile vers le résultat après l’analyse', async () => {
+  let scrolled = 0;
+  const originalMatchMedia = window.matchMedia;
+  const originalScroll = window.HTMLElement.prototype.scrollIntoView;
+  window.matchMedia = (query) => ({
+    matches: query.includes('max-width: 1023px'),
+    media: query, onchange: null, addListener() {}, removeListener() {},
+    addEventListener() {}, removeEventListener() {}, dispatchEvent() { return false; },
+  });
+  window.HTMLElement.prototype.scrollIntoView = function () { scrolled += 1; };
+  try {
+    const app = await mountAndOpen();
+    await pickAndWaitPreview(app.container, fx.templateWorkbook());
+    assert.ok(scrolled > 0, 'scrollIntoView doit être appelé sur mobile après l’aperçu');
+    app.unmount();
+  } finally {
+    window.matchMedia = originalMatchMedia;
+    window.HTMLElement.prototype.scrollIntoView = originalScroll;
+  }
 });
 
 await test('Affiche une consigne si le sélecteur Android ne renvoie aucun fichier', async () => {
@@ -338,6 +388,66 @@ await test('Affiche une consigne si le sélecteur Android ne renvoie aucun fichi
   app.unmount();
 });
 
+await test('Le fichier est mémorisé avant lecture et ne corrompt jamais l’analyse', async () => {
+  // Une page tuée PENDANT la lecture ne laisse que le fichier, pas les octets.
+  const file = fx.templateWorkbook();
+  await importSession.clearImportSession();
+  const stored = await importSession.saveFileHandle(file);
+  assert.equal(stored, true, 'l’enregistrement du fichier doit être tenté au moment du choix');
+  assert.equal(await importSession.loadImportFileBytes(), null, 'aucun octet enregistré');
+
+  // LIMITE DE SIMULATION : fake-indexeddb + jsdom ne restituent pas fidèlement
+  // un objet File (Chrome le fait nativement). Si le fichier relu n'est pas un
+  // vrai Blob, la reprise doit être abandonnée proprement — jamais analyser des
+  // données corrompues, jamais rester bloqué sur « Vérification… ».
+  const restored = await importSession.loadFileHandle();
+  const app = mountDirectionHub(props());
+  if (restored) {
+    await waitFor(() => previewRows(app.container).length > 0 || app.container.querySelector('[data-testid="import-error"]'),
+      { label: 'résultat de la reprise', timeout: 8000 });
+    if (previewRows(app.container).length) {
+      assert.deepEqual(cells(previewRows(app.container)[0]).slice(0, 3), ['Aminata', 'Traoré', '6ème A']);
+    } else {
+      assert.match(textOf(app.container), /n’a pas pu|conservé|Aucun fichier/);
+    }
+  } else {
+    // Aucune reprise possible : l'écran doit rester utilisable et ne rien inventer.
+    await sleep(300);
+    await openImportTab(app.container);
+    await waitFor(() => !/Vérification d’un import précédent/.test(textOf(app.container)), { label: 'fin de la vérification', timeout: 8000 });
+    assert.equal(previewRows(app.container).length, 0, 'aucun aperçu ne doit être inventé');
+    assert.match(textOf(app.container), /Aucun fichier sélectionné/);
+  }
+  app.unmount();
+});
+
+await test('Garde-fou : la reprise automatique s’arrête après 2 tentatives', async () => {
+  const file = fx.corruptedWorkbook();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  await importSession.clearImportSession();
+  await importSession.saveImportFileBytes({ name: file.name, type: file.type, lastModified: 1, bytes });
+  const signature = `${file.name}|${bytes.byteLength}`;
+  for (let i = 0; i < 3; i += 1) await importSession.noteAnalysisAttempt(signature);
+
+  const app = mountDirectionHub(props());
+  await waitFor(() => /reprise automatique s’est arrêtée/i.test(textOf(app.container)), { label: 'message de garde-fou', timeout: 8000 });
+  assert.match(textOf(app.container), /après 2 tentatives/);
+  assert.equal(app.container.querySelector('[data-testid="import-preview"]'), null, 'aucun aperçu ne doit être inventé');
+  app.unmount();
+});
+
+await test('Le journal de diagnostic enregistre les étapes sans donnée d’élève', async () => {
+  const app = await mountAndOpen();
+  await pickAndWaitPreview(app.container, fx.templateWorkbook());
+  const journal = textOf(app.container.querySelector('[data-testid="import-diagnostics"]'));
+  assert.match(journal, /fichier choisi/);
+  assert.match(journal, /octets lus/);
+  assert.match(journal, /aperçu prêt/);
+  assert.match(journal, /eleves\.xlsx/);
+  assert.doesNotMatch(journal, /Aminata|Traoré|75000000/, 'aucune donnée d’élève ne doit être journalisée');
+  app.unmount();
+});
+
 // ── 5. Analyse pure (module studentImport) ─────────────────────────────────
 
 await test('Normalise les dates, téléphones et noms', async () => {
@@ -347,8 +457,10 @@ await test('Normalise les dates, téléphones et noms', async () => {
   assert.equal(studentImport.normalizeBirthDate(20130412), '2013-04-12');
   assert.equal(studentImport.normalizeBirthDate(''), '');
   assert.throws(() => studentImport.normalizeBirthDate('32/13/2013'), /Date de naissance invalide/);
-  assert.equal(studentImport.normalizePhone('75 00 00 00'), '75000000');
-  assert.equal(studentImport.normalizePhone('+223 75-00-00-00'), '+22375000000');
+  // Règle de production conservée : la mise en forme du téléphone n'est pas modifiée.
+  assert.equal(studentImport.normalizePhone('75 00 00 00'), '75 00 00 00');
+  assert.equal(studentImport.normalizePhone('+223 75-00-00-00'), '+223 75-00-00-00');
+  assert.equal(studentImport.normalizePhone('0750000001'), '0750000001', 'le zéro initial est préservé');
   assert.equal(studentImport.studentDuplicateKey({ firstName: ' Aminata ', lastName: 'TRAORE', className: '6e A' }),
     studentImport.studentDuplicateKey({ firstName: 'aminata', lastName: 'Traoré', className: '6ème A' }));
 });
