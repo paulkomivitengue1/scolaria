@@ -132,6 +132,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const importLock = useRef(false);
 
   useEffect(() => {
+    logImportEvent('ecran-direction-monte');
     try {
       const savedNotice = sessionStorage.getItem('gestilys-import-preview-notice');
       if (importPreview.length && savedNotice) setNotice(savedNotice);
