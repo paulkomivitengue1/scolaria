@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, CreditCard, Check, X, Search, BadgeCheck,
   Clock, AlertCircle, Smartphone, ArrowLeft, Sparkles, School, Lock,
   Loader2, LogOut, Users, Phone, TrendingUp, CalendarDays, CalendarRange,
-  Calendar, User, Download, RefreshCw, Filter, Activity, Menu,
+  Calendar, User, Mail, Download, RefreshCw, Filter, Activity, Menu,
 } from 'lucide-react';
 import { formatFCFA } from '../types';
 import {
@@ -869,12 +869,12 @@ export function AdminPanel({ onExit }: Props) {
                     <Building2 className="h-3 w-3" /> Établissements
                   </div>
                   <h2 className="font-display text-xl font-800 tracking-tight text-ink sm:text-2xl">Liste des clients</h2>
-                  <p className="mt-0.5 text-sm text-slate-500">Nom, contact, téléphone, statut et nombre d'élèves.</p>
+                  <p className="mt-0.5 text-sm text-slate-500">Nom, e-mail, téléphone, statut et nombre d'élèves.</p>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                   <div className="relative min-w-0 sm:w-64">
                     <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="École, ville, directeur, téléphone…" className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-2 focus:ring-royal-100" />
+                    <input type="text" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="École, ville, directeur, téléphone, e-mail…" className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-royal-400 focus:ring-2 focus:ring-royal-100" />
                   </div>
                   <div className="relative">
                     <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -921,6 +921,10 @@ export function AdminPanel({ onExit }: Props) {
                               <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                               <span className="truncate">{s.phone || '—'}</span>
                             </div>
+                            <div className="flex items-start gap-2 text-xs text-slate-700">
+                              <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-700" />
+                              <span className="min-w-0 break-all font-semibold text-blue-900">{s.email || 'E-mail non renseigné'}</span>
+                            </div>
                             <div className="flex items-center gap-2 text-xs text-slate-600">
                               <Users className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                               <span>{s.student_count} élève{s.student_count !== 1 ? 's' : ''}</span>
@@ -954,6 +958,7 @@ export function AdminPanel({ onExit }: Props) {
                           <th className="px-5 py-3">Établissement</th>
                           <th className="px-3 py-3">Directeur</th>
                           <th className="px-3 py-3">Téléphone</th>
+                          <th className="px-3 py-3">E-mail</th>
                           <th className="px-3 py-3">Élèves</th>
                           <th className="px-3 py-3">Plan</th>
                           <th className="px-3 py-3">Inscrit le</th>
@@ -979,6 +984,7 @@ export function AdminPanel({ onExit }: Props) {
                               </td>
                               <td className="px-3 py-3 text-slate-600">{s.director_name || '—'}</td>
                               <td className="px-3 py-3 text-slate-600">{s.phone || '—'}</td>
+                              <td className="max-w-[220px] break-all px-3 py-3 text-xs font-semibold text-blue-900">{s.email || '—'}</td>
                               <td className="px-3 py-3 text-slate-600">{s.student_count}</td>
                               <td className="px-3 py-3">
                                 <span className={`rounded-lg px-2.5 py-1 text-[11px] font-700 ${planBadge(s.plan)}`}>{s.plan}</span>
