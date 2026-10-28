@@ -1,5 +1,3 @@
-import { getSupabase } from './supabase';
-
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scolaria-admin`;
 const VISITOR_KEY = 'gestilys_visitor_id';
 const SESSION_KEY = 'gestilys_visit_session';
