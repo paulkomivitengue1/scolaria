@@ -49,6 +49,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function fetchProfile(u: User): Promise<SchoolProfile | null> {
     let data: any = null;
     let error: any = null;
+
+    // When the device explicitly reports offline, do not wait for a remote
+    // Supabase request before restoring the profile saved on this device.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      try {
+        const cached = localStorage.getItem('gestilys-profile-cache-' + u.id);
+        if (cached) {
+          const parsed = JSON.parse(cached) as SchoolProfile;
+          if (parsed.schoolId && parsed.role) {
+            setProfile(parsed);
+            return parsed;
+          }
+        }
+      } catch { /* A missing/invalid local profile must not block startup. */ }
+      setProfile(null);
+      return null;
+    }
+
     try {
       const result = await getSupabase()
         .from('users')

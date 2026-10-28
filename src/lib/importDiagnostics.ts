@@ -33,6 +33,7 @@ function environmentSummary(): string {
       } catch { return 'bloqué'; }
     };
     return [
+      `diagnostic=picker-v3`,
       `mode=${standalone ? 'PWA installée' : 'navigateur'}`,
       `memoire~${nav.deviceMemory ?? '?'}Go`,
       `coeurs=${nav.hardwareConcurrency ?? '?'}`,
@@ -148,6 +149,7 @@ export function formatImportDiagnostics(): string {
   const { environment, entries, storage } = readAll();
   const header = [
     `Gestilys — diagnostic import (${new Date().toLocaleString('fr-FR')})`,
+    'versionDiagnostic=picker-v3',
     environment,
     `journal=${storage || 'aucun stockage disponible'}`,
     '',
