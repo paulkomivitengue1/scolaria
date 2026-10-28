@@ -9,7 +9,7 @@ import type { Expense, SalaryPayment, Student, Teacher } from '../types';
 import { prepareImportFromBytes, prepareImportFromFile, StudentImportError } from '../lib/studentImport';
 import type { ImportPreview } from '../lib/studentImport';
 import { clearImportSession, loadFileHandle, loadImportFileBytes, loadImportSnapshot, MAX_AUTO_ANALYSIS_ATTEMPTS, noteAnalysisAttempt, resetAnalysisAttempts, saveFileHandle, saveImportFileBytes, saveImportSnapshot } from '../lib/importSession';
-import { formatImportDiagnostics, logImportEvent } from '../lib/importDiagnostics';
+import { formatImportDiagnostics, installImportDiagnosticErrorHandlers, logImportEvent } from '../lib/importDiagnostics';
 
 type Tab = 'overview' | 'cash' | 'attendance' | 'messages' | 'team' | 'import';
 type OperationKind = 'cash' | 'attendance' | 'task' | 'announcement';
@@ -132,6 +132,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const importLock = useRef(false);
 
   useEffect(() => {
+    installImportDiagnosticErrorHandlers();
     logImportEvent('ecran-direction-monte');
     try {
       const savedNotice = sessionStorage.getItem('gestilys-import-preview-notice');
@@ -196,6 +197,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         const message = error instanceof StudentImportError
           ? [error.message, ...error.details].join(' ')
           : error instanceof Error ? error.message : 'La reprise de l’import a échoué. Choisissez à nouveau le fichier.';
+        logImportEvent('échec de restauration automatique', { file: stored?.name || file?.name, size: stored?.bytes.byteLength || file?.size, detail: message });
         setNotice(message);
         await saveImportSnapshot({
           savedAt: Date.now(),
@@ -374,7 +376,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         sessionStorage.removeItem('gestilys-import-preview-notice');
       } catch { /* Ignore les anciennes clés après import réussi. */ }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
+      const message = error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.';
+      logImportEvent('échec enregistrement des élèves', { detail: message });
+      setNotice(message);
     } finally {
       importLock.current = false;
       setImportBusy(false);

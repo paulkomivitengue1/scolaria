@@ -75,6 +75,30 @@ function readAll(): StoredDiagnostics {
   return { environment: environmentSummary(), entries: [], storage: stores[0]?.name };
 }
 
+let globalErrorHandlersInstalled = false;
+
+/**
+ * Capture les erreurs JavaScript qui ne remontent pas toujours jusqu'au
+ * gestionnaire d'import, sans enregistrer de données d'élèves.
+ */
+export function installImportDiagnosticErrorHandlers(): void {
+  if (globalErrorHandlersInstalled || typeof window === 'undefined') return;
+  globalErrorHandlersInstalled = true;
+  window.addEventListener('error', (event) => {
+    const location = event.filename ? ` · ${event.filename.split('/').pop() || ''}:${event.lineno || 0}:${event.colno || 0}` : '';
+    logImportEvent('erreur JavaScript globale', {
+      detail: `${event.message || 'Erreur JavaScript inconnue'}${location}`,
+    });
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const detail = reason instanceof Error
+      ? `${reason.name}: ${reason.message}`
+      : typeof reason === 'string' ? reason : 'Promesse rejetée sans message exploitable';
+    logImportEvent('promesse rejetée sans gestionnaire', { detail });
+  });
+}
+
 /** Ajoute une étape au journal sans jamais bloquer l'import. */
 export function logImportEvent(step: string, info: { file?: string; size?: number; detail?: string } = {}): void {
   try {
@@ -99,6 +123,26 @@ export function readImportDiagnostics(): { environment: string; entries: ImportD
   return readAll();
 }
 
+function diagnosticAdvice(entry: ImportDiagnosticEntry): string | null {
+  const text = `${entry.step} ${entry.detail || ''}`.toLocaleLowerCase('fr');
+  if (/mémoire|memoire|memory|quota|allocation|out of memory/.test(text)) {
+    return 'Piste : fermez les autres onglets, puis enregistrez uniquement la feuille des élèves dans un nouveau fichier .xlsx ou .csv plus léger.';
+  }
+  if (/indexeddb|stockage|quotaexceeded|transaction/.test(text)) {
+    return 'Piste : ouvrez Gestilys dans Chrome normal, fermez les autres onglets Gestilys et réessayez sans effacer les données du site.';
+  }
+  if (/lecture|arraybuffer|fichier|permission|content:\/\//.test(text)) {
+    return 'Piste : copiez le fichier dans le dossier Téléchargements du téléphone, puis sélectionnez cette copie.';
+  }
+  if (/module excel|xlsx|chunk|chargement module/.test(text)) {
+    return 'Piste : vérifiez la connexion Internet et rechargez Gestilys avant de choisir à nouveau le fichier.';
+  }
+  if (/erreur|échec|rejet|failed|failure/.test(text)) {
+    return 'Piste : cette erreur nécessite une vérification du code. Conservez et transmettez ce diagnostic complet.';
+  }
+  return null;
+}
+
 /** Version texte lisible et copiable pour le support. */
 export function formatImportDiagnostics(): string {
   const { environment, entries, storage } = readAll();
@@ -117,6 +161,8 @@ export function formatImportDiagnostics(): string {
     if (typeof entry.size === 'number') parts.push(`taille=${entry.size}o`);
     if (entry.detail) parts.push(`détail=${entry.detail}`);
     header.push(parts.join(' · '));
+    const advice = diagnosticAdvice(entry);
+    if (advice) header.push('  → ' + advice);
   }
   return header.join('\n');
 }
