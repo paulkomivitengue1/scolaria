@@ -134,11 +134,23 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   useEffect(() => {
     installImportDiagnosticErrorHandlers();
     logImportEvent('ecran-direction-monte');
+    const logPageReturn = () => logImportEvent('retour-focus-page', { detail: document.visibilityState });
+    const logVisibility = () => logImportEvent('visibilite-page-changee', { detail: document.visibilityState });
+    window.addEventListener('focus', logPageReturn);
+    document.addEventListener('visibilitychange', logVisibility);
     try {
       const savedNotice = sessionStorage.getItem('gestilys-import-preview-notice');
       if (importPreview.length && savedNotice) setNotice(savedNotice);
     } catch { /* Session recovery is best-effort. */ }
+    return () => {
+      window.removeEventListener('focus', logPageReturn);
+      document.removeEventListener('visibilitychange', logVisibility);
+    };
   }, []);
+
+  useEffect(() => {
+    if (tab === 'import') logImportEvent('onglet-import-affiche');
+  }, [tab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -568,7 +580,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez un fichier Excel (.xlsx, .xls) ou CSV (.csv). Les titres sont reconnus même avec des variantes : <strong>Prénom de l’élève, Nom de l’élève, Classe de l’élève, Nom du parent, Numéro du parent</strong>. Les colonnes Date de naissance, Lieu de naissance et Sexe sont facultatives.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; if (file) void handleImportFile(file); input.value = ''; }} /></label>
+          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onClick={() => logImportEvent('clic-selecteur-fichier')} onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; logImportEvent('evenement-selection-fichier', { file: file?.name, size: file?.size, detail: file ? `type=${file.type || 'inconnu'}; modified=${file.lastModified || 0}` : 'aucun fichier renvoyé par le sélecteur' }); if (file) void handleImportFile(file); else logImportEvent('selection-sans-fichier'); input.value = ''; }} /></label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => void saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom de l’élève','Nom de l’élève','Classe de l’élève','Nom du parent','Numéro du parent','Date de naissance','Lieu de naissance','Sexe'],['Aminata','Traoré',classNames[0] || '','Mamadou Traoré','75000000','2013-04-12','Bamako','F']]).catch(error => setNotice(error instanceof Error ? error.message : 'Impossible de créer le modèle Excel.'))}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
