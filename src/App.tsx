@@ -31,6 +31,7 @@ import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { StocksView } from './components/StocksView';
 import { ReportCardView } from './components/ReportCardView';
 import { AdminPanel } from './components/AdminPanel';
+import { trackPublicVisit } from './lib/visitorTracking';
 import { UserGuide } from './components/UserGuide';
 import { DirectionHub, type ImportedStudentRow } from './components/DirectionHub';
 import { ClassView } from './components/ClassView';
@@ -1175,6 +1176,7 @@ export default function App() {
 
 function LandingOrAuth(_: { onEnterAuth: () => void }) {
   const [showAuth, setShowAuth] = useState(false);
+  useEffect(() => trackPublicVisit(showAuth ? 'auth' : 'landing'), [showAuth]);
   if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
   return <LandingPage onEnter={() => setShowAuth(true)} />;
 }
