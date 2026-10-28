@@ -5,14 +5,38 @@ const ADMIN_EMAIL = "paulkomivitengue@gmail.com";
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 type Plan = "Essentiel" | "Premium" | "Élite";
 type Period = "mensuel" | "annuel";
-interface Body { code?: string; action: string; paymentId?: string; schoolId?: string; status?: "suspend"|"restore"; paid?: boolean; plan?: Plan; billingPeriod?: Period; trialDays?: number; plans?: {name: Plan; monthly: number}[]; }
+interface VisitInput { id?: string; visitor_id?: string; session_id?: string; page_path?: string; referrer_origin?: string | null; utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; device_type?: string; operating_system?: string; browser?: string; screen_size?: string | null; language?: string | null; timezone?: string | null; }
+interface Body { code?: string; action: string; paymentId?: string; schoolId?: string; status?: "suspend"|"restore"; paid?: boolean; plan?: Plan; billingPeriod?: Period; trialDays?: number; plans?: {name: Plan; monthly: number}[]; visit?: VisitInput; visit_id?: string; duration_seconds?: number; }
 const prices: Record<Plan, number> = {Essentiel:10000, Premium:20000, "Élite":30000};
 Deno.serve(async (req: Request) => {
  if(req.method==="OPTIONS") return new Response(null,{status:200,headers:corsHeaders});
  const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
- if(!DEV_CODE) return respond({error:"Configuration administrateur manquante"},500);
  try {
   const b:Body=await req.json();
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (b.action === "record_visit") {
+   const v = b.visit;
+   if (!v || !uuidPattern.test(v.id || "") || !uuidPattern.test(v.visitor_id || "") || !uuidPattern.test(v.session_id || "")) return respond({error:"Visite invalide"},400);
+   if (!["/","/auth"].includes(v.page_path || "")) return respond({error:"Page invalide"},400);
+   const allowedDevices = ["Téléphone","Tablette","Ordinateur","Autre / non identifié"];
+   const clean = (value: unknown, max = 120): string | null => typeof value === "string" ? value.replace(/[<>\u0000-\u001f]/g,"").slice(0,max) || null : null;
+   const {error}=await supabase.from("visitor_visits").insert({
+    id:v.id, visitor_id:v.visitor_id, session_id:v.session_id, page_path:v.page_path,
+    referrer_origin:clean(v.referrer_origin,200), utm_source:clean(v.utm_source), utm_medium:clean(v.utm_medium), utm_campaign:clean(v.utm_campaign),
+    device_type:allowedDevices.includes(v.device_type || "") ? v.device_type : "Autre / non identifié",
+    operating_system:clean(v.operating_system) || "Autre / non identifié", browser:clean(v.browser) || "Autre / non identifié",
+    screen_size:clean(v.screen_size,24), language:clean(v.language,24), timezone:clean(v.timezone,80)
+   });
+   if(error) throw error;
+   return respond({ok:true});
+  }
+  if (b.action === "finish_visit") {
+   if (!uuidPattern.test(b.visit_id || "") || !Number.isInteger(b.duration_seconds) || b.duration_seconds! < 0 || b.duration_seconds! > 86400) return respond({error:"Durée de visite invalide"},400);
+   const {error}=await supabase.from("visitor_visits").update({duration_seconds:b.duration_seconds}).eq("id",b.visit_id).is("duration_seconds",null);
+   if(error) throw error;
+   return respond({ok:true});
+  }
+  if(!DEV_CODE) return respond({error:"Configuration administrateur manquante"},500);
   if(b.action==="get_public_pricing") {
    const {data,error}=await supabase.from("gestilys_public_settings").select("plans,updated_at").eq("id",1).single();
    if(error)throw error;
@@ -54,6 +78,11 @@ Deno.serve(async (req: Request) => {
     const {error}=await supabase.from("gestilys_public_settings").upsert({id:1,plans:normalized,updated_at:new Date().toISOString()});
     if(error)throw error;
     return respond({ok:true,plans:normalized});
+   }
+   case "get_visitor_analytics": {
+    const {data,error}=await supabase.rpc("admin_get_visitor_analytics",{p_days:0,p_limit:1000});
+    if(error)throw error;
+    return respond({data});
    }
    case "get_subscription_churn_stats": {
     const {data,error}=await supabase.rpc("admin_subscription_churn_stats");
