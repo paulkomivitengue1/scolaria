@@ -46,6 +46,30 @@ export interface AdminLoginStats {
   monthly: { month: string; count: number }[];
 }
 
+export interface AdminVisit {
+  id: string;
+  visitor_id: string;
+  session_id: string;
+  page_path: string;
+  referrer_origin: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  device_type: string;
+  operating_system: string;
+  browser: string;
+  screen_size: string | null;
+  language: string | null;
+  timezone: string | null;
+  duration_seconds: number | null;
+  created_at: string;
+}
+
+export interface AdminVisitorAnalytics {
+  summary: { total: number; unique_visitors: number; today: number; last_7_days: number; last_30_days: number; returning_visitors: number };
+  visits: AdminVisit[];
+}
+
 export interface AdminManualPayment {
   id: string;
   school_id: string;
@@ -76,6 +100,19 @@ async function adminFetch(code: string, action: string, paymentId?: string, scho
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
   return json;
+}
+
+export async function adminGetVisitorAnalytics(code: string, period: '7' | '30' | 'all'): Promise<AdminVisitorAnalytics> {
+  const { data } = await adminFetch(code, 'get_visitor_analytics');
+  const result = data as AdminVisitorAnalytics | undefined;
+  if (!result || !Array.isArray(result.visits) || !result.summary) {
+    throw new Error('Les statistiques de visites ne sont pas disponibles.');
+  }
+  const cutoff = period === 'all' ? null : Date.now() - Number(period) * 86400000;
+  return {
+    summary: result.summary,
+    visits: cutoff === null ? result.visits : result.visits.filter(visit => new Date(visit.created_at).getTime() >= cutoff),
+  };
 }
 
 export async function adminGetChurnStats(code: string): Promise<AdminChurnStats> {
