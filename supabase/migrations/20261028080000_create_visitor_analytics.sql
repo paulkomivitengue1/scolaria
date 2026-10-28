@@ -25,3 +25,4 @@ create index if not exists visitor_visits_session_id_idx on public.visitor_visit
 
 alter table public.visitor_visits enable row level security;
 revoke all on public.visitor_visits from anon, authenticated;
+grant select, insert, update, delete on public.visitor_visits to service_role;
