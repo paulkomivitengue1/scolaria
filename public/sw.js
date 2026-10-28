@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v7';
+const CACHE_NAME = 'gestilys-shell-v8';
 const SHELL_URLS = [
   '/',
   '/offline.html',
@@ -80,7 +80,9 @@ self.addEventListener('fetch', (event) => {
       } catch {
         const cached = await cache.match(request);
         if (cached) return cached;
-        return new Response('', { status: 503, statusText: 'Offline' });
+        // A missing cached chunk must fail as a network error, not as an empty JS response.
+        // This lets the import UI display its explicit Excel-module fallback message.
+        return Response.error();
       }
     })());
   }
