@@ -39,7 +39,7 @@ test('Reconnaît les en-têtes français sous une ligne de titre', () => {
 
 test('Décode correctement les CSV Windows-1252 avec accents', () => {
   const bytes = new Uint8Array(Buffer.from(
-    'Prénom;Nom;Classe;Téléphone parent\\r\\nAminata;Traoré;6ème A;75000000',
+    'Prénom;Nom;Classe;Téléphone parent\r\nAminata;Traoré;6ème A;75000000',
     'latin1',
   ));
   const result = importer.parseStudentCsv(bytes);
@@ -106,8 +106,8 @@ for (const { name, run } of tests) {
     console.log('PASS ' + name);
   } catch (error) {
     failures += 1;
-    console.error('FAIL ' + name + '\\n' + (error?.stack || error));
+    console.error('FAIL ' + name + '\n' + (error?.stack || error));
   }
 }
-console.log('\\n' + (tests.length - failures) + '/' + tests.length + ' tests réussis');
+console.log('\n' + (tests.length - failures) + '/' + tests.length + ' tests réussis');
 if (failures) process.exitCode = 1;
