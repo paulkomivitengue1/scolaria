@@ -630,26 +630,22 @@ const READ_OPTIONS = {
 
 export async function parseWorkbookBytes(bytes: Uint8Array, kind: StudentFileKind = 'xlsx'): Promise<{ rows: PreviewRow[]; invalid: InvalidImportRow[]; kind: StudentFileKind }> {
   const XLSX = await loadSpreadsheetLibrary();
-  let sheetNames: string[];
+  let workbook: { SheetNames: string[]; Sheets: Record<string, unknown> };
   try {
-    // Première lecture légère : les noms de feuilles seulement, sans cellules.
-    const index = XLSX.read(bytes, { ...READ_OPTIONS, bookSheets: true } as unknown as Record<string, unknown>);
-    sheetNames = index?.SheetNames || [];
+    // Parse the ZIP container only once. Re-reading the same workbook once per
+    // sheet caused repeated decompression and high transient memory pressure on
+    // Android, especially for files with several sheets.
+    workbook = XLSX.read(bytes, READ_OPTIONS as unknown as Record<string, unknown>);
   } catch {
     throw new StudentImportError(
       'Ce fichier Excel est illisible : il est peut-être endommagé, protégé par un mot de passe, ou ce n’est pas un vrai fichier Excel. Ouvrez-le dans Excel, choisissez « Enregistrer sous » puis le format .xlsx, et réessayez.',
     );
   }
+  const sheetNames = workbook?.SheetNames || [];
   if (!sheetNames.length) throw new StudentImportError('Le classeur Excel ne contient aucune feuille.');
   const problems: string[] = [];
   for (const sheetName of sheetNames) {
     try {
-      // Recharger une seule feuille à la fois évite de garder toutes les grilles
-      // en mémoire sur les téléphones Android à mémoire limitée.
-      const workbook = XLSX.read(bytes, {
-        ...READ_OPTIONS,
-        sheets: [sheetName],
-      } as unknown as Record<string, unknown>);
       const sheet = workbook.Sheets[sheetName];
       if (!sheet || !(sheet as { '!ref'?: string })['!ref']) continue;
       const grid = XLSX.utils.sheet_to_json(sheet, {
@@ -663,6 +659,10 @@ export async function parseWorkbookBytes(bytes: Uint8Array, kind: StudentFileKin
       return { rows: parsed.rows, invalid: parsed.invalid, kind };
     } catch (error) {
       problems.push(messageOf(error, `Feuille « ${sheetName} » : format non reconnu.`));
+    } finally {
+      // Release each processed grid as soon as possible. The parser only needs
+      // one sheet's normalized rows; it must not retain converted grids.
+      delete workbook.Sheets[sheetName];
     }
   }
   throw new StudentImportError(
