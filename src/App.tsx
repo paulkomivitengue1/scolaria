@@ -140,6 +140,34 @@ export default function App() {
   // ── Load all school data when user logs in ────────────
   const loadAllData = useCallback(async (schoolId: string) => {
     setDataLoading(true);
+
+    // Offline startup must use the local snapshot immediately instead of
+    // waiting for several remote requests to time out one by one.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      try {
+        const raw = localStorage.getItem('gestilys-offline-data-' + schoolId);
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached.schoolConfig) setFeeConfig(cached.schoolConfig);
+          if (cached.academicYear) setCurrentAcademicYear(cached.academicYear);
+          if (Array.isArray(cached.schoolClasses)) setClassNames(cached.schoolClasses);
+          if (Array.isArray(cached.students)) setStudents(cached.students);
+          if (Array.isArray(cached.uniforms)) setUniforms(cached.uniforms);
+          if (Array.isArray(cached.books)) setBooks(cached.books);
+          if (Array.isArray(cached.supplies)) setSupplies(cached.supplies);
+          if (Array.isArray(cached.gradePeriods) && cached.gradePeriods.length) setGradePeriods(cached.gradePeriods);
+          if (Array.isArray(cached.expenses)) setExpenses(cached.expenses);
+          if (Array.isArray(cached.teachers)) setTeachers(cached.teachers);
+          if (Array.isArray(cached.salaryPayments)) setSalaryPayments(cached.salaryPayments);
+        }
+      } catch (cacheError) {
+        console.error('Impossible de restaurer les données locales hors ligne :', cacheError);
+      }
+      setLoadedSchoolId(schoolId);
+      setDataLoading(false);
+      return;
+    }
+
     try {
       const [schoolConfig, academicYear, schoolClasses] = await Promise.all([loadSchoolFeeConfig(schoolId), loadCurrentAcademicYear(schoolId), loadSchoolClasses(schoolId)]);
       setCurrentAcademicYear(academicYear);
@@ -757,8 +785,21 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas">
-        <div className="h-10 w-10 rounded-full border-4 border-slate-200 border-t-royal-700 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-amber-50 px-5 text-slate-900">
+        <section role="status" aria-live="polite" className="w-full max-w-md rounded-3xl border border-blue-100 bg-white p-6 text-center shadow-xl sm:p-8">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-900 text-xl font-black text-amber-300 shadow-md">G</div>
+          <h1 className="mt-4 text-2xl font-black text-blue-950">Gestilys démarre</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {typeof navigator !== 'undefined' && !navigator.onLine
+              ? 'Connexion coupée : récupération du compte enregistré sur cet appareil…'
+              : 'Vérification de votre session et préparation de votre espace scolaire…'}
+          </p>
+          <div className="mt-6 h-2 overflow-hidden rounded-full bg-blue-100">
+            <div className="h-full w-2/5 animate-[gestilys-loading_1.4s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-blue-800 via-blue-600 to-amber-400" />
+          </div>
+          <p className="mt-3 text-xs font-semibold text-slate-500">Gardez cette page ouverte pendant le démarrage.</p>
+          <style>{'@keyframes gestilys-loading { 0% { transform: translateX(-110%); } 100% { transform: translateX(270%); } }'}</style>
+        </section>
       </div>
     );
   }
@@ -911,8 +952,22 @@ export default function App() {
 
         <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
           {dataLoading && (
-            <div className="flex items-center justify-center py-20">
-              <div className="h-8 w-8 rounded-full border-4 border-slate-200 border-t-royal-700 animate-spin" />
+            <div role="status" aria-live="polite" className="mx-auto my-8 max-w-xl rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 shrink-0 animate-spin rounded-full border-4 border-blue-100 border-t-blue-800" />
+                <div>
+                  <h2 className="font-extrabold text-blue-950">Préparation de votre tableau de bord</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-700">
+                    {isOnline
+                      ? 'Chargement des élèves, des classes et des informations scolaires…'
+                      : 'Hors connexion : ouverture des dernières données enregistrées sur cet appareil…'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-blue-100">
+                <div className="h-full w-2/5 animate-[gestilys-loading_1.4s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-blue-800 via-blue-600 to-amber-400" />
+              </div>
+              <style>{'@keyframes gestilys-loading { 0% { transform: translateX(-110%); } 100% { transform: translateX(270%); } }'}</style>
             </div>
           )}
 
@@ -920,6 +975,7 @@ export default function App() {
             <>
               {view === 'dashboard' && (
                 <DashboardView
+                  directorName={profile.directorName}
                   students={students}
                   totalCollected={totalCollected}
                   outstanding={outstanding}
