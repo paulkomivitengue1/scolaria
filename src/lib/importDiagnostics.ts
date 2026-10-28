@@ -1,15 +1,7 @@
 /**
  * Journal de diagnostic de l'import, stocké sur l'appareil.
- *
- * Objectif : pouvoir comprendre un échec sur un téléphone Android **sans**
- * brancher l'appareil à un ordinateur ni ouvrir les outils de développeur.
- * Le journal est affiché dans l'écran d'import et peut être copié en un appui.
- *
- * Confidentialité : on n'enregistre JAMAIS de donnée d'élève (ni nom, ni
- * téléphone, ni date de naissance). Uniquement : l'étape technique, le nom du
- * fichier choisi, sa taille, et le message d'erreur technique.
+ * Aucun nom d'élève ni téléphone n'est enregistré.
  */
-
 const STORAGE_KEY = 'gestilys-import-diagnostics';
 const MAX_ENTRIES = 30;
 
@@ -20,10 +12,10 @@ export interface ImportDiagnosticEntry {
   size?: number;
   detail?: string;
 }
-
 interface StoredDiagnostics {
   environment: string;
   entries: ImportDiagnosticEntry[];
+  storage?: string;
 }
 
 function environmentSummary(): string {
@@ -31,35 +23,62 @@ function environmentSummary(): string {
     const nav = navigator as Navigator & { deviceMemory?: number; standalone?: boolean };
     const standalone = nav.standalone === true
       || (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches);
+    const storageStatus = (kind: 'localStorage' | 'sessionStorage') => {
+      try {
+        const storage = window[kind];
+        const key = '__gestilys_import_diag_test__';
+        storage.setItem(key, '1');
+        storage.removeItem(key);
+        return 'ok';
+      } catch { return 'bloqué'; }
+    };
     return [
       `mode=${standalone ? 'PWA installée' : 'navigateur'}`,
       `memoire~${nav.deviceMemory ?? '?'}Go`,
       `coeurs=${nav.hardwareConcurrency ?? '?'}`,
       `reseau=${nav.onLine ? 'en ligne' : 'hors ligne'}`,
+      `stockageLocal=${storageStatus('localStorage')}`,
+      `stockageSession=${storageStatus('sessionStorage')}`,
       `ecran=${window.screen?.width ?? '?'}x${window.screen?.height ?? '?'}`,
       `dpr=${window.devicePixelRatio ?? '?'}`,
       `ua=${navigator.userAgent}`,
     ].join(' | ');
-  } catch {
-    return 'environnement indisponible';
+  } catch { return 'environnement indisponible'; }
+}
+
+function availableStores(): Array<{ name: 'localStorage' | 'sessionStorage'; store: Storage }> {
+  const stores: Array<{ name: 'localStorage' | 'sessionStorage'; store: Storage }> = [];
+  for (const name of ['localStorage', 'sessionStorage'] as const) {
+    try {
+      const store = window[name];
+      const testKey = '__gestilys_import_diag_test__';
+      store.setItem(testKey, '1');
+      store.removeItem(testKey);
+      stores.push({ name, store });
+    } catch { /* essaie l'autre stockage */ }
   }
+  return stores;
 }
 
 function readAll(): StoredDiagnostics {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { environment: environmentSummary(), entries: [] };
-    const parsed = JSON.parse(raw) as StoredDiagnostics;
-    if (!parsed || !Array.isArray(parsed.entries)) return { environment: environmentSummary(), entries: [] };
-    return { environment: parsed.environment || environmentSummary(), entries: parsed.entries };
-  } catch {
-    return { environment: environmentSummary(), entries: [] };
+  const stores = availableStores();
+  for (const { name, store } of stores) {
+    try {
+      const raw = store.getItem(STORAGE_KEY);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as StoredDiagnostics;
+      if (parsed && Array.isArray(parsed.entries)) {
+        return { environment: parsed.environment || environmentSummary(), entries: parsed.entries, storage: name };
+      }
+    } catch { /* essaie le stockage suivant */ }
   }
+  return { environment: environmentSummary(), entries: [], storage: stores[0]?.name };
 }
 
-/** Ajoute une étape au journal (best-effort : n'échoue jamais). */
+/** Ajoute une étape au journal sans jamais bloquer l'import. */
 export function logImportEvent(step: string, info: { file?: string; size?: number; detail?: string } = {}): void {
   try {
+    const stores = availableStores();
     const current = readAll();
     const entries = current.entries.slice(-(MAX_ENTRIES - 1));
     entries.push({
@@ -69,31 +88,41 @@ export function logImportEvent(step: string, info: { file?: string; size?: numbe
       size: typeof info.size === 'number' ? info.size : undefined,
       detail: info.detail ? String(info.detail).slice(0, 300) : undefined,
     });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ environment: environmentSummary(), entries }));
-  } catch {
-    /* Le diagnostic est facultatif : il ne doit jamais bloquer un import. */
-  }
+    const payload = JSON.stringify({ environment: environmentSummary(), entries });
+    for (const { store } of stores) {
+      try { store.setItem(STORAGE_KEY, payload); } catch { /* essaie l'autre stockage */ }
+    }
+  } catch { /* diagnostic facultatif */ }
 }
 
 export function readImportDiagnostics(): { environment: string; entries: ImportDiagnosticEntry[] } {
   return readAll();
 }
 
-/** Version texte, lisible et copiable, pour un envoi au support. */
+/** Version texte lisible et copiable pour le support. */
 export function formatImportDiagnostics(): string {
-  const { environment, entries } = readAll();
-  if (!entries.length) return 'Aucune trace enregistrée pour le moment.';
-  const lines = [`Gestilys — diagnostic import (${new Date().toLocaleString('fr-FR')})`, environment, ''];
+  const { environment, entries, storage } = readAll();
+  const header = [
+    `Gestilys — diagnostic import (${new Date().toLocaleString('fr-FR')})`,
+    environment,
+    `journal=${storage || 'aucun stockage disponible'}`,
+    '',
+  ];
+  if (!entries.length) {
+    return [...header, 'Aucune étape enregistrée. Si ce message apparaît juste après ouverture, le code de diagnostic peut ne pas être chargé ou le stockage est indisponible.'].join('\n');
+  }
   for (const entry of entries.slice().reverse()) {
     const parts = [entry.at, entry.step];
     if (entry.file) parts.push(`fichier=${entry.file}`);
     if (typeof entry.size === 'number') parts.push(`taille=${entry.size}o`);
     if (entry.detail) parts.push(`détail=${entry.detail}`);
-    lines.push(parts.join(' · '));
+    header.push(parts.join(' · '));
   }
-  return lines.join('\n');
+  return header.join('\n');
 }
 
 export function clearImportDiagnostics(): void {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* facultatif */ }
+  for (const { store } of availableStores()) {
+    try { store.removeItem(STORAGE_KEY); } catch { /* facultatif */ }
+  }
 }
