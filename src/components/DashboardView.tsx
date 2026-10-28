@@ -7,6 +7,7 @@ import type { AppView, Student } from '../types';
 import { formatFCFA, studentExpected } from '../types';
 
 interface Props {
+  directorName: string;
   students: Student[];
   totalCollected: number;
   outstanding: number;
@@ -35,7 +36,8 @@ function getAcademicYearLabel(date = new Date()): string {
   return `${startYear}-${startYear + 1}`;
 }
 
-export function DashboardView({ students, totalCollected, outstanding, recoveryRate, stockSales, totalExpenses, onNavigate, onStartStudent }: Props) {
+export function DashboardView({ directorName, students, totalCollected, outstanding, recoveryRate, stockSales, totalExpenses, onNavigate, onStartStudent }: Props) {
+  const directorFirstName = directorName.trim().split(/\s+/)[0] || '';
   const totalExpected = students.reduce((s, st) => s + studentExpected(st), 0);
   const totalCollectedAll = totalCollected;
   const classes = new Set(students.map(s => s.className)).size;
@@ -137,6 +139,7 @@ export function DashboardView({ students, totalCollected, outstanding, recoveryR
   return (
     <div>
       <div className="mb-5">
+        <p className="mb-3 text-lg font-semibold text-blue-950 sm:text-xl">Bonjour{directorFirstName ? ', ' + directorFirstName : ''} 👋</p>
         <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-royal-50 px-2.5 py-1 text-[11px] font-700 uppercase tracking-wider text-royal-700">
           <Sparkles className="h-3 w-3" /> Tableau de bord
         </div>
