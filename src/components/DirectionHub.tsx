@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, CalendarCheck, Check, ClipboardList, FileSpreadsheet,
   MessageCircle, Plus, RefreshCw, ShieldCheck, Trash2, Wallet, Lock, Download, Users,
@@ -6,6 +6,9 @@ import {
 import { getSupabase } from '../lib/supabase';
 import { formatFCFA, studentCollected, studentExpected } from '../types';
 import type { Expense, SalaryPayment, Student, Teacher } from '../types';
+import { prepareImportFromBytes, prepareImportFromFile, StudentImportError } from '../lib/studentImport';
+import type { ImportPreview } from '../lib/studentImport';
+import { clearImportSession, loadFileHandle, loadImportFileBytes, loadImportSnapshot, MAX_AUTO_ANALYSIS_ATTEMPTS, noteAnalysisAttempt, resetAnalysisAttempts, saveFileHandle, saveImportFileBytes, saveImportSnapshot } from '../lib/importSession';
 
 type Tab = 'overview' | 'cash' | 'attendance' | 'messages' | 'team' | 'import';
 type OperationKind = 'cash' | 'attendance' | 'task' | 'announcement';
@@ -224,12 +227,86 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     catch { return ''; }
   });
   const [importBusy, setImportBusy] = useState(false);
+  const importLock = useRef(false);
 
   useEffect(() => {
     try {
       const savedNotice = sessionStorage.getItem('gestilys-import-preview-notice');
       if (importPreview.length && savedNotice) setNotice(savedNotice);
     } catch { /* Session recovery is best-effort. */ }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const restore = async () => {
+      const snapshot = await loadImportSnapshot();
+      if (cancelled) return;
+      if (snapshot) {
+        setImportName(snapshot.fileName || '');
+        if (snapshot.status === 'ready' && Array.isArray(snapshot.rows)) {
+          setImportPreview(snapshot.rows);
+          setNotice(snapshot.message || 'Aperçu récupéré après le retour du sélecteur de fichiers. Vérifiez les lignes avant de confirmer.');
+          return;
+        }
+        if (snapshot.status === 'error') {
+          setNotice(snapshot.message || 'Le dernier fichier n’a pas pu être analysé. Choisissez-le à nouveau.');
+          return;
+        }
+      }
+
+      let stored = await loadImportFileBytes();
+      let file = stored ? null : await loadFileHandle();
+      if (cancelled || (!stored && !file)) return;
+      const signature = stored
+        ? stored.name + ':' + stored.bytes.byteLength + ':' + stored.lastModified
+        : file!.name + ':' + file!.size + ':' + file!.lastModified;
+      const attempts = await noteAnalysisAttempt(signature);
+      if (attempts > MAX_AUTO_ANALYSIS_ATTEMPTS) {
+        setNotice('La reprise automatique a été arrêtée après plusieurs essais. Choisissez à nouveau le fichier Excel ou CSV pour relancer l’analyse.');
+        return;
+      }
+      setNotice('Récupération du fichier sélectionné avant la fermeture de la page…');
+      try {
+        const options = {
+          classNames,
+          existingStudents: students.map(student => ({
+            firstName: student.firstName,
+            lastName: student.lastName,
+            className: student.className,
+          })),
+        };
+        const preview = stored
+          ? await prepareImportFromBytes(stored.bytes, stored.name, options)
+          : await prepareImportFromFile(file!, {
+              ...options,
+              onBytes: bytes => saveImportFileBytes({
+                name: file!.name,
+                type: file!.type,
+                lastModified: file!.lastModified,
+                bytes,
+              }),
+            });
+        if (cancelled) return;
+        await applyPreparedPreview(preview);
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof StudentImportError
+          ? [error.message, ...error.details].join(' ')
+          : error instanceof Error ? error.message : 'La reprise de l’import a échoué. Choisissez à nouveau le fichier.';
+        setNotice(message);
+        await saveImportSnapshot({
+          savedAt: Date.now(),
+          status: 'error',
+          fileName: stored?.name || file?.name || '',
+          message,
+          details: error instanceof StudentImportError ? error.details : [],
+        });
+      }
+    };
+    void restore();
+    return () => { cancelled = true; };
+  // La restauration doit se faire une seule fois au montage de cet écran.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadOperations = useCallback(async () => {
@@ -290,126 +367,103 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     ? 'https://wa.me/' + (() => { const digits = currentStudent.parentPhone.replace(/\D/g, ''); return digits.length === 8 ? '223' + digits : digits; })() + '?text=' + encodeURIComponent(messageText)
     : '';
 
-  const handleImportFile = async (file?: File) => {
-    if (!file) return;
-    // Avoid duplicating the selected file in IndexedDB: on low-memory Android
-    // devices this extra copy can compete with XLSX parsing and trigger an OS
-    // "insufficient memory" failure. Parse the selected File only once.
+  const importSummary = (preview: ImportPreview) => {
+    const parts = [preview.importableCount + ' élève(s) prêt(s) à être importé(s).'];
+    if (preview.duplicateInFileCount) parts.push(preview.duplicateInFileCount + ' doublon(s) dans le fichier ignoré(s).');
+    if (preview.alreadyRegisteredCount) parts.push(preview.alreadyRegisteredCount + ' élève(s) déjà inscrit(s) ignoré(s).');
+    if (preview.unknownClasses.length) parts.push('Classes inconnues : ' + preview.unknownClasses.join(', ') + '. Créez-les dans Paramètres avant de réessayer.');
+    if (preview.invalidCount) parts.push(preview.invalidCount + ' ligne(s) incomplète(s) ou avec une date invalide ignorée(s). ' + preview.invalidRows.slice(0, 4).map(row => 'Ligne ' + row.lineNumber + ' : ' + row.reason).join(' '));
+    if (!preview.importableCount) parts.push('Aucun nouvel élève ne peut être importé. Vérifiez les classes, les doublons et les lignes signalées.');
+    return parts.join(' ');
+  };
+
+  const applyPreparedPreview = async (preview: ImportPreview) => {
+    const message = importSummary(preview);
+    setImportPreview(preview.importableRows);
+    setImportName(preview.fileName);
+    setNotice(message);
+    await saveImportSnapshot({
+      savedAt: Date.now(),
+      status: 'ready',
+      fileName: preview.fileName,
+      kind: preview.kind,
+      rows: preview.importableRows,
+      invalid: preview.invalidRows,
+      message,
+    });
+    await resetAnalysisAttempts();
     try {
       sessionStorage.removeItem('gestilys-import-preview');
       sessionStorage.removeItem('gestilys-import-preview-name');
       sessionStorage.removeItem('gestilys-import-preview-notice');
-    } catch { /* Session storage is optional. */ }
-    setNotice('');
-    setImportPreview([]);
-    if (file.size > 10 * 1024 * 1024) {
-      setImportName(file.name);
-      setNotice('Ce fichier dépasse 10 Mo et risque de saturer la mémoire du téléphone. Ouvrez-le dans Excel et enregistrez uniquement la feuille des élèves dans un nouveau fichier .xlsx ou .csv, puis réessayez.');
-      return;
-    }
-    if (!/\.(csv|xlsx|xls)$/i.test(file.name) && file.type !== 'text/csv' && !file.type.includes('spreadsheet')) {
-      setImportPreview([]);
+    } catch { /* Les anciennes clés ne sont qu'un secours. */ }
+  };
+
+  const handleImportFile = async (file?: File) => {
+    if (!file || importLock.current) return;
+    if (!/\.(csv|xlsx|xls|xlsm)$/i.test(file.name) && !file.type.includes('spreadsheet') && !file.type.includes('excel') && file.type !== 'text/csv') {
       setImportName(file.name);
       setNotice('Choisissez un fichier Excel (.xlsx ou .xls) ou CSV (.csv).');
       return;
     }
+    setImportName(file.name);
+    setNotice('Lecture du fichier ' + file.name + '…');
     try {
-      setImportName(file.name);
-      setNotice('Lecture du fichier ' + file.name + '…');
-      let text = '';
-      let parsedRows: ImportedStudentRow[] | null = null;
-      if (/\.(xlsx|xls)$/i.test(file.name) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
-        // Sur Android, lire toutes les feuilles d'un classeur d'un coup peut
-        // multiplier fortement la mémoire utilisée (fichier + classeur + grille).
-        // Première lecture : récupérer uniquement les noms des feuilles, sans les cellules.
-        const XLSX = await import('xlsx');
-        const buffer = await file.arrayBuffer();
-        const readOptions = {
-          type: 'array' as const,
-          dense: true,
-          sheetRows: 5006,
-          cellDates: false,
-          cellFormula: false,
-          cellHTML: false,
-          cellStyles: false,
-          bookVBA: false,
-          WTF: false,
-        };
-        const workbookIndex = XLSX.read(buffer, { ...readOptions, bookSheets: true });
-        const sheetNames = workbookIndex.SheetNames || [];
-        if (!sheetNames.length) throw new Error('Le classeur Excel ne contient aucune feuille.');
-        const sheetErrors: string[] = [];
-        // Analyse une seule feuille à la fois et limite la grille aux 5 006
-        // premières lignes et 26 colonnes. Les colonnes habituelles d'élèves
-        // (jusqu'à la date, au lieu de naissance et au sexe) sont ainsi couvertes.
-        for (const sheetName of sheetNames) {
-          try {
-            const workbook = XLSX.read(buffer, { ...readOptions, sheets: [sheetName] });
-            const sheet = workbook.Sheets[sheetName];
-            if (!sheet || !sheet['!ref']) continue;
-            const grid = XLSX.utils.sheet_to_json(sheet, {
-              header: 1,
-              raw: true,
-              defval: '',
-              blankrows: false,
-              range: { s: { r: 0, c: 0 }, e: { r: 5005, c: 25 } },
-            }) as unknown[][];
-            parsedRows = parseStudentGrid(grid);
-            if (parsedRows) break;
-          } catch (sheetError) {
-            sheetErrors.push(sheetError instanceof Error ? sheetError.message : 'Feuille illisible.');
-          }
-        }
-        if (!parsedRows) throw new Error(sheetErrors[0] || 'Aucune feuille Excel ne contient un tableau avec Prénom, Nom et Classe.');
-      } else {
-        text = await file.text();
-      }
-      const rows = parsedRows || parseStudentCsv(text);
-      if (!rows.length) throw new Error('Aucun élève valide trouvé dans ce fichier. Vérifiez les en-têtes Prénom, Nom et Classe.');
-      const classByNormalizedName = new Map(classNames.map(name => [normalizeClassName(name), name]));
-      const unknownClasses = [...new Set(rows.map(row => row.className).filter(name => !classByNormalizedName.has(normalizeClassName(name))))];
-      if (unknownClasses.length) throw new Error('Classe(s) inconnue(s) : ' + unknownClasses.join(', ') + '. Créez ces classes dans Paramètres avant l’import.');
-      // Store the exact class label configured by the school, even if the Excel file uses "6e" instead of "6ème".
-      const normalizedRows = rows.map(row => ({ ...row, className: classByNormalizedName.get(normalizeClassName(row.className)) || row.className }));
-      // Persist the parsed rows before updating React state: Android may restore
-      // the page after the document picker and discard in-memory component state.
-      try {
-        sessionStorage.setItem('gestilys-import-preview', JSON.stringify({ rows: normalizedRows }));
-        sessionStorage.setItem('gestilys-import-preview-name', file.name);
-        sessionStorage.setItem('gestilys-import-preview-notice', rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
-      } catch (storageError) {
-        console.warn('Aperçu non conservé dans la session :', storageError);
-      }
-      setImportPreview(normalizedRows);
-      setImportName(file.name);
-      setNotice(rows.length + ' ligne(s) prête(s) à être vérifiée(s). Rien n’a encore été ajouté.');
+      // Mémoriser le fichier avant la lecture : Android peut recréer la page.
+      await saveFileHandle(file);
+      const preview = await prepareImportFromFile(file, {
+        classNames,
+        existingStudents: students.map(student => ({
+          firstName: student.firstName,
+          lastName: student.lastName,
+          className: student.className,
+        })),
+        onBytes: bytes => saveImportFileBytes({
+          name: file.name,
+          type: file.type,
+          lastModified: file.lastModified,
+          bytes,
+        }),
+      });
+      await applyPreparedPreview(preview);
     } catch (error) {
-      setImportPreview([]);
-      try {
-        sessionStorage.removeItem('gestilys-import-preview');
-        sessionStorage.removeItem('gestilys-import-preview-name');
-        sessionStorage.setItem('gestilys-import-preview-notice', error instanceof Error ? error.message : 'Fichier illisible.');
-      } catch { /* Error message still appears in the current screen. */ }
-      setNotice(error instanceof Error ? error.message : 'Fichier illisible.');
-      // Keep the selected file available for recovery if Android recreates this screen.
+      const message = error instanceof StudentImportError
+        ? [error.message, ...error.details].join(' ')
+        : error instanceof Error ? error.message : 'Le fichier n’a pas pu être analysé. Réessayez ou choisissez un autre fichier.';
+      setNotice(message);
+      // Ne pas détruire un aperçu valide si le nouveau fichier échoue.
+      if (!importPreview.length) {
+        await saveImportSnapshot({
+          savedAt: Date.now(),
+          status: 'error',
+          fileName: file.name,
+          message,
+          details: error instanceof StudentImportError ? error.details : [],
+        });
+      }
     }
   };
 
   const runImport = async () => {
-    if (!importPreview.length) return;
+    if (!importPreview.length || importLock.current) return;
+    importLock.current = true;
     setImportBusy(true); setNotice('');
     try {
       const count = await onImportStudents(importPreview);
       setNotice(count + (navigator.onLine ? ' élève(s) importé(s) dans la base. Vérifiez les fiches et les classes après import.' : ' élève(s) conservé(s) sur cet appareil. Ils seront synchronisés automatiquement au retour d’Internet. Gardez cet appareil et ne videz pas les données du navigateur.'));
       setImportPreview([]);
+      await clearImportSession();
       try {
         sessionStorage.removeItem('gestilys-import-preview');
         sessionStorage.removeItem('gestilys-import-preview-name');
         sessionStorage.removeItem('gestilys-import-preview-notice');
-      } catch { /* Ignore session storage failures after a successful import. */ }
+      } catch { /* Ignore les anciennes clés après import réussi. */ }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Import interrompu. Vérifiez les élèves enregistrés avant de recommencer.');
-    } finally { setImportBusy(false); }
+    } finally {
+      importLock.current = false;
+      setImportBusy(false);
+    }
   };
 
   const pageTitle = TABS.find(item => item.id === tab)!;
