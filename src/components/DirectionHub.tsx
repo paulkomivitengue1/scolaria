@@ -279,12 +279,12 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
           ? await prepareImportFromBytes(stored.bytes, stored.name, options)
           : await prepareImportFromFile(file!, {
               ...options,
-              onBytes: bytes => saveImportFileBytes({
+              onBytes: async bytes => { await saveImportFileBytes({
                 name: file!.name,
                 type: file!.type,
                 lastModified: file!.lastModified,
                 bytes,
-              }),
+              }); },
             });
         if (cancelled) return;
         await applyPreparedPreview(preview);
@@ -418,12 +418,12 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
           lastName: student.lastName,
           className: student.className,
         })),
-        onBytes: bytes => saveImportFileBytes({
+        onBytes: async bytes => { await saveImportFileBytes({
           name: file.name,
           type: file.type,
           lastModified: file.lastModified,
           bytes,
-        }),
+        }); },
       });
       await applyPreparedPreview(preview);
     } catch (error) {
