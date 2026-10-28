@@ -9,6 +9,7 @@ import type { Expense, SalaryPayment, Student, Teacher } from '../types';
 import { prepareImportFromBytes, prepareImportFromFile, StudentImportError } from '../lib/studentImport';
 import type { ImportPreview } from '../lib/studentImport';
 import { clearImportSession, loadFileHandle, loadImportFileBytes, loadImportSnapshot, MAX_AUTO_ANALYSIS_ATTEMPTS, noteAnalysisAttempt, resetAnalysisAttempts, saveFileHandle, saveImportFileBytes, saveImportSnapshot } from '../lib/importSession';
+import { formatImportDiagnostics, logImportEvent } from '../lib/importDiagnostics';
 
 type Tab = 'overview' | 'cash' | 'attendance' | 'messages' | 'team' | 'import';
 type OperationKind = 'cash' | 'attendance' | 'task' | 'announcement';
@@ -126,6 +127,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     catch { return ''; }
   });
   const [importBusy, setImportBusy] = useState(false);
+  const [diagnosticText, setDiagnosticText] = useState('');
+  const [diagnosticCopied, setDiagnosticCopied] = useState(false);
   const importLock = useRef(false);
 
   useEffect(() => {
@@ -307,9 +310,14 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     }
     setImportName(file.name);
     setNotice('Lecture du fichier ' + file.name + '…');
+    let stage = 'fichier sélectionné';
+    logImportEvent('fichier sélectionné', { file: file.name, size: file.size });
     try {
       // Mémoriser le fichier avant la lecture : Android peut recréer la page.
-      await saveFileHandle(file);
+      stage = 'sauvegarde de secours du fichier';
+      const handleSaved = await saveFileHandle(file);
+      logImportEvent('sauvegarde du fichier terminée', { file: file.name, size: file.size, detail: handleSaved ? 'ok' : 'indisponible' });
+      stage = 'lecture des octets';
       const preview = await prepareImportFromFile(file, {
         classNames,
         existingStudents: students.map(student => ({
@@ -317,18 +325,25 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
           lastName: student.lastName,
           className: student.className,
         })),
-        onBytes: async bytes => { await saveImportFileBytes({
-          name: file.name,
-          type: file.type,
-          lastModified: file.lastModified,
-          bytes,
-        }); },
+        onBytes: async bytes => {
+          stage = 'analyse du fichier après lecture';
+          logImportEvent('octets du fichier lus', { file: file.name, size: bytes.byteLength });
+          const stored = await saveImportFileBytes({
+            name: file.name,
+            type: file.type,
+            lastModified: file.lastModified,
+            bytes,
+          });
+          logImportEvent('sauvegarde des octets terminée', { file: file.name, size: bytes.byteLength, detail: stored ? 'ok' : 'indisponible' });
+        },
       });
+      logImportEvent('aperçu préparé', { file: file.name, size: file.size, detail: `${preview.importableCount} élève(s), format ${preview.kind}` });
       await applyPreparedPreview(preview);
     } catch (error) {
       const message = error instanceof StudentImportError
         ? [error.message, ...error.details].join(' ')
         : error instanceof Error ? error.message : 'Le fichier n’a pas pu être analysé. Réessayez ou choisissez un autre fichier.';
+      logImportEvent('échec de l’import', { file: file.name, size: file.size, detail: `${stage} : ${message}` });
       setNotice(message);
       // Ne pas détruire un aperçu valide si le nouveau fichier échoue.
       if (!importPreview.length) {
@@ -557,6 +572,22 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
           {importPreview.length > 100 && <p className="mt-2 text-xs font-bold text-slate-700">Les 100 premières lignes sont affichées ; l’import prendra en compte les {importPreview.length} lignes valides.</p>}
           <button type="button" className={buttonClass + ' mt-4 w-full'} disabled={!importPreview.length || importBusy} onClick={() => void runImport()}><FileSpreadsheet className="h-4 w-4" />{importBusy ? 'Import en cours…' : 'Confirmer l’import de ' + importPreview.length + ' élève(s)'}</button>
         </div>
+      </div>}
+      {!loading && tab === 'import' && <div className={panelClass + ' mt-4'}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-black text-blue-950">Diagnostic de l’import</h2>
+            <p className="mt-1 text-sm leading-5 text-slate-700">Si l’import échoue sur Android, affichez ce journal technique. Il ne contient pas les noms ni les téléphones des élèves.</p>
+          </div>
+          <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-950" onClick={() => { setDiagnosticText(formatImportDiagnostics()); setDiagnosticCopied(false); }}>Afficher le diagnostic</button>
+        </div>
+        {diagnosticText && <div className="mt-3 space-y-2">
+          <textarea aria-label="Diagnostic technique de l’import" readOnly value={diagnosticText} onFocus={event => event.currentTarget.select()} className="min-h-40 w-full rounded-xl border border-blue-200 bg-slate-50 p-3 font-mono text-xs leading-5 text-slate-900" />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-800 px-4 py-2 text-sm font-extrabold text-white" onClick={async () => { try { await navigator.clipboard.writeText(diagnosticText); setDiagnosticCopied(true); } catch { setNotice('Le diagnostic est affiché ci-dessus : maintenez le doigt sur le texte, sélectionnez tout puis choisissez Copier.'); } }}>{diagnosticCopied ? 'Diagnostic copié' : 'Copier le diagnostic'}</button>
+            <button type="button" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-blue-200 px-4 py-2 text-sm font-extrabold text-blue-950" onClick={() => { setDiagnosticText(formatImportDiagnostics()); setDiagnosticCopied(false); }}>Actualiser</button>
+          </div>
+        </div>}
       </div>}
 
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold leading-5 text-blue-950"><strong>Important :</strong> les totaux sont calculés à partir des données réellement enregistrées. Les mouvements complémentaires de caisse sont séparés des paiements et dépenses pour éviter de compter deux fois une même opération. {pageTitle.description}</div>
