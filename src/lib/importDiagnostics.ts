@@ -75,6 +75,30 @@ function readAll(): StoredDiagnostics {
   return { environment: environmentSummary(), entries: [], storage: stores[0]?.name };
 }
 
+let globalErrorHandlersInstalled = false;
+
+/**
+ * Capture les erreurs JavaScript qui ne remontent pas toujours jusqu'au
+ * gestionnaire d'import, sans enregistrer de données d'élèves.
+ */
+export function installImportDiagnosticErrorHandlers(): void {
+  if (globalErrorHandlersInstalled || typeof window === 'undefined') return;
+  globalErrorHandlersInstalled = true;
+  window.addEventListener('error', (event) => {
+    const location = event.filename ? ` · ${event.filename.split('/').pop() || ''}:${event.lineno || 0}:${event.colno || 0}` : '';
+    logImportEvent('erreur JavaScript globale', {
+      detail: `${event.message || 'Erreur JavaScript inconnue'}${location}`,
+    });
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const detail = reason instanceof Error
+      ? `${reason.name}: ${reason.message}`
+      : typeof reason === 'string' ? reason : 'Promesse rejetée sans message exploitable';
+    logImportEvent('promesse rejetée sans gestionnaire', { detail });
+  });
+}
+
 /** Ajoute une étape au journal sans jamais bloquer l'import. */
 export function logImportEvent(step: string, info: { file?: string; size?: number; detail?: string } = {}): void {
   try {
