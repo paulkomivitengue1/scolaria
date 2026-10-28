@@ -1,3 +1,5 @@
+import { logImportEvent } from './importDiagnostics';
+
 /**
  * Import des élèves depuis un fichier Excel (.xlsx / .xls / .xlsm) ou CSV.
  *
@@ -562,12 +564,17 @@ export async function readFileBytes(file: ImportSourceFile, attempts = 3): Promi
   let lastProblem = '';
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
+      logImportEvent('début lecture du fichier', { file: file.name, size: file.size, detail: `tentative ${attempt + 1}/${attempts}` });
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
-      if (bytes.byteLength > 0) return bytes;
+      if (bytes.byteLength > 0) {
+        logImportEvent('lecture du fichier réussie', { file: file.name, size: bytes.byteLength });
+        return bytes;
+      }
       lastProblem = 'fichier vide';
     } catch (error) {
       lastProblem = messageOf(error, 'lecture impossible');
+      logImportEvent('échec tentative de lecture', { file: file.name, size: file.size, detail: lastProblem });
     }
     if (attempt < attempts - 1) await delay(120 * (attempt + 1));
   }
@@ -600,13 +607,19 @@ interface SpreadsheetLibrary {
 
 /** Charge xlsx à la demande, avec une seconde tentative (réseau mobile instable). */
 async function loadSpreadsheetLibrary(): Promise<SpreadsheetLibrary> {
+  logImportEvent('chargement module Excel démarré');
   try {
-    return (await import('xlsx')) as unknown as SpreadsheetLibrary;
+    const module = (await import('xlsx')) as unknown as SpreadsheetLibrary;
+    logImportEvent('chargement module Excel réussi');
+    return module;
   } catch {
     await delay(300);
     try {
-      return (await import('xlsx')) as unknown as SpreadsheetLibrary;
-    } catch {
+      const module = (await import('xlsx')) as unknown as SpreadsheetLibrary;
+      logImportEvent('chargement module Excel réussi après nouvelle tentative');
+      return module;
+    } catch (error) {
+      logImportEvent('échec chargement module Excel', { detail: messageOf(error, 'module indisponible') });
       throw new StudentImportError(
         'Le module de lecture Excel n’a pas pu être chargé. Vérifiez la connexion Internet puis réessayez. En attendant, un fichier CSV peut être importé.',
       );
@@ -629,6 +642,7 @@ const READ_OPTIONS = {
 } as const;
 
 export async function parseWorkbookBytes(bytes: Uint8Array, kind: StudentFileKind = 'xlsx'): Promise<{ rows: PreviewRow[]; invalid: InvalidImportRow[]; kind: StudentFileKind }> {
+  logImportEvent('début analyse classeur Excel', { size: bytes.byteLength, detail: `format ${kind}` });
   const XLSX = await loadSpreadsheetLibrary();
   let workbook: { SheetNames: string[]; Sheets: Record<string, unknown> };
   try {
@@ -636,7 +650,9 @@ export async function parseWorkbookBytes(bytes: Uint8Array, kind: StudentFileKin
     // sheet caused repeated decompression and high transient memory pressure on
     // Android, especially for files with several sheets.
     workbook = XLSX.read(bytes, READ_OPTIONS as unknown as Record<string, unknown>);
-  } catch {
+    logImportEvent('classeur Excel décompressé', { size: bytes.byteLength, detail: `${workbook?.SheetNames?.length ?? 0} feuille(s)` });
+  } catch (error) {
+    logImportEvent('échec décompression classeur Excel', { size: bytes.byteLength, detail: messageOf(error, 'erreur inconnue') });
     throw new StudentImportError(
       'Ce fichier Excel est illisible : il est peut-être endommagé, protégé par un mot de passe, ou ce n’est pas un vrai fichier Excel. Ouvrez-le dans Excel, choisissez « Enregistrer sous » puis le format .xlsx, et réessayez.',
     );
@@ -646,6 +662,7 @@ export async function parseWorkbookBytes(bytes: Uint8Array, kind: StudentFileKin
   const problems: string[] = [];
   for (const sheetName of sheetNames) {
     try {
+      logImportEvent('analyse feuille Excel', { size: bytes.byteLength, detail: sheetName });
       const sheet = workbook.Sheets[sheetName];
       if (!sheet || !(sheet as { '!ref'?: string })['!ref']) continue;
       const grid = XLSX.utils.sheet_to_json(sheet, {
@@ -655,7 +672,9 @@ export async function parseWorkbookBytes(bytes: Uint8Array, kind: StudentFileKin
         blankrows: false,
         range: { s: { r: 0, c: 0 }, e: { r: MAX_ROWS + 5, c: 25 } },
       }) as unknown[][];
+      logImportEvent('grille Excel convertie', { size: bytes.byteLength, detail: `${sheetName} : ${grid.length} ligne(s)` });
       const parsed = parseStudentGrid(grid, sheetNames.length > 1 ? sheetName : undefined);
+      logImportEvent('analyse feuille réussie', { size: bytes.byteLength, detail: `${sheetName} : ${parsed.rows.length} élève(s)` });
       return { rows: parsed.rows, invalid: parsed.invalid, kind };
     } catch (error) {
       problems.push(messageOf(error, `Feuille « ${sheetName} » : format non reconnu.`));
