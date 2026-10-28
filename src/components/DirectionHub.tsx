@@ -45,6 +45,14 @@ interface Props {
   onImportStudents: (rows: ImportedStudentRow[]) => Promise<number>;
   onNavigate: (view: 'inscriptions' | 'paiements' | 'enseignants' | 'depenses' | 'parametres') => void;
 }
+type OpenFilePickerHandle = { getFile: () => Promise<File> };
+type OpenFilePickerWindow = Window & {
+  showOpenFilePicker?: (options: {
+    multiple?: boolean;
+    types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+  }) => Promise<OpenFilePickerHandle[]>;
+};
+
 const TABS: { id: Tab; label: string; description: string; icon: typeof Activity }[] = [
   { id: 'overview', label: 'Pilotage', description: 'Chiffres clés de la direction', icon: Activity },
   { id: 'cash', label: 'Caisse', description: 'Mouvements complémentaires', icon: Wallet },
@@ -130,13 +138,18 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
   const [diagnosticText, setDiagnosticText] = useState('');
   const [diagnosticCopied, setDiagnosticCopied] = useState(false);
   const importLock = useRef(false);
+  const importFileInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     installImportDiagnosticErrorHandlers();
-    logImportEvent('diagnostic-code-charge', { detail: 'picker-v3; écouteurs globaux installés' });
+    logImportEvent('diagnostic-code-charge', { detail: 'picker-v4; écouteurs globaux installés' });
     logImportEvent('ecran-direction-monte');
     const logPageReturn = () => logImportEvent('retour-focus-page', { detail: document.visibilityState });
     const logVisibility = () => logImportEvent('visibilite-page-changee', { detail: document.visibilityState });
+    const logPageHide = () => logImportEvent('pagehide-apres-selecteur', { detail: document.visibilityState });
+    const logPageShow = (event: PageTransitionEvent) => logImportEvent('pageshow-retour-page', {
+      detail: `persisted=${event.persisted}; visibilité=${document.visibilityState}`,
+    });
     // Capture at document level as well as on the React input. This survives
     // cases where Android opens the picker but React's input handler is missed.
     const logFilePickerClick = (event: Event) => {
@@ -157,6 +170,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       }
     };
     window.addEventListener('focus', logPageReturn);
+    window.addEventListener('pagehide', logPageHide);
+    window.addEventListener('pageshow', logPageShow);
     document.addEventListener('visibilitychange', logVisibility);
     document.addEventListener('click', logFilePickerClick, true);
     document.addEventListener('change', logFilePickerChange, true);
@@ -166,6 +181,8 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     } catch { /* Session recovery is best-effort. */ }
     return () => {
       window.removeEventListener('focus', logPageReturn);
+      window.removeEventListener('pagehide', logPageHide);
+      window.removeEventListener('pageshow', logPageShow);
       document.removeEventListener('visibilitychange', logVisibility);
       document.removeEventListener('click', logFilePickerClick, true);
       document.removeEventListener('change', logFilePickerChange, true);
@@ -397,6 +414,42 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
     }
   };
 
+  const chooseImportFile = async () => {
+    const picker = (window as OpenFilePickerWindow).showOpenFilePicker;
+    if (typeof picker !== 'function') {
+      logImportEvent('sélecteur-alternatif-indisponible', { detail: 'retour au sélecteur classique du navigateur' });
+      importFileInput.current?.click();
+      return;
+    }
+    try {
+      logImportEvent('sélecteur-alternatif-ouverture');
+      const handles = await picker.call(window, {
+        multiple: false,
+        types: [{
+          description: 'Fichier d’élèves Excel ou CSV',
+          accept: {
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+            'application/vnd.ms-excel': ['.xls'],
+            'text/csv': ['.csv'],
+          },
+        }],
+      });
+      const handle = handles[0];
+      if (!handle) return;
+      const file = await handle.getFile();
+      logImportEvent('sélecteur-alternatif-fichier-reçu', { file: file.name, size: file.size });
+      await handleImportFile(file);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        logImportEvent('sélecteur-alternatif-annulé');
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Erreur inconnue';
+      logImportEvent('échec sélecteur alternatif', { detail: message });
+      setNotice('Le sélecteur alternatif n’a pas fonctionné. Utilisez le sélecteur classique ci-dessous ou ouvrez Gestilys dans Chrome.');
+    }
+  };
+
   const runImport = async () => {
     if (!importPreview.length || importLock.current) return;
     importLock.current = true;
@@ -604,7 +657,9 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
       </div>}
       {!loading && tab === 'import' && <div className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
         <div className={panelClass}><h2 className="text-lg font-black text-blue-950">Importer les élèves en lot</h2><p className="mt-1 text-sm leading-6 text-slate-700">Choisissez un fichier Excel (.xlsx, .xls) ou CSV (.csv). Les titres sont reconnus même avec des variantes : <strong>Prénom de l’élève, Nom de l’élève, Classe de l’élève, Nom du parent, Numéro du parent</strong>. Les colonnes Date de naissance, Lieu de naissance et Sexe sont facultatives.</p>
-          <label className="mt-4 block text-sm font-bold text-slate-900">Fichier Excel ou CSV<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onPointerDown={() => logImportEvent('pointer-selecteur-fichier')} onClick={() => logImportEvent('clic-selecteur-fichier')} onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; logImportEvent('evenement-selection-fichier', { file: file?.name, size: file?.size, detail: file ? `type=${file.type || 'inconnu'}; modified=${file.lastModified || 0}` : 'aucun fichier renvoyé par le sélecteur' }); if (file) void handleImportFile(file); else logImportEvent('selection-sans-fichier'); input.value = ''; }} /></label>
+          <button type="button" className={buttonClass + ' mt-4 w-full'} onClick={() => void chooseImportFile()}><FileSpreadsheet className="h-4 w-4" />Choisir un fichier (sélecteur compatible)</button>
+          <p className="mt-2 text-xs font-semibold text-slate-700">Si le sélecteur compatible n’est pas disponible, le bouton ouvre le sélecteur classique.</p>
+          <label className="mt-3 block text-sm font-bold text-slate-900">Sélecteur classique (secours)<input ref={importFileInput} type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" className="mt-2 block min-h-14 w-full max-w-full rounded-xl border border-blue-300 bg-blue-50 p-3 text-base font-semibold text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-800 file:px-3 file:py-2 file:font-bold file:text-white" onPointerDown={() => logImportEvent('pointer-selecteur-fichier')} onClick={() => logImportEvent('clic-selecteur-fichier')} onChange={e => { const input = e.currentTarget; const file = input.files?.[0]; logImportEvent('evenement-selection-fichier', { file: file?.name, size: file?.size, detail: file ? `type=${file.type || 'inconnu'}; modified=${file.lastModified || 0}` : 'aucun fichier renvoyé par le sélecteur' }); if (file) void handleImportFile(file); else logImportEvent('selection-sans-fichier'); input.value = ''; }} /></label>
           <button type="button" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-extrabold text-blue-950" onClick={() => void saveExcelTemplate('modele-import-eleves-gestilys.xlsx', [['Prénom de l’élève','Nom de l’élève','Classe de l’élève','Nom du parent','Numéro du parent','Date de naissance','Lieu de naissance','Sexe'],['Aminata','Traoré',classNames[0] || '','Mamadou Traoré','75000000','2013-04-12','Bamako','F']]).catch(error => setNotice(error instanceof Error ? error.message : 'Impossible de créer le modèle Excel.'))}><Download className="h-4 w-4" />Télécharger un modèle Excel</button>
           {importName && <p className="mt-3 break-all text-sm font-bold text-blue-950">Fichier sélectionné : {importName}</p>}
         </div>
