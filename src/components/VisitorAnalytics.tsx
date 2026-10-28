@@ -62,10 +62,11 @@ export function VisitorAnalytics({ code }: Props) {
           <button onClick={exportCsv} disabled={!visits.length} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-800 text-white disabled:opacity-50">Exporter CSV</button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-px bg-blue-100 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-px bg-blue-100 sm:grid-cols-3 lg:grid-cols-3">
         {[
           { label: 'Visites enregistrées', value: summary.total, icon: Activity },
           { label: 'Visiteurs distincts', value: summary.unique_visitors, icon: Users },
+          { label: 'Visiteurs récurrents', value: summary.returning_visitors, icon: Users },
           { label: 'Aujourd’hui', value: summary.today, icon: CalendarDays },
           { label: '7 derniers jours', value: summary.last_7_days, icon: Clock3 },
           { label: '30 derniers jours', value: summary.last_30_days, icon: Globe2 },
