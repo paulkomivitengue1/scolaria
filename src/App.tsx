@@ -101,6 +101,7 @@ export default function App() {
   const [trancheReceiptAmount, setTrancheReceiptAmount] = useState(0);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [addStudentError, setAddStudentError] = useState<string | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editStudentId, setEditStudentId] = useState<string | null>(null);
@@ -371,33 +372,55 @@ export default function App() {
   };
 
   const addStudent = async (st: Student) => {
-    if (students.length >= getStudentLimit()) {
-      setPayError(getStudentLimit() === 150
-        ? 'La formule Essentiel est limitée à 150 élèves. Passez à Premium ou Élite pour inscrire davantage d’élèves.'
-        : 'La formule Premium est limitée à 500 élèves. Passez à Élite pour inscrire davantage d’élèves.');
-      setView('dashboard');
+    setAddStudentError(null);
+    const limit = getStudentLimit();
+    if (students.length >= limit) {
+      setAddStudentError(limit === 150
+        ? 'La limite de 150 élèves de la formule Essentiel est atteinte. Aucun nouvel élève n’a été inscrit. Passez à Premium ou Élite pour augmenter votre capacité.'
+        : limit === 500
+          ? 'La limite de 500 élèves de la formule Premium est atteinte. Aucun nouvel élève n’a été inscrit. Passez à Élite pour augmenter votre capacité.'
+          : 'La limite de votre forfait est atteinte. Consultez les formules disponibles pour inscrire davantage d’élèves.');
       return;
     }
-    if (!profile?.schoolId) return;
+    if (!profile?.schoolId) {
+      setAddStudentError('Impossible d’inscrire cet élève : votre école n’a pas été identifiée. Rechargez la page puis réessayez.');
+      return;
+    }
     try {
       const dbId = await addStudentDB(profile.schoolId, st);
       setStudents(p => [{ ...st, id: dbId }, ...p]);
+      setAddStudentError(null);
       setAddOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to add student:', err);
+      const detail = err instanceof Error && err.message ? ' Détail : ' + err.message : '';
+      setAddStudentError('Impossible d’enregistrer cet élève. Vérifiez votre connexion puis réessayez.' + detail);
     }
   };
 
   const handleBulkImportStudents = async (rows: ImportedStudentRow[]): Promise<number> => {
     if (!profile?.schoolId) throw new Error('École non identifiée.');
     const limit = getStudentLimit();
-    if (students.length >= limit) throw new Error(limit === 150 ? 'La formule Essentiel est limitée à 150 élèves.' : 'La formule Premium est limitée à 500 élèves.');
+    if (students.length >= limit) {
+      throw new Error(limit === 150
+        ? 'La limite de 150 élèves de la formule Essentiel est atteinte. Aucun élève de ce fichier n’a été importé. Passez à Premium ou Élite pour augmenter votre capacité.'
+        : limit === 500
+          ? 'La limite de 500 élèves de la formule Premium est atteinte. Aucun élève de ce fichier n’a été importé. Passez à Élite pour augmenter votre capacité.'
+          : 'La limite de votre forfait est atteinte. Aucun élève de ce fichier n’a été importé.');
+    }
     const existing = new Set(students.map(st => `${st.firstName}|${st.lastName}|${st.className}`.toLocaleLowerCase('fr')));
     const candidates: Omit<Student, 'id'>[] = [];
     for (const row of rows) {
-      if (students.length + candidates.length >= limit) break;
       const duplicateKey = `${row.firstName}|${row.lastName}|${row.className}`.toLocaleLowerCase('fr');
       if (existing.has(duplicateKey)) continue;
+      if (students.length + candidates.length >= limit) {
+        const available = Math.max(0, limit - students.length);
+        throw new Error(limit === 150
+          ? `Votre formule Essentiel autorise 150 élèves et il ne reste que ${available} place(s). Le fichier contient davantage de nouveaux élèves : aucun élève de ce fichier n’a été importé. Passez à Premium ou Élite pour augmenter votre capacité.`
+          : limit === 500
+            ? `Votre formule Premium autorise 500 élèves et il ne reste que ${available} place(s). Le fichier contient davantage de nouveaux élèves : aucun élève de ce fichier n’a été importé. Passez à Élite pour augmenter votre capacité.`
+            : 'La limite de votre forfait est atteinte. Aucun élève de ce fichier n’a été importé.');
+      }
       const fees = feeConfig.feeTypes.map(ft => {
         const matching = feeConfig.feeConfig.filter(config => config.feeType === ft.feeType && config.className === row.className);
         const payments: Record<string, { paid: number }> = {};
@@ -1200,9 +1223,11 @@ export default function App() {
       />
       <AddStudentModal
         open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onOpenSettings={() => { setAddOpen(false); handleNavigate('parametres'); }}
+        onClose={() => { setAddOpen(false); setAddStudentError(null); }}
+        onOpenSettings={() => { setAddOpen(false); setAddStudentError(null); handleNavigate('parametres'); }}
         onAdd={addStudent}
+        errorMessage={addStudentError}
+        onClearError={() => setAddStudentError(null)}
         feeTypes={feeConfig.feeTypes}
         feeConfig={feeConfig.feeConfig}
         tranches={feeConfig.tranches}
