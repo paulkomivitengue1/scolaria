@@ -517,7 +517,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
         })}
       </div>
 
-      {notice && <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-950">{notice}</div>}
+      {notice && <div role={/limite|aucun élève|impossible|échec|erreur/i.test(notice) ? 'alert' : 'status'} aria-live="polite" className={'rounded-xl border-2 px-4 py-3 text-sm font-bold ' + (/limite|aucun élève|impossible|échec|erreur/i.test(notice) ? 'border-red-300 bg-red-50 text-red-950' : 'border-blue-200 bg-blue-50 text-blue-950')}>{notice}</div>}
       {loading && <div className="rounded-xl border border-blue-100 bg-white p-4 text-sm font-semibold text-blue-900">Chargement du suivi de direction…</div>}
 
       {!loading && tab === 'overview' && <div className="grid gap-4 lg:grid-cols-2">
