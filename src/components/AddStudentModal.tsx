@@ -31,7 +31,7 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, errorMes
   const [plans, setPlans] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+  const updateField = <K extends keyof FormState,>(key: K, value: FormState[K]) => {
     onClearError?.();
     setForm(current => ({ ...current, [key]: value }));
   };
