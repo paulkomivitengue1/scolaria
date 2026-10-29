@@ -364,8 +364,9 @@ export default function App() {
   };
 
   const getStudentLimit = () => {
-    if (profile?.subscriptionStatus !== 'active') return Number.POSITIVE_INFINITY;
-    const plan = (profile.plan || 'Essentiel').trim().toLocaleLowerCase('fr');
+    // La capacité dépend du forfait choisi, pas de l'état de paiement.
+    // Sinon les comptes en essai / avec un autre statut contournaient la limite.
+    const plan = (profile?.plan || 'Essentiel').trim().toLocaleLowerCase('fr');
     if (plan === 'élite' || plan === 'elite') return Number.POSITIVE_INFINITY;
     if (plan === 'premium') return 500;
     return 150;
@@ -1228,6 +1229,8 @@ export default function App() {
         onAdd={addStudent}
         errorMessage={addStudentError}
         onClearError={() => setAddStudentError(null)}
+        studentCount={students.length}
+        studentLimit={getStudentLimit()}
         feeTypes={feeConfig.feeTypes}
         feeConfig={feeConfig.feeConfig}
         tranches={feeConfig.tranches}
