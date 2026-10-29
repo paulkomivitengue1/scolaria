@@ -10,6 +10,8 @@ interface AddStudentModalProps {
   onAdd: (s: Student) => void | Promise<void>;
   errorMessage?: string | null;
   onClearError?: () => void;
+  studentCount?: number;
+  studentLimit?: number;
   feeTypes: FeeTypeDef[];
   feeConfig: FeeConfigRow[];
   tranches: TrancheDef[];
@@ -26,10 +28,16 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate: string; birthPlace: string; matricule: string; sexe: 'M' | 'F'; }
 const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', birthDate: '', birthPlace: '', matricule: '', sexe: 'M' };
 
-export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, errorMessage, onClearError, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
+export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, errorMessage, onClearError, studentCount = 0, studentLimit = Number.POSITIVE_INFINITY, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [plans, setPlans] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
+  const limitReached = studentCount >= studentLimit;
+  const limitMessage = studentLimit === 150
+    ? 'La limite de 150 élèves de la formule Essentiel est atteinte. Aucun nouvel élève ne peut être inscrit. Passez à Premium ou Élite pour augmenter votre capacité.'
+    : studentLimit === 500
+      ? 'La limite de 500 élèves de la formule Premium est atteinte. Aucun nouvel élève ne peut être inscrit. Passez à Élite pour augmenter votre capacité.'
+      : 'La limite de votre forfait est atteinte. Consultez les formules disponibles pour inscrire davantage d’élèves.';
 
   const updateField = <K extends keyof FormState,>(key: K, value: FormState[K]) => {
     onClearError?.();
@@ -109,9 +117,9 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, errorMes
           </div>
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin px-5 py-5">
-          {errorMessage && <div role="alert" aria-live="polite" className="mb-4 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+          {(limitReached || errorMessage) && <div role="alert" aria-live="assertive" className="mb-4 flex items-start gap-3 rounded-xl border-2 border-red-400 bg-red-50 p-4 text-sm text-red-950 shadow-sm">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
-            <div><p className="font-extrabold">Inscription impossible</p><p className="mt-1 leading-5">{errorMessage}</p></div>
+            <div><p className="font-extrabold">Inscription impossible</p><p className="mt-1 leading-5">{limitReached ? limitMessage : errorMessage}</p></div>
           </div>}
           <div className="grid grid-cols-3 gap-3">
             <Field label="Prénom" span={2}><input value={form.firstName} onChange={e => updateField('firstName', e.target.value)} placeholder="Awa" className={inputCls} /></Field>
@@ -166,7 +174,7 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, errorMes
         </div>
         <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-3"><div className="flex gap-2">
           <button onClick={onClose} className="flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-600 text-slate-600 transition hover:bg-slate-50 active:scale-95">Annuler</button>
-          <button onClick={submit} disabled={!valid || submitting} className="flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:opacity-40"><Check className="h-4 w-4" strokeWidth={3} />{submitting ? 'Enregistrement…' : "Inscrire l'élève"}</button>
+          <button onClick={submit} disabled={!valid || submitting || limitReached} className="flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:opacity-40"><Check className="h-4 w-4" strokeWidth={3} />{limitReached ? 'Limite atteinte' : submitting ? 'Enregistrement…' : "Inscrire l'élève"}</button>
         </div></div>
       </div>
     </div>
