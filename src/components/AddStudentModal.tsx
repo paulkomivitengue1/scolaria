@@ -7,7 +7,9 @@ interface AddStudentModalProps {
   open: boolean;
   onClose: () => void;
   onOpenSettings: () => void;
-  onAdd: (s: Student) => void;
+  onAdd: (s: Student) => void | Promise<void>;
+  errorMessage?: string | null;
+  onClearError?: () => void;
   feeTypes: FeeTypeDef[];
   feeConfig: FeeConfigRow[];
   tranches: TrancheDef[];
@@ -24,9 +26,15 @@ const FEE_ICONS: Record<string, typeof GraduationCap> = {
 interface FormState { firstName: string; lastName: string; className: string; parentName: string; parentPhone: string; birthDate: string; birthPlace: string; matricule: string; sexe: 'M' | 'F'; }
 const EMPTY_FORM: FormState = { firstName: '', lastName: '', className: '', parentName: '', parentPhone: '', birthDate: '', birthPlace: '', matricule: '', sexe: 'M' };
 
-export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
+export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, errorMessage, onClearError, feeTypes, feeConfig, tranches, schoolName, schoolId, classNames, onGenerateMatricule }: AddStudentModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [plans, setPlans] = useState<Record<string, boolean>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const updateField = <K extends keyof FormState,>(key: K, value: FormState[K]) => {
+    onClearError?.();
+    setForm(current => ({ ...current, [key]: value }));
+  };
 
   useEffect(() => {
     if (open) {
@@ -34,6 +42,7 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes
       feeTypes.forEach(f => { initialPlans[f.feeType] = f.feeType === 'scolarite'; });
       setPlans(initialPlans);
       setForm(EMPTY_FORM);
+      setSubmitting(false);
       // Auto-generate matricule
       onGenerateMatricule(schoolId, schoolName).then(m => {
         setForm(f => ({ ...f, matricule: m }));
@@ -57,8 +66,8 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes
   const grandTotal = selectedFeeTypes.reduce((sum, f) => sum + totalForClass(f.feeType), 0);
   const hasConfiguredFees = !!form.className && feeTypes.some(f => totalForClass(f.feeType) > 0);
 
-  const submit = () => {
-    if (!valid) return;
+  const submit = async () => {
+    if (!valid || submitting) return;
     const fees: FeeSubscription[] = selectedFeeTypes.map(f => {
       const totalExpected = totalForClass(f.feeType);
       const payments: Record<string, { paid: number }> = f.paymentMode === 'tranche'
@@ -66,19 +75,24 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes
         : emptySinglePayment();
       return { feeType: f.feeType, paymentMode: f.paymentMode, payments, totalExpected };
     });
-    onAdd({
-      id: `stu-${Date.now()}`,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      className: form.className.trim(),
-      parentName: form.parentName.trim(),
-      parentPhone: form.parentPhone.trim(),
-      birthDate: form.birthDate,
-      birthPlace: form.birthPlace.trim(),
-      matricule: form.matricule.trim(),
-      sexe: form.sexe,
-      fees,
-    });
+    setSubmitting(true);
+    try {
+      await onAdd({
+        id: `stu-${Date.now()}`,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        className: form.className.trim(),
+        parentName: form.parentName.trim(),
+        parentPhone: form.parentPhone.trim(),
+        birthDate: form.birthDate,
+        birthPlace: form.birthPlace.trim(),
+        matricule: form.matricule.trim(),
+        sexe: form.sexe,
+        fees,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputCls = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-ink outline-none transition focus:border-royal-400 focus:ring-4';
@@ -95,27 +109,31 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes
           </div>
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin px-5 py-5">
+          {errorMessage && <div role="alert" aria-live="polite" className="mb-4 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+            <div><p className="font-extrabold">Inscription impossible</p><p className="mt-1 leading-5">{errorMessage}</p></div>
+          </div>}
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Prénom" span={2}><input value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} placeholder="Awa" className={inputCls} /></Field>
-            <Field label="Nom" span={1}><input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} placeholder="Diallo" className={inputCls} /></Field>
+            <Field label="Prénom" span={2}><input value={form.firstName} onChange={e => updateField('firstName', e.target.value)} placeholder="Awa" className={inputCls} /></Field>
+            <Field label="Nom" span={1}><input value={form.lastName} onChange={e => updateField('lastName', e.target.value)} placeholder="Diallo" className={inputCls} /></Field>
           </div>
-          <Field label="Classe"><select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{classNames.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
+          <Field label="Classe"><select value={form.className} onChange={e => updateField('className', e.target.value)} className={`${inputCls} cursor-pointer`}><option value="">Sélectionner…</option>{classNames.map(c => <option key={c} value={c}>{c}</option>)}</select></Field>
           {classNames.length === 0 && <div className="mt-2 rounded-xl border border-amber-300 bg-amber-50 p-3"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" /><div className="min-w-0"><p className="text-sm font-extrabold text-amber-950">Aucune classe n’est encore configurée</p><p className="mt-1 text-xs leading-5 text-amber-900">Avant l’inscription, créez au moins une classe et configurez les frais de scolarité dans les paramètres.</p><button type="button" onClick={() => { onClose(); onOpenSettings(); }} className="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400"><Settings2 className="h-4 w-4" /> Configurer mon école</button></div></div></div>}
           {form.className && !hasConfiguredFees && <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" /><div><p className="text-sm font-extrabold text-amber-950">Scolarité non configurée pour cette classe</p><p className="mt-1 text-xs leading-5 text-amber-900">L’inscription reste possible, mais le montant dû sera à zéro tant que les frais ne sont pas renseignés. Configurez les frais par classe dans Paramètres.</p><button type="button" onClick={() => { onClose(); onOpenSettings(); }} className="mt-2 inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400"><Settings2 className="h-4 w-4" /> Configurer la scolarité</button></div></div></div>}
-          <Field label="Nom du parent"><input value={form.parentName} onChange={e => setForm({ ...form, parentName: e.target.value })} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
-          <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => setForm({ ...form, parentPhone: e.target.value })} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
+          <Field label="Nom du parent"><input value={form.parentName} onChange={e => updateField('parentName', e.target.value)} placeholder="Mme Fatou Diallo" className={inputCls} /></Field>
+          <Field label="WhatsApp du parent"><input value={form.parentPhone} onChange={e => updateField('parentPhone', e.target.value)} placeholder="+221 77 123 45 67" className={inputCls} /></Field>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Date de naissance (facultatif)"><input type="date" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} className={inputCls} /></Field>
-            <Field label="Lieu de naissance (facultatif)"><input value={form.birthPlace} onChange={e => setForm({ ...form, birthPlace: e.target.value })} placeholder="Bamako" className={inputCls} /></Field>
+            <Field label="Date de naissance (facultatif)"><input type="date" value={form.birthDate} onChange={e => updateField('birthDate', e.target.value)} className={inputCls} /></Field>
+            <Field label="Lieu de naissance (facultatif)"><input value={form.birthPlace} onChange={e => updateField('birthPlace', e.target.value)} placeholder="Bamako" className={inputCls} /></Field>
           </div>
 
-          <Field label="Matricule"><input value={form.matricule} onChange={e => setForm({ ...form, matricule: e.target.value })} placeholder="ECOLE-2026-001" className={inputCls} /></Field>
+          <Field label="Matricule"><input value={form.matricule} onChange={e => updateField('matricule', e.target.value)} placeholder="ECOLE-2026-001" className={inputCls} /></Field>
 
           <div className="mt-3">
             <label className="mb-1 block text-xs font-600 text-slate-500">Sexe</label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setForm({ ...form, sexe: 'M' })} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'M' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♂</span>Garçon</button>
-              <button type="button" onClick={() => setForm({ ...form, sexe: 'F' })} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'F' ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♀</span>Fille</button>
+              <button type="button" onClick={() => updateField('sexe', 'M')} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'M' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♂</span>Garçon</button>
+              <button type="button" onClick={() => updateField('sexe', 'F')} className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-700 transition ${form.sexe === 'F' ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}><span className="text-base leading-none">♀</span>Fille</button>
             </div>
           </div>
 
@@ -148,7 +166,7 @@ export function AddStudentModal({ open, onClose, onOpenSettings, onAdd, feeTypes
         </div>
         <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-3"><div className="flex gap-2">
           <button onClick={onClose} className="flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-600 text-slate-600 transition hover:bg-slate-50 active:scale-95">Annuler</button>
-          <button onClick={submit} disabled={!valid} className="flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:opacity-40"><Check className="h-4 w-4" strokeWidth={3} />Inscrire l'élève</button>
+          <button onClick={submit} disabled={!valid || submitting} className="flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 text-sm font-700 text-white shadow-gold transition hover:brightness-105 active:scale-95 disabled:opacity-40"><Check className="h-4 w-4" strokeWidth={3} />{submitting ? 'Enregistrement…' : "Inscrire l'élève"}</button>
         </div></div>
       </div>
     </div>
