@@ -518,7 +518,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
         </div>
 
         {/* Printable bulletin */}
-        <div id="bulletin-print" className={`mx-auto max-w-2xl bg-white shadow-card print:shadow-none print:p-0 ${bulletinFormat==='compact'?'p-3 sm:p-4':bulletinFormat==='minimal'?'p-5 sm:p-6':'rounded-2.5xl p-6 sm:p-8'}`} style={{border:formatBorder,borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'4px':'18px',fontFamily:bulletinFormat==='officiel'?'Georgia,serif':'inherit'}}>
+        <div id="bulletin-print" className={`mx-auto w-full min-w-0 max-w-2xl overflow-hidden bg-white p-3 shadow-card print:shadow-none print:p-0 sm:p-8 ${bulletinFormat==='compact'?'sm:p-4':bulletinFormat==='minimal'?'sm:p-6':'rounded-2.5xl'}`} style={{border:formatBorder,borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'4px':'18px',fontFamily:bulletinFormat==='officiel'?'Georgia,serif':'inherit'}}>
           {/* Header */}
           <div className={`pb-4 ${bulletinFormat==='moderne'?'text-left':'text-center'} ${bulletinFormat==='officiel'?'uppercase tracking-wide':''}`} style={{borderBottom:bulletinFormat==='officiel'?'double 5px '+formatColor:'3px solid '+formatColor,background:bulletinFormat==='moderne'?'#f0fdfa':bulletinFormat==='officiel'?'#f8fafc':bulletinFormat==='minimal'?'#ffffff':'transparent',padding:bulletinFormat==='moderne'?'14px':bulletinFormat==='compact'?'4px 0':'8px 0',borderRadius:bulletinFormat==='officiel'?'0':bulletinFormat==='minimal'?'0':'8px'}}>
             <div className={`flex items-center justify-center gap-3 ${bulletinFormat==='moderne'?'flex-row text-left':'flex-col text-center'}`}>
@@ -562,9 +562,9 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <div className="rounded border border-slate-300 p-2"><b>Effectif :</b> {classStats.count || students.filter(s => s.className === selectedStudent.className).length}</div>
                 <div className="rounded border border-slate-300 p-2"><b>Rang :</b> {classStats.rank ? classStats.rank + 'e' : '—'}</div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] border-collapse text-xs sm:text-sm">
-                  <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matières','Note classe /20','Compo /40',...(showLyceeRank?['Rang']:[]),'Moy. générale','Coef.','Moy. coef.',...(showLyceeMention?['Mention']:[])].map(label => <th key={label} className="border border-slate-500 px-1 py-2 text-center font-bold">{label}</th>)}</tr></thead>
+              <div className="mt-2 w-full min-w-0 max-w-full overflow-hidden">
+                <table className="w-full table-fixed border-collapse text-[9px] leading-tight sm:text-xs">
+                  <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matières','Note classe /20','Compo /40',...(showLyceeRank?['Rang']:[]),'Moy. générale','Coef.','Moy. coef.',...(showLyceeMention?['Mention']:[])].map(label => <th key={label} className="break-words border border-slate-500 px-0.5 py-1 text-center font-bold">{label}</th>)}</tr></thead>
                   <tbody>{subjectRows.map((g, index) => {
                     const score = lyceeAverage(g.subject);
                     const coef = Number(g.coefficient) || 1;
@@ -573,9 +573,9 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                     const scoreEntry = lyceeScores[g.subject];
                     const hasCompleteScore = isConduct || (scoreEntry?.classScore !== undefined && scoreEntry.classScore !== '' && scoreEntry?.compositionScore !== undefined && scoreEntry.compositionScore !== '');
                     return <tr key={g.id || g.subject}>
-                      <td className="border border-slate-500 px-1 py-1 text-center">{index + 1}</td>
-                      <td className="border border-slate-500 px-2 py-1 font-semibold">{g.subject}</td>
-                      <td className="border border-slate-500 p-1 text-center">{isConduct ? Number(lyceeScores.Conduite?.classScore ?? 18).toFixed(2) : (lyceeScores[g.subject]?.classScore === undefined || lyceeScores[g.subject]?.classScore === '' ? '—' : Number(lyceeScores[g.subject].classScore).toFixed(2))}</td>
+                      <td className="break-words border border-slate-500 px-0.5 py-1 text-center">{index + 1}</td>
+                      <td className="break-words border border-slate-500 px-0.5 py-1 text-[9px] font-semibold sm:text-xs">{g.subject}</td>
+                      <td className="break-words border border-slate-500 px-0.5 py-1 text-center">{isConduct ? Number(lyceeScores.Conduite?.classScore ?? 18).toFixed(2) : (lyceeScores[g.subject]?.classScore === undefined || lyceeScores[g.subject]?.classScore === '' ? '—' : Number(lyceeScores[g.subject].classScore).toFixed(2))}</td>
                       <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : (lyceeScores[g.subject]?.compositionScore === undefined || lyceeScores[g.subject]?.compositionScore === '' ? '—' : Number(lyceeScores[g.subject].compositionScore).toFixed(2))}</td>
                       {showLyceeRank && <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : (lyceeScores[g.subject]?.rank ? lyceeScores[g.subject].rank + 'e' : '—')}</td>}
                       <td className="border border-slate-500 px-1 py-1 text-center font-bold">{hasCompleteScore ? score.toFixed(2) : '—'}</td>
@@ -584,7 +584,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                       {showLyceeMention && <td className="border border-slate-500 px-1 py-1 text-center">{isConduct ? 'Bonne' : hasCompleteScore ? lyceeMention(score) : '—'}</td>}
                     </tr>;
                   })}</tbody>
-                  <tfoot><tr className="bg-slate-100 font-bold"><td colSpan={5 + (showLyceeRank ? 1 : 0)} className="border border-slate-500 px-2 py-2 text-right">TOTAL</td><td className="border border-slate-500 px-1 py-2 text-center">{totalCoefficient}</td><td className="border border-slate-500 px-1 py-2 text-center">{totalPoints.toFixed(2)}</td>{showLyceeMention && <td className="border border-slate-500 px-1 py-2 text-center">Maximum : {totalMax}</td>}</tr></tfoot>
+                  <tfoot><tr className="bg-slate-100 font-bold"><td colSpan={5 + (showLyceeRank ? 1 : 0)} className="border border-slate-500 px-2 py-2 text-right">TOTAL</td><td className="break-words border border-slate-500 px-0.5 py-1 text-center">{totalCoefficient}</td><td className="border border-slate-500 px-1 py-2 text-center">{totalPoints.toFixed(2)}</td>{showLyceeMention && <td className="border border-slate-500 px-1 py-2 text-center">Maximum : {totalMax}</td>}</tr></tfoot>
                 </table>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
