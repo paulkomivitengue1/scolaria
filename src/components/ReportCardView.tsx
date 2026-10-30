@@ -78,6 +78,60 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   };
   const lyceeMention = (average: number) => average >= 18 ? 'Excellent' : average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
 
+  // Rang automatique du bulletin lycée à partir des notes complètes de la classe.
+  const lyceeClassmates = selectedStudent
+    ? students.filter(student => student.className === selectedStudent.className)
+    : [];
+  const readLyceeScores = (studentId: string): Record<string, LyceeScore> => {
+    if (selectedStudent && studentId === selectedStudent.id) return lyceeScores;
+    try {
+      const key = 'gestilys-lycee-scores-' + schoolId + '-' + studentId + '-' + selectedPeriod;
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) as Record<string, LyceeScore> : {};
+    } catch { return {}; }
+  };
+  const lyceeAverageFor = (scores: Record<string, LyceeScore>, subjectRows: GradeRow[]) => {
+    const rows = subjectRows.filter(g => g.subject.trim() && g.subject !== 'Conduite');
+    if (!rows.length) return null;
+    let weighted = 0;
+    let coefficientTotal = 0;
+    for (const grade of rows) {
+      const entry = scores[grade.subject];
+      if (!entry || entry.classScore === '' || entry.compositionScore === '' ||
+          entry.classScore === undefined || entry.compositionScore === undefined) return null;
+      const coefficient = Number(grade.coefficient) || 1;
+      const average = (Number(entry.classScore) + Number(entry.compositionScore)) / 3;
+      if (!Number.isFinite(average)) return null;
+      weighted += average * coefficient;
+      coefficientTotal += coefficient;
+    }
+    return coefficientTotal > 0 ? weighted / coefficientTotal : null;
+  };
+  const lyceeSubjectRank = (subject: string) => {
+    const current = lyceeScores[subject];
+    if (!current || current.classScore === '' || current.compositionScore === '' ||
+        current.classScore === undefined || current.compositionScore === undefined) return null;
+    const currentAverage = (Number(current.classScore) + Number(current.compositionScore)) / 3;
+    const higher = lyceeClassmates.filter(student => {
+      const entry = readLyceeScores(student.id)[subject];
+      if (!entry || entry.classScore === '' || entry.compositionScore === '' ||
+          entry.classScore === undefined || entry.compositionScore === undefined) return false;
+      return (Number(entry.classScore) + Number(entry.compositionScore)) / 3 > currentAverage;
+    }).length;
+    return higher + 1;
+  };
+  const lyceeOverallRank = (() => {
+    if (!selectedStudent) return null;
+    const subjectRows = grades.filter(g => g.subject.trim());
+    const currentAverage = lyceeAverageFor(lyceeScores, subjectRows);
+    if (currentAverage === null) return null;
+    const higher = lyceeClassmates.filter(student => {
+      const average = lyceeAverageFor(readLyceeScores(student.id), subjectRows);
+      return average !== null && average > currentAverage;
+    }).length;
+    return higher + 1;
+  })();
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('gestilys-bulletin-format-' + schoolId);
@@ -442,16 +496,16 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               </div>
             </div>
             <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <table className="w-max min-w-[650px] border-collapse text-sm">
+              <table className="w-max min-w-[650px] table-fixed border-collapse text-sm">
                 <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40',...(showLyceeRank?['Rang']:[])].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
                 <tbody>{[...grades.filter(g => g.subject.trim()), { id: '__conduite__', subject: 'Conduite', score: 18, maxScore: 20, coefficient: 1 } as GradeRow].map((g, index) => {
                   const isConduct = g.subject === 'Conduite';
                   return <tr key={g.id || g.subject}>
                     <td className="border border-slate-300 px-2 py-2 text-center font-700">{index + 1}</td>
-                    <td className="border border-slate-300 px-2 py-2 font-800 text-slate-900">{g.subject}</td>
+                    <td className="w-[105px] max-w-[105px] break-words border border-slate-300 px-1 py-2 font-800 text-slate-900">{g.subject}</td>
                     <td className="border border-slate-300 p-2">{<input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? (isConduct ? '18' : '')} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-full min-w-[100px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
                     <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Composition sur 40 '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-full min-w-[100px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
-                    {showLyceeRank && <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Rang de '+g.subject} type="number" min="1" value={lyceeScores[g.subject]?.rank ?? ''} onChange={e => updateLyceeScore(g.subject,'rank',e.target.value)} className="w-full min-w-[70px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>}
+                    {showLyceeRank && <td className="border border-slate-300 p-2 text-center font-800 text-slate-900">{isConduct ? '—' : (lyceeSubjectRank(g.subject) ?? '—')}</td>}
                   </tr>;
                 })}</tbody>
               </table>
@@ -610,7 +664,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div><b>Moyenne :</b> {(totalCoefficient ? totalPoints / totalCoefficient : 0).toFixed(2)} / 20</div>
-                <div><b>Rang :</b> {lyceeScores['__summary__']?.rank ? lyceeScores['__summary__'].rank + 'e / ' + (classStats.count || students.filter(s => s.className === selectedStudent.className).length) + ' élèves classés' : 'À renseigner'}</div>
+                <div><b>Rang :</b> {lyceeOverallRank ? lyceeOverallRank + 'e / ' + lyceeClassmates.length + ' élèves' : 'En attente des notes complètes'}</div>
                 <div><b>Moyenne du premier :</b> {lyceeScores['__summary__']?.classScore ? Number(lyceeScores['__summary__'].classScore).toFixed(2) : 'À renseigner'}</div>
                 <div className="text-right"><b>{schoolName || 'École'}, le</b> {new Date().toLocaleDateString('fr-FR')}</div>
               </div>
