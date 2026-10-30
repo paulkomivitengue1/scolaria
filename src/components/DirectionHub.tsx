@@ -502,7 +502,7 @@ export function DirectionHub({ schoolId, schoolName, students, classNames, teach
             { label: 'Scolarité encaissée', value: formatFCFA(collected), tone: 'border-emerald-300/30 bg-emerald-500/20' },
             { label: 'Reste à payer estimé', value: formatFCFA(outstanding), tone: 'border-amber-300/30 bg-amber-500/20' },
             { label: 'Tâches ouvertes', value: String(openTasks), tone: 'border-pink-300/30 bg-pink-500/20' },
-          ].map(metric => <div key={metric.label} className={'min-w-0 rounded-xl border p-2.5 sm:p-3 ' + metric.tone}><p className="text-[11px] font-bold leading-tight text-white/90 sm:text-xs">{metric.label}</p><p className="mt-1.5 min-w-0 break-words text-base font-black leading-tight tracking-tight text-white tabular-nums sm:text-lg">{metric.value}</p></div>)}
+          ].map(metric => <div key={metric.label} className={'min-w-0 overflow-hidden rounded-xl border px-4 py-3 sm:px-4 sm:py-3 ' + metric.tone}><p className="text-center text-[11px] font-bold leading-tight text-white/90 sm:text-xs">{metric.label}</p><p className="mt-2 w-full text-center text-sm font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere] tabular-nums sm:text-lg">{metric.value}</p></div>)}
         </div>
       </div>
 
