@@ -320,8 +320,8 @@ export function StudentCardsView({ students, schoolId, schoolName, schoolLogo, o
             {selectedStudents.map(s => (
               <div key={s.id} className="student-card-wrapper">
                 <article className={`student-id-card card-format-${cardFormat} relative flex flex-col h-[205px] w-full max-w-[325px] overflow-hidden border border-slate-200 shadow-card`} style={{ borderTop: cardFormat === 'tricolore' ? '0' : cardFormat === 'bandeau' ? `8px solid ${accent}` : `5px solid ${accent}`, borderLeft: cardFormat === 'elegant' ? '3px solid #d4a72c' : undefined, borderRadius: cardFormat === 'minimal' ? '4px' : '12px', background: cardFormat === 'elegant' ? '#fffdf5' : '#ffffff' }}>
-                  <div aria-hidden="true" className="pointer-events-none relative z-20 flex h-[12px] w-full shrink-0 overflow-hidden" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
-                    {cardFormat === 'tricolore' ? <><span className="h-full w-1/3 shrink-0" style={{ backgroundColor: '#16834a' }} /><span className="h-full w-1/3 shrink-0" style={{ backgroundColor: '#f5cf3d' }} /><span className="h-full w-1/3 shrink-0" style={{ backgroundColor: '#c93232' }} /></> : <span className="h-full w-full" style={{ backgroundColor: accent }} />}
+                  <div aria-hidden="true" className="pointer-events-none relative z-20 flex h-[18px] w-full shrink-0 overflow-hidden" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
+                    <><span className="h-full w-1/3 shrink-0" style={{ backgroundColor: '#16834a' }} /><span className="h-full w-1/3 shrink-0" style={{ backgroundColor: '#f5cf3d' }} /><span className="h-full w-1/3 shrink-0" style={{ backgroundColor: '#c93232' }} /></>
                   </div>
                   
                   <div className="relative z-10 flex min-w-0 flex-1 flex-col p-3">

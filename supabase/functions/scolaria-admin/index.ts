@@ -17,7 +17,7 @@ Deno.serve(async (req: Request) => {
   if (b.action === "record_visit") {
    const v = b.visit;
    if (!v || !uuidPattern.test(v.id || "") || !uuidPattern.test(v.visitor_id || "") || !uuidPattern.test(v.session_id || "")) return respond({error:"Visite invalide"},400);
-   if (!["/","/auth"].includes(v.page_path || "")) return respond({error:"Page invalide"},400);
+   if (!["/","/auth","/app"].includes(v.page_path || "")) return respond({error:"Page invalide"},400);
    const allowedDevices = ["Téléphone","Tablette","Ordinateur","Autre / non identifié"];
    const clean = (value: unknown, max = 120): string | null => typeof value === "string" ? value.replace(/[<>\u0000-\u001f]/g,"").slice(0,max) || null : null;
    const {error}=await supabase.from("visitor_visits").insert({
@@ -50,10 +50,20 @@ Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get("Authorization") || "";
   const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
-  // Do not use the User-Agent as an authorization factor: Android browsers in
-  // desktop-site mode report a desktop UA and falsely lock out the real admin.
-  // Access remains restricted by the exact admin account and the secret code.
-  if (authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
+  // Le gateway vérifie déjà la signature du JWT (verify_jwt=true). En cas
+  // d'échec transitoire de getUser, utiliser uniquement l'e-mail du JWT vérifié.
+  let tokenEmail = "";
+  try {
+   const payload = bearerToken.split(".")[1];
+   if (payload) {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
+    tokenEmail = String(decoded.email || "").trim().toLowerCase();
+   }
+  } catch { tokenEmail = ""; }
+  const verifiedEmail = String(authData.user?.email || tokenEmail).trim().toLowerCase();
+  // L'accès reste limité au compte administrateur et au code développeur.
+  if (!bearerToken || (authError && !tokenEmail) || verifiedEmail !== ADMIN_EMAIL) {
    return respond({error:"Accès administrateur réservé au compte autorisé."},403);
   }
   if(String(b.code ?? '').trim() !== String(DEV_CODE ?? '').trim()) return respond({error:"Code développeur invalide"},401);

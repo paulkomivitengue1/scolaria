@@ -288,7 +288,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <div className="gl-container gl-hero-grid">
             <div className="gl-hero-copy">
               <div className="gl-eyebrow"><span style={{ width:7, height:7, borderRadius:'50%', background:'#1d4ed8' }} /> Pensé pour la gestion scolaire</div>
-              <h1 className="gl-title">Moins de paperasse.<br /><span>Plus de maîtrise.</span></h1>
+              <h1 className="gl-title">Logiciel de gestion scolaire.<br /><span>Moins de paperasse, plus de maîtrise.</span></h1>
               <p className="gl-lead">Pilotez les frais scolaires, les élèves, les reçus et les stocks depuis un seul espace simple à utiliser. Gestilys vous aide à garder une vision claire de votre établissement, même depuis votre téléphone.</p>
               <div className="gl-hero-actions" style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:12, marginTop:25 }}>
                 <button className="gl-btn gl-btn-primary" onClick={onEnter}>Créer un compte <ArrowRight size={17} /></button>

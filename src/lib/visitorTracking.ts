@@ -53,8 +53,8 @@ async function send(payload: Record<string, unknown>, keepalive = false): Promis
   }
 }
 
-/** Tracks only the public landing/auth flow; it never collects a phone number or raw IP. */
-export function trackPublicVisit(page: 'landing' | 'auth'): () => void {
+/** Tracks consented landing, authentication, and app visits; it never collects a phone number or raw IP. */
+export function trackPublicVisit(page: 'landing' | 'auth' | 'app'): () => void {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return () => undefined;
   const visitId = crypto.randomUUID();
   const startedAt = Date.now();
@@ -68,7 +68,7 @@ export function trackPublicVisit(page: 'landing' | 'auth'): () => void {
       id: visitId,
       visitor_id: visitorId,
       session_id: sessionId,
-      page_path: page === 'auth' ? '/auth' : '/',
+      page_path: page === 'auth' ? '/auth' : page === 'app' ? '/app' : '/',
       referrer_origin: document.referrer ? safeOrigin(document.referrer) : null,
       utm_source: safeCampaign(url.searchParams.get('utm_source')),
       utm_medium: safeCampaign(url.searchParams.get('utm_medium')),
