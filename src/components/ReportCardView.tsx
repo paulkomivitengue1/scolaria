@@ -109,8 +109,10 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     })).then(results => {
       if (!alive) return;
       const ranked = results.filter((item): item is { studentId: string; average: number } => item !== null).sort((a, b) => b.average - a.average);
-      const rankIndex = ranked.findIndex(item => item.studentId === selectedStudent.id);
-      setClassStats({ count: classmates.length, highest: ranked.length ? ranked[0].average : null, lowest: ranked.length ? ranked[ranked.length - 1].average : null, rank: rankIndex >= 0 ? rankIndex + 1 : null });
+      const selected = ranked.find(item => item.studentId === selectedStudent.id);
+      // Ex-aequo : deux élèves avec la même moyenne partagent le même rang.
+      const rank = selected ? 1 + ranked.filter(item => item.average > selected.average).length : null;
+      setClassStats({ count: classmates.length, highest: ranked.length ? ranked[0].average : null, lowest: ranked.length ? ranked[ranked.length - 1].average : null, rank });
     });
     return () => { alive = false; };
   }, [mode, selectedStudent, selectedPeriod, academicYear, schoolId, students]);
@@ -377,12 +379,12 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             <h3 className="font-display text-sm font-700 text-ink">Notes par matière</h3>
           </div>
           {/* Desktop header */}
-          <div className="hidden grid-cols-[1fr_80px_80px_80px_40px] gap-2 border-b border-slate-100 px-4 py-2 text-[11px] font-700 uppercase tracking-wider text-slate-500 sm:grid">
+          <div className="hidden grid-cols-[minmax(110px,0.8fr)_70px_70px_65px_36px] gap-2 border-b border-slate-100 px-4 py-2 text-[11px] font-700 uppercase tracking-wider text-slate-500 sm:grid">
             <span>Matière</span><span className="text-center">Note</span><span className="text-center">Sur</span><span className="text-center">Coef.</span><span></span>
           </div>
           <div className="divide-y divide-slate-100">
             {grades.map((g, i) => (
-              <div key={i} className="px-4 py-3 sm:grid sm:grid-cols-[1fr_80px_80px_80px_40px] sm:items-center sm:gap-2">
+              <div key={i} className="px-4 py-3 sm:grid sm:grid-cols-[minmax(110px,0.8fr)_70px_70px_65px_36px] sm:items-center sm:gap-2">
                 {/* Subject — full width on both mobile & desktop */}
                 <div className="relative">
                   <input
@@ -582,7 +584,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 <div className="rounded border border-slate-300 p-2"><b>Rang :</b> {classStats.rank ? classStats.rank + 'e' : '—'}</div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] border-collapse text-xs sm:text-sm">
+                <table className="w-full min-w-[680px] table-fixed border-collapse text-xs sm:text-sm">
                   <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matières','Note classe /20','Compo /40',...(showLyceeRank?['Rang']:[]),'Moy. générale','Coef.','Moy. coef.',...(showLyceeMention?['Mention']:[])].map(label => <th key={label} className="border border-slate-500 px-1 py-2 text-center font-bold">{label}</th>)}</tr></thead>
                   <tbody>{subjectRows.map((g, index) => {
                     const score = lyceeAverage(g.subject);
@@ -593,7 +595,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                     const hasCompleteScore = isConduct || (scoreEntry?.classScore !== undefined && scoreEntry.classScore !== '' && scoreEntry?.compositionScore !== undefined && scoreEntry.compositionScore !== '');
                     return <tr key={g.id || g.subject}>
                       <td className="border border-slate-500 px-1 py-1 text-center">{index + 1}</td>
-                      <td className="border border-slate-500 px-2 py-1 font-semibold">{g.subject}</td>
+                      <td className="w-[105px] max-w-[105px] break-words border border-slate-500 px-1 py-1 font-semibold">{g.subject}</td>
                       <td className="border border-slate-500 p-1 text-center">{isConduct ? Number(lyceeScores.Conduite?.classScore ?? 18).toFixed(2) : (lyceeScores[g.subject]?.classScore === undefined || lyceeScores[g.subject]?.classScore === '' ? '—' : Number(lyceeScores[g.subject].classScore).toFixed(2))}</td>
                       <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : (lyceeScores[g.subject]?.compositionScore === undefined || lyceeScores[g.subject]?.compositionScore === '' ? '—' : Number(lyceeScores[g.subject].compositionScore).toFixed(2))}</td>
                       {showLyceeRank && <td className="border border-slate-500 p-1 text-center">{isConduct ? '—' : (lyceeScores[g.subject]?.rank ? lyceeScores[g.subject].rank + 'e' : '—')}</td>}
