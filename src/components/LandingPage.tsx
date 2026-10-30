@@ -117,9 +117,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         .gl-container { width:min(1120px, calc(100% - 40px)); margin-inline:auto; }
         .gl-nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.96); backdrop-filter:blur(16px); border-bottom:1px solid #e8edf5; }
         .gl-menu-toggle { display:inline-flex; width:42px; height:42px; flex:none; align-items:center; justify-content:center; border:1px solid #dbe3ef; border-radius:12px; background:white; color:#172554; box-shadow:0 4px 12px rgba(23,37,84,.06); }
-        .gl-mobile-backdrop { position:fixed; inset:68px 0 0; z-index:49; width:100%; height:calc(100dvh - 68px); border:0; background:rgba(15,23,42,.38); }
-        .gl-mobile-menu { position:fixed; top:68px; bottom:0; left:0; z-index:51; display:block; width:min(86vw,320px); overflow-y:auto; overscroll-behavior:contain; border-top:1px solid #e8edf5; border-right:1px solid #dbeafe; border-radius:0 18px 0 0; background:#fff; box-shadow:12px 0 32px rgba(23,37,84,.16); padding:14px 18px 24px; animation:gl-menu-in .18s ease-out; }
-        @keyframes gl-menu-in { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
+        .gl-mobile-menu { display:block; border-top:1px solid #e8edf5; background:#fff; box-shadow:0 18px 28px rgba(23,37,84,.10); padding:10px 20px 16px; }
         .gl-mobile-menu a { display:flex; align-items:center; justify-content:space-between; min-height:46px; padding:10px 4px; color:#172554; text-decoration:none; font-size:14px; font-weight:800; border-bottom:1px solid #eef2f7; }
         .gl-mobile-menu .gl-mobile-cta { display:flex; width:100%; align-items:center; gap:8px; justify-content:center; min-height:46px; margin-top:12px; border:0; border-radius:12px; background:linear-gradient(135deg,#f9d56e,#f4bd35); color:#172554; font-size:14px; font-weight:900; }
         @media (max-width:900px) {
@@ -273,7 +271,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           </nav>
           <button className="gl-btn gl-btn-primary gl-nav-cta" style={{ padding:'11px 15px', fontSize:12, minHeight:44, whiteSpace:'nowrap' }} onClick={onEnter}>Se connecter / S’inscrire <ArrowRight size={15} /></button>
         </div>
-        {mobileMenuOpen && <><button type="button" className="gl-mobile-backdrop" aria-label="Fermer le menu" onClick={() => setMobileMenuOpen(false)} /><nav id="gestilys-mobile-menu" className="gl-mobile-menu" aria-label="Navigation principale">
+        {mobileMenuOpen && <nav id="gestilys-mobile-menu" className="gl-mobile-menu" aria-label="Navigation principale">
           <a href="#accueil" onClick={() => setMobileMenuOpen(false)}>Accueil <ArrowRight size={15} /></a>
           <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)}>Fonctionnalités <ArrowRight size={15} /></a>
           <a href="#demonstration" onClick={() => setMobileMenuOpen(false)}>Aperçu du logiciel <ArrowRight size={15} /></a>
@@ -282,7 +280,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           <a href="#questions" onClick={() => setMobileMenuOpen(false)}>Questions fréquentes <ArrowRight size={15} /></a>
           <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact <ArrowRight size={15} /></a>
           <button type="button" className="gl-mobile-cta" onClick={() => { setMobileMenuOpen(false); onEnter(); }}>Créer un compte <ArrowRight size={16} /></button>
-        </nav></>}
+        </nav>}
       </header>
 
       <main>
