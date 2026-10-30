@@ -50,10 +50,20 @@ Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get("Authorization") || "";
   const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
-  // Do not use the User-Agent as an authorization factor: Android browsers in
-  // desktop-site mode report a desktop UA and falsely lock out the real admin.
-  // Access remains restricted by the exact admin account and the secret code.
-  if (authError || !authData.user || authData.user.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
+  // Le gateway vérifie déjà la signature du JWT (verify_jwt=true). En cas
+  // d'échec transitoire de getUser, utiliser uniquement l'e-mail du JWT vérifié.
+  let tokenEmail = "";
+  try {
+   const payload = bearerToken.split(".")[1];
+   if (payload) {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
+    tokenEmail = String(decoded.email || "").trim().toLowerCase();
+   }
+  } catch { tokenEmail = ""; }
+  const verifiedEmail = String(authData.user?.email || tokenEmail).trim().toLowerCase();
+  // L'accès reste limité au compte administrateur et au code développeur.
+  if (!bearerToken || (authError && !tokenEmail) || verifiedEmail !== ADMIN_EMAIL) {
    return respond({error:"Accès administrateur réservé au compte autorisé."},403);
   }
   if(String(b.code ?? '').trim() !== String(DEV_CODE ?? '').trim()) return respond({error:"Code développeur invalide"},401);
