@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestilys-shell-v8';
+const CACHE_NAME = 'gestilys-shell-v9';
 const SHELL_URLS = [
   '/',
   '/offline.html',
@@ -12,8 +12,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(SHELL_URLS);
-    // Also cache the current Vite HTML shell and its hashed JS/CSS files.
-    // These are required for the installed PWA to start after the network disappears.
+    // Pre-cache the exact hashed bundles referenced by the current HTML.
+    // A PWA must never combine an old HTML shell with missing/stale JS chunks.
     try {
       const response = await fetch('/', { cache: 'reload' });
       if (response.ok) {
@@ -23,15 +23,15 @@ self.addEventListener('install', (event) => {
           .map((match) => new URL(match[1], self.location.origin).href);
         await Promise.all(assets.map(async (assetUrl) => {
           try {
-            const assetResponse = await fetch(assetUrl);
+            const assetResponse = await fetch(assetUrl, { cache: 'reload' });
             if (assetResponse.ok) await cache.put(assetUrl, assetResponse);
           } catch {
-            // Keep installation successful if one optional asset cannot be fetched.
+            // A single optional asset must not prevent the worker from installing.
           }
         }));
       }
     } catch {
-      // The shell URLs above remain the minimum offline fallback.
+      // Keep the minimum shell cache if the network is temporarily unavailable.
     }
     await self.skipWaiting();
   })());
@@ -40,7 +40,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const names = await caches.keys();
-    await Promise.all(names.filter((name) => name.startsWith('gestilys-shell-') && name !== CACHE_NAME).map((name) => caches.delete(name)));
+    await Promise.all(names
+      .filter((name) => name.startsWith('gestilys-shell-') && name !== CACHE_NAME)
+      .map((name) => caches.delete(name)));
     await self.clients.claim();
   })());
 });
@@ -50,39 +52,53 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // Never cache authentication, database, storage or edge-function responses.
   if (/\/(rest\/v1|auth\/v1|storage\/v1|functions\/v1)(\/|$)/.test(url.pathname)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
       try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put('/', response.clone());
-        }
+        const response = await fetch(request, { cache: 'no-cache' });
+        if (response && response.ok) await cache.put('/', response.clone());
         return response;
       } catch {
-        const cache = await caches.open(CACHE_NAME);
-        return (await cache.match(request)) || (await cache.match('/')) || (await cache.match('/offline.html'));
+        return (await cache.match(request)) ||
+          (await cache.match('/')) ||
+          (await cache.match('/offline.html')) ||
+          Response.error();
       }
     })());
     return;
   }
 
-  if (request.destination === 'script' || request.destination === 'style' || request.destination === 'image' || request.destination === 'font' || request.destination === 'document' || url.pathname.startsWith('/assets/')) {
+  // Vite assets have content-hashed names: cache-first is safe and avoids a
+  // transient mobile-network failure leaving the PWA with a blank document.
+  if (url.pathname.startsWith('/assets/')) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      // Network-first: never show an old app bundle when a newer deployment is online.
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) await cache.put(request, response.clone());
+        return response;
+      } catch {
+        return Response.error();
+      }
+    })());
+    return;
+  }
+
+  if (['script', 'style', 'image', 'font', 'document'].includes(request.destination)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
       try {
         const response = await fetch(request, { cache: 'no-cache' });
         if (response && response.ok) await cache.put(request, response.clone());
         return response;
       } catch {
-        const cached = await cache.match(request);
-        if (cached) return cached;
-        // A missing cached chunk must fail as a network error, not as an empty JS response.
-        // This lets the import UI display its explicit Excel-module fallback message.
-        return Response.error();
+        return (await cache.match(request)) || Response.error();
       }
     })());
   }
