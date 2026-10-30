@@ -1286,13 +1286,15 @@ function LandingOrAuth(_: { onEnterAuth: () => void }) {
   };
   return <>
     {showAuth ? <AuthPage onBack={() => setShowAuth(false)} /> : <LandingPage onEnter={() => setShowAuth(true)} />}
-    {analyticsConsent === null && <aside role="dialog" aria-label="Choix de confidentialité" className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-3xl rounded-2xl border border-blue-200 bg-white p-4 shadow-2xl sm:inset-x-6 sm:bottom-5 sm:p-5">
+    {analyticsConsent === null && <aside role="dialog" aria-label="Choix de confidentialité" className="fixed inset-0 z-[100] flex items-end justify-center overflow-y-auto bg-slate-950/45 p-3 sm:items-center sm:p-6">
+      <section className="w-full max-w-3xl rounded-2xl border border-blue-200 bg-white p-4 shadow-2xl sm:p-5" aria-label="Préférences de confidentialité">
       <p className="text-sm font-800 text-blue-950">Mesure d’audience Gestilys</p>
       <p className="mt-1 text-xs leading-5 text-slate-600">Avec ton accord, nous enregistrons des statistiques de visite (type d’appareil, navigateur et pages consultées) pour améliorer le site. Nous ne collectons ni ton nom, ni ton numéro de téléphone, ni ton adresse IP brute. Tu peux refuser sans bloquer l’accès à Gestilys.</p>
       <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button type="button" onClick={() => chooseConsent('refused')} className="min-h-10 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-800 text-slate-700">Refuser</button>
         <button type="button" onClick={() => chooseConsent('accepted')} className="min-h-10 rounded-xl bg-gradient-to-r from-blue-950 to-blue-700 px-4 py-2 text-sm font-800 text-white">Accepter la mesure d’audience</button>
       </div>
+      </section>
     </aside>}
   </>;
 }
