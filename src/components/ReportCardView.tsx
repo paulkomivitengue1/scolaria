@@ -371,6 +371,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           </label>
           {bulletinFormat === 'lycee-malien' && <p className="mt-2 text-sm font-600 text-indigo-900">Saisis toutes les notes ci-dessous avant d’ouvrir l’aperçu. L’aperçu sera ensuite en lecture seule.</p>}
         </div>
+        {bulletinFormat !== 'lycee-malien' && (
         {/* Grades table */}
         <div className="overflow-hidden rounded-2.5xl border border-slate-200 bg-white shadow-card">
           <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
@@ -404,27 +405,28 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             <button onClick={addGrade} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-600 text-indigo-700 transition hover:bg-indigo-100 active:scale-95"><Plus className="h-4 w-4" /> Ajouter une matière</button>
           </div>
         </div>
+        )}
 
         {bulletinFormat === 'lycee-malien' && (
           <section className="min-w-0 rounded-2xl border-2 border-emerald-200 bg-white shadow-sm">
             <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-3">
               <h3 className="text-base font-800 text-emerald-950">Notes du bulletin — lycée malien</h3>
-              <p className="mt-1 text-sm font-600 text-emerald-900">Les matières viennent du tableau ci-dessus. Fais défiler le tableau horizontalement sur téléphone.</p>
+              <p className="mt-1 text-sm font-600 text-emerald-900">Chaque matière reste sur une seule ligne : note de classe, composition, coefficient et calculs automatiques. Sur téléphone, fais glisser le tableau horizontalement.</p>
               <div className="mt-3 flex flex-wrap gap-4 text-sm font-bold text-emerald-950">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={showLyceeRank} onChange={e => setShowLyceeRank(e.target.checked)} className="h-4 w-4 accent-emerald-700" />Afficher les rangs</label>
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={showLyceeMention} onChange={e => setShowLyceeMention(e.target.checked)} className="h-4 w-4 accent-emerald-700" />Afficher les mentions</label>
               </div>
             </div>
             <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <table className="w-max min-w-[980px] border-collapse text-sm">
+              <table className="w-max min-w-[900px] table-fixed border-collapse text-sm"><colgroup><col style={{ width: 38 }} /><col style={{ width: 125 }} /><col style={{ width: 112 }} /><col style={{ width: 112 }} /><col style={{ width: 66 }} /><col style={{ width: 105 }} /><col style={{ width: 120 }} />{showLyceeRank && <col style={{ width: 75 }} />}</colgroup>
                 <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40','Coef.','Moyenne /20','Moyenne × coef.',...(showLyceeRank?['Rang']:[])].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
                 <tbody>{[...grades.filter(g => g.subject.trim()), { id: '__conduite__', subject: 'Conduite', score: 18, maxScore: 20, coefficient: 1 } as GradeRow].map((g, index) => {
                   const isConduct = g.subject === 'Conduite';
                   return <tr key={g.id || g.subject}>
                     <td className="border border-slate-300 px-2 py-2 text-center font-700">{index + 1}</td>
-                    <td className="border border-slate-300 px-2 py-2 font-800 text-slate-900">{g.subject}</td>
-                    <td className="border border-slate-300 p-2">{<input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? (isConduct ? '18' : '')} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-[88px] rounded-lg border border-slate-300 bg-white px-2 py-2 text-base font-700 text-slate-950" />}</td>
-                    <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Composition sur 40 '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-[88px] rounded-lg border border-slate-300 bg-white px-2 py-2 text-base font-700 text-slate-950" />}</td>
+                    <td className="border border-slate-300 px-1 py-2 font-800 text-slate-900 break-words">{g.subject}<button aria-label={'Supprimer '+g.subject} onClick={() => { const gradeIndex = grades.findIndex(item => item.id === g.id || item.subject === g.subject); if (gradeIndex >= 0) removeGrade(gradeIndex); }} className="ml-1 inline-flex align-middle text-slate-400 hover:text-red-600"><Trash2 className="h-3 w-3" /></button></td>
+                    <td className="border border-slate-300 p-2">{<input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? (isConduct ? '18' : '')} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-[78px] max-w-full rounded border border-slate-300 bg-white px-1 py-1.5 text-sm font-700 text-slate-950" />}</td>
+                    <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Composition sur 40 '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-[78px] max-w-full rounded border border-slate-300 bg-white px-1 py-1.5 text-sm font-700 text-slate-950" />}</td>
                     <td className="border border-slate-300 p-2 text-center font-700">{isConduct ? '1' : (Number(g.coefficient) || 1)}</td>
                     <td className="border border-slate-300 p-2 text-center font-700">{lyceeAverage(g.subject).toFixed(2)}</td>
                     <td className="border border-slate-300 p-2 text-center font-700">{(lyceeAverage(g.subject) * (Number(g.coefficient) || 1)).toFixed(2)}</td>
@@ -433,6 +435,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                 })}</tbody>
               </table>
             </div>
+            <div className="border-t border-emerald-100 px-4 py-3"><button onClick={addGrade} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-700 text-emerald-800 hover:bg-emerald-100"><Plus className="h-4 w-4" /> Ajouter une matière</button></div>
             <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-2">
               <label className="text-sm font-800 text-slate-800">Rang général<input type="number" min="1" value={lyceeScores['__summary__']?.rank ?? ''} onChange={e => updateLyceeScore('__summary__','rank',e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" placeholder="Ex. 2" /></label>
               <label className="text-sm font-800 text-slate-800">Moyenne du premier<input type="number" min="0" max="20" step="0.01" value={lyceeScores['__summary__']?.classScore ?? ''} onChange={e => updateLyceeScore('__summary__','classScore',e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" placeholder="Ex. 18,61" /></label>
