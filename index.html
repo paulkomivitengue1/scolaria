@@ -21,6 +21,45 @@
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Gestilys — Logiciel de gestion scolaire" />
     <meta name="twitter:description" content="Un outil pratique pour gérer les écoles privées au Mali et en Afrique de l’Ouest." />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://scolaria-gestion.vercel.app/#organization",
+            "name": "Gestilys",
+            "url": "https://scolaria-gestion.vercel.app/",
+            "email": "paulkomivitengue@gmail.com",
+            "telephone": "+22373369410",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Bamako",
+              "addressCountry": "ML"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://scolaria-gestion.vercel.app/#software",
+            "name": "Gestilys",
+            "url": "https://scolaria-gestion.vercel.app/",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "Logiciel de gestion scolaire",
+            "operatingSystem": "Web",
+            "inLanguage": "fr",
+            "description": "Logiciel de gestion scolaire pour les écoles privées au Mali et en Afrique de l’Ouest : élèves, classes, frais scolaires, paiements, reçus, stocks et bulletins.",
+            "publisher": {
+              "@id": "https://scolaria-gestion.vercel.app/#organization"
+            },
+            "offers": [
+              { "@type": "Offer", "name": "Essentiel", "price": "10000", "priceCurrency": "XOF" },
+              { "@type": "Offer", "name": "Premium", "price": "20000", "priceCurrency": "XOF" },
+              { "@type": "Offer", "name": "Élite", "price": "30000", "priceCurrency": "XOF" }
+            ]
+          }
+        ]
+      }
+    </script>
     <title>Gestilys — Logiciel de gestion scolaire au Mali et en Afrique de l’Ouest</title>
   </head>
   <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
