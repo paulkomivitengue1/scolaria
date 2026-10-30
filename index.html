@@ -57,5 +57,29 @@
     </script>
     <title>Gestilys — Logiciel de gestion scolaire au Mali et en Afrique de l’Ouest</title>
   </head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+  <body>
+    <div id="app-startup-fallback" role="status" aria-live="polite" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#eff6ff,#fff,#fffbeb);font-family:system-ui,sans-serif;color:#172554">
+      <section style="width:100%;max-width:420px;padding:28px 22px;border:1px solid #dbeafe;border-radius:24px;background:#fff;text-align:center;box-shadow:0 18px 50px rgba(23,37,84,.10)">
+        <div style="margin:0 auto;width:54px;height:54px;display:grid;place-items:center;border-radius:16px;background:#172554;color:#f4bd35;font-size:26px;font-weight:900">G</div>
+        <h1 style="margin:16px 0 6px;font-size:23px;font-weight:900">Gestilys démarre</h1>
+        <p id="app-startup-message" style="margin:0;color:#475569;font-size:14px;line-height:1.6">Préparation de votre application…</p>
+        <div style="height:6px;margin:20px 0 0;overflow:hidden;border-radius:8px;background:#dbeafe"><div style="height:100%;width:40%;border-radius:8px;background:#1d4ed8;animation:gestilys-startup 1.4s ease-in-out infinite"></div></div>
+        <button id="app-startup-retry" type="button" style="display:none;margin-top:18px;min-height:44px;padding:10px 18px;border:0;border-radius:12px;background:#172554;color:#fff;font-weight:800" onclick="window.location.reload()">Réessayer</button>
+      </section>
+    </div>
+    <style>@keyframes gestilys-startup{0%{transform:translateX(-110%)}100%{transform:translateX(270%)}}@media(prefers-reduced-motion:reduce){#app-startup-fallback div[style*="animation"]{animation:none!important}}</style>
+    <script>
+      window.setTimeout(function () {
+        var message = document.getElementById('app-startup-message');
+        var retry = document.getElementById('app-startup-retry');
+        if (message && document.getElementById('app-startup-fallback')) {
+          message.textContent = "Le démarrage prend plus de temps que prévu. Vérifiez votre connexion puis réessayez. Si le problème persiste, fermez complètement Gestilys et rouvrez-le.";
+          if (retry) retry.style.display = 'inline-flex';
+        }
+      }, 12000);
+    </script>
+    <noscript><p style="padding:20px;text-align:center">Activez JavaScript pour utiliser Gestilys.</p></noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
