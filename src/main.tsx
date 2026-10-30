@@ -45,6 +45,9 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
+// Remove the static startup screen only after this JavaScript entry point has loaded.
+document.getElementById('app-startup-fallback')?.remove();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <InitErrorBoundary>
