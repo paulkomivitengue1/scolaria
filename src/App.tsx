@@ -51,6 +51,16 @@ const EMPTY_FEE_CONFIG: SchoolFeeConfig = {
 export default function App() {
   const { user, profile, loading, isTrialExpired, signOut, refreshProfile } = useAuth();
 
+  // Compte les visites dans l'application uniquement après le consentement
+  // déjà donné sur la page publique. Le refus reste respecté sur tous les appareils.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    try {
+      if (localStorage.getItem('gestilys_analytics_consent') !== 'accepted') return undefined;
+    } catch { return undefined; }
+    return trackPublicVisit('app');
+  }, [user?.id]);
+
   // The admin panel is opened from the authenticated in-app menu, not by a public URL.
   const [isAdminPanel, setIsAdminPanel] = useState(false);
 
