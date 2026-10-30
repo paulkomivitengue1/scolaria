@@ -259,7 +259,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const lyceeScoredGrades = grades.filter(g => g.subject.trim() && lyceeScores[g.subject]?.classScore !== undefined && lyceeScores[g.subject].classScore !== '' && lyceeScores[g.subject]?.compositionScore !== undefined && lyceeScores[g.subject].compositionScore !== '');
   const lyceeCoefficientTotal = lyceeScoredGrades.reduce((sum, g) => sum + (Number(g.coefficient) || 1), 0);
   const lyceeWeightedTotal = lyceeScoredGrades.reduce((sum, g) => sum + lyceeAverage(g.subject) * (Number(g.coefficient) || 1), 0);
-  const avg = bulletinFormat === 'lycee-malien' ? (lyceeCoefficientTotal ? lyceeWeightedTotal / lyceeCoefficientTotal : 0) : gradeAverage(grades);
+  const avg = lyceeCoefficientTotal ? lyceeWeightedTotal / lyceeCoefficientTotal : 0;
 
   if (students.length === 0) {
     return (
@@ -372,38 +372,37 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           {bulletinFormat === 'lycee-malien' && <p className="mt-2 text-sm font-600 text-indigo-900">Saisis toutes les notes ci-dessous avant d’ouvrir l’aperçu. L’aperçu sera ensuite en lecture seule.</p>}
         </div>
         {bulletinFormat !== 'lycee-malien' && (
-        <div className="overflow-hidden rounded-2.5xl border border-slate-200 bg-white shadow-card">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <h3 className="font-display text-sm font-700 text-ink">Notes par matière</h3>
-          </div>
-          {/* Tableau horizontal conservé sur téléphone et ordinateur */}
-          <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="min-w-[510px]">
-              <div className="grid grid-cols-[minmax(120px,1.5fr)_72px_72px_72px_36px] gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-700 uppercase tracking-wide text-slate-600">
-                <span>Matière</span><span className="text-center">Note</span><span className="text-center">Sur</span><span className="text-center">Coef.</span><span></span>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {grades.map((g, i) => (
-                  <div key={i} className="grid grid-cols-[minmax(120px,1.5fr)_72px_72px_72px_36px] items-center gap-2 px-3 py-2">
-                    <div className="relative min-w-0">
-                      <input type="text" list="subjects-list" value={g.subject} onChange={e => updateGrade(i, 'subject', e.target.value)} placeholder="Matière…" aria-label="Matière" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                      <datalist id="subjects-list">{DEFAULT_SUBJECTS.map(s => <option key={s} value={s} />)}</datalist>
-                    </div>
-                    <input aria-label={'Note de '+g.subject} type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="—" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                    <input aria-label={'Note sur '+g.subject} type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                    <input aria-label={'Coefficient de '+g.subject} type="number" min={1} step={1} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => { const raw = e.target.value; const cleaned = raw.length > 1 && raw.startsWith('1') && !raw.startsWith('1.') ? raw.slice(1) : raw; updateGrade(i, 'coefficient', cleaned === '' ? 1 : (parseFloat(cleaned) || 1)); }} placeholder="1" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                    <button aria-label={'Supprimer '+g.subject} onClick={() => removeGrade(i)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                ))}
-                {grades.length === 0 && <div className="px-4 py-8 text-center text-sm text-slate-400">Aucune matière. Cliquez sur « Ajouter une matière » pour commencer.</div>}
-              </div>
+          <section className="min-w-0 overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-card">
+            <div className="border-b border-indigo-100 bg-indigo-50 px-4 py-3">
+              <h3 className="text-base font-800 text-indigo-950">Saisie des notes par matière</h3>
+              <p className="mt-1 text-sm text-indigo-900">Pour chaque matière : note de classe /20, composition /40, coefficient et calculs automatiques. La mention est calculée automatiquement. Le rang reste facultatif.</p>
+              <label className="mt-3 inline-flex items-center gap-2 text-sm font-700 text-indigo-950"><input type="checkbox" checked={showRank} onChange={e => setShowRank(e.target.checked)} className="h-4 w-4 accent-indigo-700" /> Afficher le rang sur le bulletin</label>
             </div>
-          </div>
-          <p className="px-3 py-2 text-xs text-slate-500">Sur téléphone, faites glisser le tableau horizontalement pour voir tous les champs.</p>
-          <div className="border-t border-slate-200 px-4 py-3">
-            <button onClick={addGrade} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-600 text-indigo-700 transition hover:bg-indigo-100 active:scale-95"><Plus className="h-4 w-4" /> Ajouter une matière</button>
-          </div>
-        </div>
+            <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <table className="w-max min-w-[900px] border-collapse text-sm">
+                <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40','Coef.','Moyenne générale /20','Moyenne × coef.',...(showRank?['Rang (facultatif)']:[])].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
+                <tbody>{grades.map((g, index) => {
+                  const subject = g.subject.trim();
+                  const entry = lyceeScores[subject];
+                  const complete = !!subject && entry?.classScore !== undefined && entry.classScore !== '' && entry?.compositionScore !== undefined && entry.compositionScore !== '';
+                  const average = complete ? lyceeAverage(subject) : null;
+                  const coefficient = Number(g.coefficient) || 1;
+                  return <tr key={g.id || 'grade-'+index}>
+                    <td className="border border-slate-300 px-2 py-2 text-center font-700">{index+1}</td>
+                    <td className="border border-slate-300 px-1 py-2"><div className="flex items-center gap-1"><input type="text" list="common-subjects-list" value={g.subject} onChange={e => updateGrade(index,'subject',e.target.value)} placeholder="Matière…" aria-label="Matière" className="w-[125px] min-w-0 rounded border border-slate-300 bg-white px-1.5 py-2 text-sm font-700 text-slate-950" /><datalist id="common-subjects-list">{DEFAULT_SUBJECTS.map(name=><option key={name} value={name}/>)}</datalist><button aria-label={'Supprimer '+(g.subject || 'la matière')} onClick={()=>removeGrade(index)} className="inline-flex shrink-0 text-slate-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5"/></button></div></td>
+                    <td className="border border-slate-300 p-2"><input aria-label={'Note de classe '+subject} type="number" min="0" max="20" step="0.5" value={entry?.classScore ?? ''} onChange={e=>updateLyceeScore(subject,'classScore',e.target.value)} className="w-[82px] rounded border border-slate-300 bg-white px-1 py-2 text-center text-sm font-700 text-slate-950"/></td>
+                    <td className="border border-slate-300 p-2"><input aria-label={'Composition sur 40 '+subject} type="number" min="0" max="40" step="0.5" value={entry?.compositionScore ?? ''} onChange={e=>updateLyceeScore(subject,'compositionScore',e.target.value)} className="w-[82px] rounded border border-slate-300 bg-white px-1 py-2 text-center text-sm font-700 text-slate-950"/></td>
+                    <td className="border border-slate-300 p-2"><input aria-label={'Coefficient '+subject} type="number" min="1" step="1" value={g.coefficient || 1} onChange={e=>updateGrade(index,'coefficient',Math.max(1,Number(e.target.value)||1))} className="w-[60px] rounded border border-slate-300 bg-white px-1 py-2 text-center text-sm font-700 text-slate-950"/></td>
+                    <td className="border border-slate-300 p-2 text-center font-800">{average === null ? '—' : average.toFixed(2)}</td>
+                    <td className="border border-slate-300 p-2 text-center font-800">{average === null ? '—' : (average*coefficient).toFixed(2)}</td>
+                    {showRank && <td className="border border-slate-300 p-2"><input aria-label={'Rang '+subject} type="number" min="1" value={entry?.rank ?? ''} onChange={e=>updateLyceeScore(subject,'rank',e.target.value)} className="w-[70px] rounded border border-slate-300 bg-white px-2 py-2 text-center text-sm font-700 text-slate-950"/></td>}
+                  </tr>;
+                })}</tbody>
+              </table>
+            </div>
+            <p className="px-3 py-2 text-xs text-slate-500">Sur téléphone, faites glisser le tableau horizontalement pour accéder à toutes les colonnes.</p>
+            <div className="border-t border-slate-200 px-4 py-3"><button onClick={addGrade} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-700 text-indigo-700"><Plus className="h-4 w-4"/> Ajouter une matière</button></div>
+          </section>
         )}
 
         {bulletinFormat === 'lycee-malien' && (
@@ -601,31 +600,30 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               </div>
               <p className="mt-3 text-xs italic text-slate-600"></p>
             </div>;
-          })() : <table className={`mt-4 w-full border-collapse ${bulletinFormat==='compact'?'text-xs':'text-sm'}`} style={{border:bulletinFormat==='minimal'?'none':undefined}}>
-            <thead>
-              <tr className="border-b-2 border-slate-300 bg-slate-50">
-                <th className="px-3 py-2 text-left text-xs font-700 uppercase tracking-wider text-slate-600">Matière</th>
-                <th className="px-3 py-2 text-center text-xs font-700 uppercase tracking-wider text-slate-600">Note</th>
-                <th className="px-3 py-2 text-center text-xs font-700 uppercase tracking-wider text-slate-600">Sur</th>
-                <th className="px-3 py-2 text-center text-xs font-700 uppercase tracking-wider text-slate-600">Coef.</th>
-                <th className="px-3 py-2 text-center text-xs font-700 uppercase tracking-wider text-slate-600">Moy/20</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grades.filter(g => g.subject).map((g, i) => (
-                <tr key={i} className="border-b border-slate-100">
-                  <td className="px-3 py-2 font-600 text-ink">{g.subject}</td>
-                  <td className="px-3 py-2 text-center font-700 text-ink">{g.score.toFixed(2)}</td>
-                  <td className="px-3 py-2 text-center text-slate-500">{g.maxScore.toFixed(0)}</td>
-                  <td className="px-3 py-2 text-center text-slate-500">{g.coefficient.toFixed(1)}</td>
-                  <td className="px-3 py-2 text-center font-700 text-indigo-700">{((g.score / g.maxScore) * 20).toFixed(2)}</td>
-                </tr>
-              ))}
-              {grades.filter(g => g.subject).length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-400">Aucune note saisie</td></tr>
-              )}
-            </tbody>
-          </table>}
+          })() : <div className="mt-4 w-full min-w-0 max-w-full overflow-hidden">
+            <table className={`w-full table-fixed border-collapse ${bulletinFormat==='compact'?'text-[9px] sm:text-xs':'text-[10px] sm:text-sm'}`} style={{border:bulletinFormat==='minimal'?'none':undefined}}>
+              <thead><tr className="border-b-2 border-slate-300 bg-slate-50">
+                {['N°','Matière','Note classe /20','Compo. /40','Coef.','Moy. générale','Moy. × coef.',...(showRank?['Rang']:[]),'Mention'].map(label=><th key={label} className="break-words border border-slate-300 px-0.5 py-2 text-center font-800 text-slate-700">{label}</th>)}
+              </tr></thead>
+              <tbody>{grades.filter(g=>g.subject.trim()).map((g,i)=>{
+                const entry=lyceeScores[g.subject];
+                const complete=entry?.classScore!==undefined&&entry.classScore!==''&&entry?.compositionScore!==undefined&&entry.compositionScore!=='';
+                const average=complete?lyceeAverage(g.subject):null;
+                const coefficient=Number(g.coefficient)||1;
+                return <tr key={g.id||i} className="border-b border-slate-100">
+                  <td className="break-words border border-slate-300 px-0.5 py-2 text-center">{i+1}</td>
+                  <td className="break-words border border-slate-300 px-0.5 py-2 font-700">{g.subject}</td>
+                  <td className="border border-slate-300 px-0.5 py-2 text-center">{complete?Number(entry.classScore).toFixed(2):'—'}</td>
+                  <td className="border border-slate-300 px-0.5 py-2 text-center">{complete?Number(entry.compositionScore).toFixed(2):'—'}</td>
+                  <td className="border border-slate-300 px-0.5 py-2 text-center">{coefficient}</td>
+                  <td className="border border-slate-300 px-0.5 py-2 text-center font-800">{average===null?'—':average.toFixed(2)}</td>
+                  <td className="border border-slate-300 px-0.5 py-2 text-center font-800">{average===null?'—':(average*coefficient).toFixed(2)}</td>
+                  {showRank&&<td className="border border-slate-300 px-0.5 py-2 text-center">{entry?.rank||'—'}</td>}
+                  <td className="break-words border border-slate-300 px-0.5 py-2 text-center">{average===null?'—':lyceeMention(average)}</td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </div>}
 
           {/* Average + appreciation */}
           {grades.filter(g => g.subject).length > 0 && (
