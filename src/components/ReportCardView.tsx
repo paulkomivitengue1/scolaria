@@ -74,7 +74,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
   const lyceeAverage = (subject: string) => {
     if (subject === 'Conduite') return Number(lyceeScores[subject]?.classScore || 18);
     const row = lyceeScores[subject];
-    return Math.round(((Number(row?.classScore || 0) + Number(row?.compositionScore || 0)) / 3) * 100) / 100;
+    return Math.round(((Number(row?.classScore || 0) + Number(row?.compositionScore || 0) / 2) / 2) * 100) / 100;
   };
   const lyceeMention = (average: number) => average >= 18 ? 'Excellent' : average >= 16 ? 'Très Bien' : average >= 14 ? 'Bien' : average >= 12 ? 'Assez Bien' : average >= 10 ? 'Passable' : 'Insuffisant';
 
@@ -100,7 +100,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
       if (!entry || entry.classScore === '' || entry.compositionScore === '' ||
           entry.classScore === undefined || entry.compositionScore === undefined) return null;
       const coefficient = Number(grade.coefficient) || 1;
-      const average = (Number(entry.classScore) + Number(entry.compositionScore)) / 3;
+      const average = (Number(entry.classScore) + Number(entry.compositionScore) / 2) / 2;
       if (!Number.isFinite(average)) return null;
       weighted += average * coefficient;
       coefficientTotal += coefficient;
@@ -111,12 +111,12 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
     const current = lyceeScores[subject];
     if (!current || current.classScore === '' || current.compositionScore === '' ||
         current.classScore === undefined || current.compositionScore === undefined) return null;
-    const currentAverage = (Number(current.classScore) + Number(current.compositionScore)) / 3;
+    const currentAverage = (Number(current.classScore) + Number(current.compositionScore) / 2) / 2;
     const higher = lyceeClassmates.filter(student => {
       const entry = readLyceeScores(student.id)[subject];
       if (!entry || entry.classScore === '' || entry.compositionScore === '' ||
           entry.classScore === undefined || entry.compositionScore === undefined) return false;
-      return (Number(entry.classScore) + Number(entry.compositionScore)) / 3 > currentAverage;
+      return (Number(entry.classScore) + Number(entry.compositionScore) / 2) / 2 > currentAverage;
     }).length;
     return higher + 1;
   };
