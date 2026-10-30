@@ -377,12 +377,12 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
             <h3 className="font-display text-sm font-700 text-ink">Notes par matière</h3>
           </div>
           {/* Desktop header */}
-          <div className="hidden grid-cols-[1fr_80px_80px_80px_40px] gap-2 border-b border-slate-100 px-4 py-2 text-[11px] font-700 uppercase tracking-wider text-slate-500 sm:grid">
+          <div className="hidden grid-cols-[minmax(90px,0.55fr)_minmax(64px,0.45fr)_minmax(64px,0.45fr)_minmax(64px,0.4fr)_24px] gap-2 border-b border-slate-100 px-3 py-2 text-[11px] font-700 uppercase tracking-wider text-slate-500 sm:grid">
             <span>Matière</span><span className="text-center">Note</span><span className="text-center">Sur</span><span className="text-center">Coef.</span><span></span>
           </div>
           <div className="divide-y divide-slate-100">
             {grades.map((g, i) => (
-              <div key={i} className="px-4 py-3 sm:grid sm:grid-cols-[minmax(110px,0.8fr)_70px_70px_65px_36px] sm:items-center sm:gap-2">
+              <div key={i} className="px-3 py-3 sm:grid sm:grid-cols-[minmax(90px,0.55fr)_minmax(64px,0.45fr)_minmax(64px,0.45fr)_minmax(64px,0.4fr)_24px] sm:items-center sm:gap-2">
                 {/* Subject — full width on both mobile & desktop */}
                 <div className="relative">
                   <input
@@ -409,7 +409,7 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
                   </div>
                   <div>
                     <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Coef.</label>
-                    <input type="number" min={1} step={0.5} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => updateGrade(i, 'coefficient', e.target.value === '' ? 1 : parseFloat(e.target.value))} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                    <input type="number" min={1} step={0.5} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => { const raw = e.target.value; const cleaned = raw.length > 1 && raw.startsWith('1') && !raw.startsWith('1.') ? raw.slice(1) : raw; updateGrade(i, 'coefficient', cleaned === '' ? 1 : (parseFloat(cleaned) || 1)); }} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
                   </div>
                 </div>
                 {/* Desktop: inline fields (hidden on mobile) */}
