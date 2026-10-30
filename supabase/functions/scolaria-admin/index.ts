@@ -17,7 +17,7 @@ Deno.serve(async (req: Request) => {
   if (b.action === "record_visit") {
    const v = b.visit;
    if (!v || !uuidPattern.test(v.id || "") || !uuidPattern.test(v.visitor_id || "") || !uuidPattern.test(v.session_id || "")) return respond({error:"Visite invalide"},400);
-   if (!["/","/auth"].includes(v.page_path || "")) return respond({error:"Page invalide"},400);
+   if (!["/","/auth","/app"].includes(v.page_path || "")) return respond({error:"Page invalide"},400);
    const allowedDevices = ["Téléphone","Tablette","Ordinateur","Autre / non identifié"];
    const clean = (value: unknown, max = 120): string | null => typeof value === "string" ? value.replace(/[<>\u0000-\u001f]/g,"").slice(0,max) || null : null;
    const {error}=await supabase.from("visitor_visits").insert({
