@@ -17,6 +17,7 @@ import { generateMatricule, generateMatricules, loadStudents, addStudentDB, addS
   loadSchoolClasses, addSchoolClass, setSchoolClassActive,
 } from './lib/db';
 import { LandingPage } from './components/LandingPage';
+import { Logo } from './components/Logo';
 import { AuthPage } from './components/AuthPage';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -821,7 +822,7 @@ export default function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-amber-50 px-5 text-slate-900">
         <section role="status" aria-live="polite" className="w-full max-w-md rounded-3xl border border-blue-100 bg-white p-6 text-center shadow-xl sm:p-8">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-900 text-xl font-black text-amber-300 shadow-md">G</div>
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white shadow-md ring-1 ring-blue-100"><Logo className="h-14 w-14" /></div>
           <h1 className="mt-4 text-2xl font-black text-blue-950">Gestilys démarre</h1>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             {typeof navigator !== 'undefined' && !navigator.onLine
