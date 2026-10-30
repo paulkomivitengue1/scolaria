@@ -442,7 +442,7 @@ export default function App() {
       });
       candidates.push({
         firstName: row.firstName.trim(), lastName: row.lastName.trim(), className: row.className.trim(),
-        parentName: row.parentName.trim(), parentPhone: row.parentPhone.trim(),
+        parentName: (row.parentName || '').trim(), parentPhone: (row.parentPhone || '').trim(),
         birthDate: row.birthDate || '', birthPlace: row.birthPlace || '', fees, matricule: '', sexe: row.sexe,
       });
       existing.add(duplicateKey);
