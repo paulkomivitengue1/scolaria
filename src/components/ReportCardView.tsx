@@ -376,54 +376,30 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
             <h3 className="font-display text-sm font-700 text-ink">Notes par matière</h3>
           </div>
-          {/* Desktop header */}
-          <div className="hidden grid-cols-[minmax(90px,0.55fr)_minmax(64px,0.45fr)_minmax(64px,0.45fr)_minmax(64px,0.4fr)_24px] gap-2 border-b border-slate-100 px-3 py-2 text-[11px] font-700 uppercase tracking-wider text-slate-500 sm:grid">
-            <span>Matière</span><span className="text-center">Note</span><span className="text-center">Sur</span><span className="text-center">Coef.</span><span></span>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {grades.map((g, i) => (
-              <div key={i} className="px-3 py-3 sm:grid sm:grid-cols-[minmax(90px,0.55fr)_minmax(64px,0.45fr)_minmax(64px,0.45fr)_minmax(64px,0.4fr)_24px] sm:items-center sm:gap-2">
-                {/* Subject — full width on both mobile & desktop */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    list="subjects-list"
-                    value={g.subject}
-                    onChange={e => updateGrade(i, 'subject', e.target.value)}
-                    placeholder="Matière…"
-                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2"
-                  />
-                  <datalist id="subjects-list">
-                    {DEFAULT_SUBJECTS.map(s => <option key={s} value={s} />)}
-                  </datalist>
-                </div>
-                {/* Mobile: 3-column compact grid for Note / Sur / Coef */}
-                <div className="mt-2 grid grid-cols-3 gap-2 sm:hidden">
-                  <div>
-                    <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Note</label>
-                    <input type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="0" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                  </div>
-                  <div>
-                    <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Sur</label>
-                    <input type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                  </div>
-                  <div>
-                    <label className="mb-0.5 block text-[10px] font-700 uppercase tracking-wide text-slate-400">Coef.</label>
-                    <input type="number" min={1} step={0.5} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => { const raw = e.target.value; const cleaned = raw.length > 1 && raw.startsWith('1') && !raw.startsWith('1.') ? raw.slice(1) : raw; updateGrade(i, 'coefficient', cleaned === '' ? 1 : (parseFloat(cleaned) || 1)); }} placeholder="1" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
-                  </div>
-                </div>
-                {/* Desktop: inline fields (hidden on mobile) */}
-                <input type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="0" className="hidden h-9 rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16 sm:block" />
-                <input type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="hidden h-9 rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16 sm:block" />
-                <input type="number" min={1} step={0.5} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => { const raw = e.target.value; const cleaned = raw.length > 1 && raw.startsWith('1') && !raw.startsWith('1.') ? raw.slice(1) : raw; updateGrade(i, 'coefficient', cleaned === '' ? 1 : (parseFloat(cleaned) || 1)); }} placeholder="1" aria-label={'Coefficient de '+g.subject} className="hidden h-9 rounded-lg border border-slate-200 bg-white px-2 text-right text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2 sm:w-16 sm:block" />
-                <button onClick={() => removeGrade(i)} className="hidden h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 sm:grid"><Trash2 className="h-4 w-4" /></button>
-                <button onClick={() => removeGrade(i)} className="mt-2 inline-flex items-center gap-1 text-xs font-600 text-red-500 sm:hidden"><Trash2 className="h-3.5 w-3.5" /> Supprimer cette matière</button>
+          {/* Tableau horizontal conservé sur téléphone et ordinateur */}
+          <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="min-w-[510px]">
+              <div className="grid grid-cols-[minmax(120px,1.5fr)_72px_72px_72px_36px] gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-700 uppercase tracking-wide text-slate-600">
+                <span>Matière</span><span className="text-center">Note</span><span className="text-center">Sur</span><span className="text-center">Coef.</span><span></span>
               </div>
-            ))}
-            {grades.length === 0 && (
-              <div className="px-4 py-8 text-center text-sm text-slate-400">Aucune matière. Cliquez sur « Ajouter une matière » pour commencer.</div>
-            )}
+              <div className="divide-y divide-slate-100">
+                {grades.map((g, i) => (
+                  <div key={i} className="grid grid-cols-[minmax(120px,1.5fr)_72px_72px_72px_36px] items-center gap-2 px-3 py-2">
+                    <div className="relative min-w-0">
+                      <input type="text" list="subjects-list" value={g.subject} onChange={e => updateGrade(i, 'subject', e.target.value)} placeholder="Matière…" aria-label="Matière" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                      <datalist id="subjects-list">{DEFAULT_SUBJECTS.map(s => <option key={s} value={s} />)}</datalist>
+                    </div>
+                    <input aria-label={'Note de '+g.subject} type="number" min={0} step={0.5} value={g.score || ''} onChange={e => updateGrade(i, 'score', parseFloat(e.target.value) || 0)} placeholder="—" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-700 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                    <input aria-label={'Note sur '+g.subject} type="number" min={1} step={1} value={g.maxScore || ''} onChange={e => updateGrade(i, 'maxScore', parseFloat(e.target.value) || 20)} placeholder="20" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                    <input aria-label={'Coefficient de '+g.subject} type="number" min={1} step={1} value={g.coefficient || ''} onFocus={e => e.currentTarget.select()} onChange={e => { const raw = e.target.value; const cleaned = raw.length > 1 && raw.startsWith('1') && !raw.startsWith('1.') ? raw.slice(1) : raw; updateGrade(i, 'coefficient', cleaned === '' ? 1 : (parseFloat(cleaned) || 1)); }} placeholder="1" className="h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-1 text-center text-sm font-600 text-ink outline-none transition focus:border-indigo-400 focus:ring-2" />
+                    <button aria-label={'Supprimer '+g.subject} onClick={() => removeGrade(i)} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                ))}
+                {grades.length === 0 && <div className="px-4 py-8 text-center text-sm text-slate-400">Aucune matière. Cliquez sur « Ajouter une matière » pour commencer.</div>}
+              </div>
+            </div>
           </div>
+          <p className="px-3 py-2 text-xs text-slate-500">Sur téléphone, faites glisser le tableau horizontalement pour voir tous les champs.</p>
           <div className="border-t border-slate-200 px-4 py-3">
             <button onClick={addGrade} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-600 text-indigo-700 transition hover:bg-indigo-100 active:scale-95"><Plus className="h-4 w-4" /> Ajouter une matière</button>
           </div>
@@ -440,16 +416,19 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
               </div>
             </div>
             <div className="max-w-full overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <table className="w-max min-w-[650px] border-collapse text-sm">
-                <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40',...(showLyceeRank?['Rang']:[])].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
+              <table className="w-max min-w-[980px] border-collapse text-sm">
+                <thead><tr className="bg-slate-100 text-slate-900">{['N°','Matière','Note de classe /20','Composition /40','Coef.','Moyenne /20','Moyenne × coef.',...(showLyceeRank?['Rang']:[])].map(label => <th key={label} className="border border-slate-300 px-2 py-3 text-left font-800">{label}</th>)}</tr></thead>
                 <tbody>{[...grades.filter(g => g.subject.trim()), { id: '__conduite__', subject: 'Conduite', score: 18, maxScore: 20, coefficient: 1 } as GradeRow].map((g, index) => {
                   const isConduct = g.subject === 'Conduite';
                   return <tr key={g.id || g.subject}>
                     <td className="border border-slate-300 px-2 py-2 text-center font-700">{index + 1}</td>
                     <td className="border border-slate-300 px-2 py-2 font-800 text-slate-900">{g.subject}</td>
-                    <td className="border border-slate-300 p-2">{<input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? (isConduct ? '18' : '')} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-full min-w-[100px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
-                    <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Composition sur 40 '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-full min-w-[100px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>
-                    {showLyceeRank && <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Rang de '+g.subject} type="number" min="1" value={lyceeScores[g.subject]?.rank ?? ''} onChange={e => updateLyceeScore(g.subject,'rank',e.target.value)} className="w-full min-w-[70px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-700 text-slate-950" />}</td>}
+                    <td className="border border-slate-300 p-2">{<input aria-label={'Note de classe '+g.subject} type="number" min="0" max="20" step="0.5" value={lyceeScores[g.subject]?.classScore ?? (isConduct ? '18' : '')} onChange={e => updateLyceeScore(g.subject,'classScore',e.target.value)} className="w-[88px] rounded-lg border border-slate-300 bg-white px-2 py-2 text-base font-700 text-slate-950" />}</td>
+                    <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Composition sur 40 '+g.subject} type="number" min="0" max="40" step="0.5" value={lyceeScores[g.subject]?.compositionScore ?? ''} onChange={e => updateLyceeScore(g.subject,'compositionScore',e.target.value)} className="w-[88px] rounded-lg border border-slate-300 bg-white px-2 py-2 text-base font-700 text-slate-950" />}</td>
+                    <td className="border border-slate-300 p-2 text-center font-700">{isConduct ? '1' : (Number(g.coefficient) || 1)}</td>
+                    <td className="border border-slate-300 p-2 text-center font-700">{lyceeAverage(g.subject).toFixed(2)}</td>
+                    <td className="border border-slate-300 p-2 text-center font-700">{(lyceeAverage(g.subject) * (Number(g.coefficient) || 1)).toFixed(2)}</td>
+                    {showLyceeRank && <td className="border border-slate-300 p-2">{isConduct ? <span className="px-3 font-700 text-slate-500">—</span> : <input aria-label={'Rang de '+g.subject} type="number" min="1" value={lyceeScores[g.subject]?.rank ?? ''} onChange={e => updateLyceeScore(g.subject,'rank',e.target.value)} className="w-[70px] rounded-lg border border-slate-300 bg-white px-2 py-2 text-base font-700 text-slate-950" />}</td>}
                   </tr>;
                 })}</tbody>
               </table>
