@@ -372,7 +372,6 @@ export function ReportCardView({ students, gradePeriods, schoolId, schoolName, a
           {bulletinFormat === 'lycee-malien' && <p className="mt-2 text-sm font-600 text-indigo-900">Saisis toutes les notes ci-dessous avant d’ouvrir l’aperçu. L’aperçu sera ensuite en lecture seule.</p>}
         </div>
         {bulletinFormat !== 'lycee-malien' && (
-        {/* Grades table */}
         <div className="overflow-hidden rounded-2.5xl border border-slate-200 bg-white shadow-card">
           <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
             <h3 className="font-display text-sm font-700 text-ink">Notes par matière</h3>
