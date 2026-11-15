@@ -466,9 +466,9 @@ export function AdminPanel({ onExit }: Props) {
   return (
     <div className="gestilys-admin min-h-screen bg-canvas bg-grid">
       <style>{`
-        .gestilys-admin .ga-module-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; max-width:1400px; margin:0 auto; padding:12px 16px; }
-        @media(min-width:768px) { .gestilys-admin .ga-module-menu { grid-template-columns:repeat(3,minmax(0,1fr)); padding:14px 24px; } }
-        .gestilys-admin .ga-module-menu button { color:#172554 !important; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:11px 12px; font-size:13px; font-weight:800; text-align:center; }
+        .gestilys-admin .ga-admin-sidebar .ga-module-menu { display:flex; flex-direction:column; gap:8px; padding:12px; overflow-y:auto; }
+        .gestilys-admin .ga-admin-sidebar .ga-module-menu button { display:flex; width:100%; min-height:46px; align-items:center; justify-content:flex-start; color:#172554 !important; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px 14px; font-size:14px; font-weight:800; text-align:left; }
+        .gestilys-admin .ga-admin-sidebar .ga-module-menu button[aria-current="page"] { color:#fff !important; background:linear-gradient(115deg,#172554,#1d4ed8); border-color:#f4bd35; box-shadow:0 5px 14px rgba(23,37,84,.16); }
         .gestilys-admin .ga-module-menu button[aria-current="page"] { color:#fff !important; background:linear-gradient(115deg,#172554,#1d4ed8); border-color:#f4bd35; box-shadow:0 5px 14px rgba(23,37,84,.16); }
         .gestilys-admin main[data-admin-module="dashboard"] > section:not([data-admin-module="dashboard"]), .gestilys-admin main[data-admin-module="revenus"] > section:not([data-admin-module="revenus"]), .gestilys-admin main[data-admin-module="tarifs"] > section:not([data-admin-module="tarifs"]), .gestilys-admin main[data-admin-module="ecoles"] > section:not([data-admin-module="ecoles"]), .gestilys-admin main[data-admin-module="paiements"] > section:not([data-admin-module="paiements"]), .gestilys-admin main[data-admin-module="visites"] > section:not([data-admin-module="visites"]), .gestilys-admin main[data-admin-module="affiliations"] > section:not([data-admin-module="affiliations"]) { display:none !important; }
         .gestilys-admin main[data-admin-module="dashboard"] > section[data-admin-module="dashboard"], .gestilys-admin main[data-admin-module="revenus"] > section[data-admin-module="revenus"], .gestilys-admin main[data-admin-module="tarifs"] > section[data-admin-module="tarifs"], .gestilys-admin main[data-admin-module="ecoles"] > section[data-admin-module="ecoles"], .gestilys-admin main[data-admin-module="paiements"] > section[data-admin-module="paiements"], .gestilys-admin main[data-admin-module="visites"] > section[data-admin-module="visites"], .gestilys-admin main[data-admin-module="affiliations"] > section[data-admin-module="affiliations"] { display:block; }
@@ -498,6 +498,7 @@ export function AdminPanel({ onExit }: Props) {
       <header className="sticky top-0 z-30 border-b border-royal-200 bg-gradient-to-r from-royal-900 via-royal-800 to-royal-900 shadow-cardLg">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
+            <button onClick={() => setAdminMenuOpen(v => !v)} aria-label="Ouvrir les rubriques administrateur" aria-expanded={adminMenuOpen} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white"><Menu className="h-5 w-5" /></button>
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-gold-300 backdrop-blur">
               <ShieldCheck className="h-5 w-5" />
             </span>
@@ -508,7 +509,7 @@ export function AdminPanel({ onExit }: Props) {
           </div>
           
           <div className="flex items-center gap-2">
-            <button onClick={() => setAdminMenuOpen(v => !v)} aria-label="Ouvrir les rubriques administrateur" aria-expanded={adminMenuOpen} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white"><Menu className="h-5 w-5" /></button>
+            
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-700 text-white backdrop-blur transition hover:bg-white/20 active:scale-95 sm:px-3.5 sm:text-sm"
@@ -525,7 +526,7 @@ export function AdminPanel({ onExit }: Props) {
         </div>
       </header>
 
-      {adminMenuOpen && authed && <nav aria-label="Modules administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 shadow-lg backdrop-blur"><div className="ga-module-menu">{[["dashboard","Vue d’ensemble"],["revenus","Revenus"],["tarifs","Tarifs"],["ecoles","Écoles"],["paiements","Paiements"],["visites","Visites"],["affiliations","Affiliés & commissions"]].map(([module,label])=><button key={module} type="button" aria-current={activeModule===module ? "page" : undefined} onClick={()=>{setActiveModule(module as typeof activeModule);setAdminMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}}>{label}</button>)}</div></nav>}
+      {adminMenuOpen && authed && <><button type="button" aria-label="Fermer le menu" onClick={()=>setAdminMenuOpen(false)} className="fixed inset-0 z-40 cursor-default bg-[#0b1738]/35" /><nav aria-label="Modules administrateur" className="ga-admin-sidebar fixed left-0 top-[68px] z-50 flex w-[min(290px,86vw)] flex-col border-r border-blue-200 bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-blue-100 bg-[#f4f7ff] px-4 py-4"><div><p className="text-[11px] font-800 uppercase tracking-widest text-[#9a6700]">GESTILYS</p><p className="text-sm font-800 text-[#172554]">Navigation admin</p></div><button type="button" onClick={()=>setAdminMenuOpen(false)} aria-label="Fermer le menu" className="grid h-9 w-9 place-items-center rounded-lg border border-blue-200 bg-white text-[#172554]"><X className="h-4 w-4"/></button></div><div className="ga-module-menu flex flex-col gap-2 overflow-y-auto p-3">{[["dashboard","Vue d’ensemble"],["revenus","Revenus"],["tarifs","Tarifs"],["ecoles","Écoles"],["paiements","Paiements"],["visites","Visites"],["affiliations","Affiliés & commissions"]].map(([module,label])=><button key={module} type="button" aria-current={activeModule===module ? "page" : undefined} onClick={()=>{setActiveModule(module as typeof activeModule);setAdminMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}}>{label}</button>)}</div></nav></>}
       <main data-admin-module={activeModule} className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {dataLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -616,6 +617,7 @@ export function AdminPanel({ onExit }: Props) {
                 <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/15 p-4"><p className="text-xs font-bold text-cyan-100">30 derniers jours</p><p className="mt-1 text-3xl font-extrabold text-cyan-100">{loginStats.last_30_days}</p><p className="text-[11px] text-cyan-100">Événements enregistrés</p></div>
               </div>
               <p className="mt-3 text-[11px] leading-relaxed text-blue-100">Le suivi des connexions et du churn commence avec cette version ; les événements antérieurs ne peuvent pas être reconstitués.</p>
+              {loginStats.today===0 && loginStats.this_month===0 && loginStats.last_30_days===0 && <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-300/40 bg-[#fff8e6] p-4 text-[#172554]"><Activity className="mt-0.5 h-5 w-5 shrink-0 text-[#9a6700]"/><div><p className="text-sm font-800">Aucune connexion enregistrée pour le moment</p><p className="mt-1 text-xs leading-5 text-slate-700">Cette zone n’est pas vide par erreur : le suivi démarre à partir de l’activation de la version actuelle. Les chiffres apparaîtront dès les prochaines connexions des écoles.</p></div></div>}
               <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
                 <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
                 <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
