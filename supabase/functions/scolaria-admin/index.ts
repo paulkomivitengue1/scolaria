@@ -163,6 +163,17 @@ Deno.serve(async (req: Request) => {
     if(error)throw error;
     return respond({ok:true,referral_code});
    }
+   case "delete_affiliate": {
+    const affiliateId=String(b.affiliateId||"");
+    if(!/^[0-9a-f-]{36}$/i.test(affiliateId))throw new Error("Partenaire invalide.");
+    const {count,error:countError}=await supabase.from("affiliate_commissions").select("id",{count:"exact",head:true}).eq("affiliate_id",affiliateId);
+    if(countError)throw countError;
+    if((count||0)>0)throw new Error("Suppression refusée : ce partenaire possède un historique financier. Mettez-le en pause pour conserver les comptes.");
+    const {data,error}=await supabase.from("affiliates").delete().eq("id",affiliateId).select("id").maybeSingle();
+    if(error)throw error;
+    if(!data)throw new Error("Partenaire introuvable.");
+    return respond({ok:true});
+   }
    case "set_affiliate_status": {
     if(!b.affiliateId||!["active","paused"].includes(b.affiliateStatus||""))throw new Error("Partenaire et statut requis.");
     const {error}=await supabase.from("affiliates").update({status:b.affiliateStatus}).eq("id",b.affiliateId);
