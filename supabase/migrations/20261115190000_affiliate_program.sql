@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS public.affiliates (
 CREATE TABLE IF NOT EXISTS public.affiliate_commissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   affiliate_id uuid NOT NULL REFERENCES public.affiliates(id) ON DELETE RESTRICT,
-  school_id uuid NOT NULL UNIQUE REFERENCES public.schools(id) ON DELETE RESTRICT,
+  school_id uuid UNIQUE REFERENCES public.schools(id) ON DELETE SET NULL,
+  school_name text NOT NULL DEFAULT '',
   plan text NOT NULL CHECK (plan IN ('Essentiel','Premium','Élite')),
   subscription_amount integer NOT NULL CHECK (subscription_amount >= 0),
   commission_amount integer NOT NULL CHECK (commission_amount >= 0),
@@ -88,9 +89,9 @@ BEGIN
         ELSE 0
       END;
       INSERT INTO public.affiliate_commissions
-        (affiliate_id, school_id, plan, subscription_amount, commission_amount)
+        (affiliate_id, school_id, school_name, plan, subscription_amount, commission_amount)
       VALUES
-        (v_affiliate_id, NEW.id, NEW.plan, coalesce(NEW.subscription_amount,0), v_commission)
+        (v_affiliate_id, NEW.id, NEW.name, NEW.plan, coalesce(NEW.subscription_amount,0), v_commission)
       ON CONFLICT (school_id) DO NOTHING;
     END IF;
   END IF;
