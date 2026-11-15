@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Users, UserPlus, Copy, Check, PauseCircle, PlayCircle, Wallet, BadgeCheck, Clock3, School, Loader2, RefreshCw, Banknote, Link2, Share2, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, Check, PauseCircle, PlayCircle, Wallet, BadgeCheck, Clock3, School, Loader2, RefreshCw, Banknote, Link2, Share2, Trash2, AlertTriangle } from 'lucide-react';
 import { formatFCFA } from '../types';
 import { adminCreateAffiliate, adminListAffiliates, adminMarkAffiliateCommissionPaid, adminSetAffiliateStatus, adminDeleteAffiliate, type AdminAffiliate, type AdminAffiliateCommission } from '../lib/admin';
 
