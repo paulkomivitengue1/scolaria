@@ -6,7 +6,7 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 type Plan = "Essentiel" | "Premium" | "Élite";
 type Period = "mensuel" | "annuel";
 interface VisitInput { id?: string; visitor_id?: string; session_id?: string; page_path?: string; referrer_origin?: string | null; utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; device_type?: string; operating_system?: string; browser?: string; screen_size?: string | null; language?: string | null; timezone?: string | null; }
-interface Body { code?: string; action: string; paymentId?: string; schoolId?: string; status?: "suspend"|"restore"; paid?: boolean; plan?: Plan; billingPeriod?: Period; trialDays?: number; plans?: {name: Plan; monthly: number}[]; visit?: VisitInput; visit_id?: string; duration_seconds?: number; }
+interface Body { code?: string; action: string; paymentId?: string; schoolId?: string; status?: "suspend"|"restore"; paid?: boolean; plan?: Plan; billingPeriod?: Period; trialDays?: number; plans?: {name: Plan; monthly: number}[]; visit?: VisitInput; visit_id?: string; duration_seconds?: number; full_name?: string; phone?: string; email?: string; affiliateId?: string; affiliateStatus?: "active"|"paused"; commissionId?: string; paymentMethod?: string; paymentReference?: string; }
 const prices: Record<Plan, number> = {Essentiel:10000, Premium:20000, "Élite":30000};
 Deno.serve(async (req: Request) => {
  if(req.method==="OPTIONS") return new Response(null,{status:200,headers:corsHeaders});
@@ -143,6 +143,41 @@ Deno.serve(async (req: Request) => {
     if(!schoolId||!Number.isInteger(b.trialDays)||b.trialDays!<0||b.trialDays!>365)throw new Error("Durée d’essai invalide (0 à 365 jours)");
     const end=new Date(Date.now()+b.trialDays!*86400000).toISOString();
     const {error}=await supabase.from("schools").update({trial_ends_at:end,subscription_status:"trial"}).eq("id",schoolId);if(error)throw error;return respond({ok:true,trial_ends_at:end});
+   }
+   case "list_affiliates": {
+    const {data:rows,error}=await supabase.from("affiliates").select("id,full_name,phone,email,referral_code,status,created_at,affiliate_commissions(id,affiliate_id,school_id,plan,subscription_amount,commission_amount,status,created_at,paid_at,payment_method,payment_reference,schools(name))").order("created_at",{ascending:false});
+    if(error)throw error;
+    const data=(rows||[]).map((a:any)=>{
+     const commissions=(a.affiliate_commissions||[]).map((c:any)=>({...c,school_name:c.schools?.name||"École supprimée",schools:undefined}));
+     return {...a,affiliate_commissions:undefined,commissions,referrals_count:commissions.length,due_total:commissions.filter((c:any)=>c.status==="due").reduce((s:number,c:any)=>s+Number(c.commission_amount||0),0),paid_total:commissions.filter((c:any)=>c.status==="paid").reduce((s:number,c:any)=>s+Number(c.commission_amount||0),0)};
+    });
+    return respond({data});
+   }
+   case "create_affiliate": {
+    const full_name=String(b.full_name||"").trim().replace(/[<>\\u0000-\\u001f]/g,"").slice(0,120);
+    const phone=String(b.phone||"").trim().replace(/[<>\\u0000-\\u001f]/g,"").slice(0,30);
+    const email=String(b.email||"").trim().toLowerCase().slice(0,160);
+    if(full_name.length<2||!phone)throw new Error("Nom et téléphone du partenaire obligatoires.");
+    const referral_code="GT"+crypto.randomUUID().replace(/-/g,"").slice(0,8).toUpperCase();
+    const {error}=await supabase.from("affiliates").insert({full_name,phone,email,referral_code,status:"active"});
+    if(error)throw error;
+    return respond({ok:true,referral_code});
+   }
+   case "set_affiliate_status": {
+    if(!b.affiliateId||!["active","paused"].includes(b.affiliateStatus||""))throw new Error("Partenaire et statut requis.");
+    const {error}=await supabase.from("affiliates").update({status:b.affiliateStatus}).eq("id",b.affiliateId);
+    if(error)throw error;
+    return respond({ok:true});
+   }
+   case "mark_affiliate_commission_paid": {
+    if(!b.commissionId)throw new Error("Commission requise.");
+    const methods=["Orange Money","Wave","Moov Money","Espèces","Virement"];
+    if(!methods.includes(b.paymentMethod||""))throw new Error("Choisissez un moyen de paiement valide.");
+    const paymentReference=String(b.paymentReference||"").trim().replace(/[<>\\u0000-\\u001f]/g,"").slice(0,100);
+    const {data,error}=await supabase.from("affiliate_commissions").update({status:"paid",paid_at:new Date().toISOString(),payment_method:b.paymentMethod,payment_reference:paymentReference||null}).eq("id",b.commissionId).eq("status","due").select("id").maybeSingle();
+    if(error)throw error;
+    if(!data)throw new Error("Cette commission est déjà réglée ou introuvable.");
+    return respond({ok:true});
    }
    default:return respond({error:"Action inconnue"},400);
   }
