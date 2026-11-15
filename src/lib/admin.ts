@@ -212,3 +212,7 @@ export async function adminSetAffiliateStatus(code: string, affiliateId: string,
 export async function adminMarkAffiliateCommissionPaid(code: string, commissionId: string, paymentMethod: string, paymentReference: string): Promise<void> {
   await adminFetch(code, 'mark_affiliate_commission_paid', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, { commissionId, paymentMethod, paymentReference });
 }
+
+export async function adminDeleteAffiliate(code: string, affiliateId: string): Promise<void> {
+  await adminFetch(code, 'delete_affiliate', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, { affiliateId });
+}
