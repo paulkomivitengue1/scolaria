@@ -154,8 +154,8 @@ Deno.serve(async (req: Request) => {
     return respond({data});
    }
    case "create_affiliate": {
-    const full_name=String(b.full_name||"").trim().replace(/[<>\\x00-\\x1f]/g,"").slice(0,120);
-    const phone=String(b.phone||"").trim().replace(/[<>\\x00-\\x1f]/g,"").slice(0,30);
+    const full_name=String(b.full_name||"").trim().replace(/[<>\x00-\x1f]/g,"").slice(0,120);
+    const phone=String(b.phone||"").trim().replace(/[<>\x00-\x1f]/g,"").slice(0,30);
     const email=String(b.email||"").trim().toLowerCase().slice(0,160);
     if(full_name.length<2||!phone)throw new Error("Nom et téléphone du partenaire obligatoires.");
     const referral_code="GT"+crypto.randomUUID().replace(/-/g,"").slice(0,8).toUpperCase();
@@ -173,7 +173,7 @@ Deno.serve(async (req: Request) => {
     if(!b.commissionId)throw new Error("Commission requise.");
     const methods=["Orange Money","Wave","Moov Money","Espèces","Virement"];
     if(!methods.includes(b.paymentMethod||""))throw new Error("Choisissez un moyen de paiement valide.");
-    const paymentReference=String(b.paymentReference||"").trim().replace(/[<>\\x00-\\x1f]/g,"").slice(0,100);
+    const paymentReference=String(b.paymentReference||"").trim().replace(/[<>\x00-\x1f]/g,"").slice(0,100);
     const {data,error}=await supabase.from("affiliate_commissions").update({status:"paid",paid_at:new Date().toISOString(),payment_method:b.paymentMethod,payment_reference:paymentReference||null}).eq("id",b.commissionId).eq("status","due").select("id").maybeSingle();
     if(error)throw error;
     if(!data)throw new Error("Cette commission est déjà réglée ou introuvable.");
