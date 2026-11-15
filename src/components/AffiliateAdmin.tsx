@@ -53,7 +53,8 @@ export function AffiliateAdmin({ code, onToast }: Props) {
     finally { setSaving(false); }
   };
 
-  const referralUrl = (codeValue: string) => window.location.origin + '/?ref=' + encodeURIComponent(codeValue);
+  // Always share the public production URL, never a temporary Vercel preview hostname.
+  const referralUrl = (codeValue: string) => 'https://scolaria-gestion.vercel.app/?ref=' + encodeURIComponent(codeValue);
   const shareLink = (affiliate: AdminAffiliate) => {
     const url = referralUrl(affiliate.referral_code);
     const message = `Bonjour ${affiliate.full_name}, voici ton lien personnel pour recommander Gestilys : ${url}. Toute école qui s'inscrit avec ce lien sera rattachée à ton compte partenaire.`;
@@ -109,6 +110,7 @@ export function AffiliateAdmin({ code, onToast }: Props) {
     <style>{`
       .gestilys-admin .ga-affiliates { color:#172554 !important; color-scheme:light; }
       .gestilys-admin .ga-affiliates h2,.gestilys-admin .ga-affiliates h3,.gestilys-admin .ga-affiliates h4,.gestilys-admin .ga-affiliates h5 { color:#172554 !important; }
+      .gestilys-admin .ga-affiliates > .rounded-3xl h2 { color:#fff !important; }
       .gestilys-admin .ga-affiliates input,.gestilys-admin .ga-affiliates select,.gestilys-admin .ga-affiliates textarea { color:#172554 !important; background-color:#fff !important; border-color:#94a3b8 !important; -webkit-text-fill-color:#172554 !important; }
       .gestilys-admin .ga-affiliates input::placeholder,.gestilys-admin .ga-affiliates textarea::placeholder { color:#64748b !important; opacity:1 !important; -webkit-text-fill-color:#64748b !important; }
       .gestilys-admin .ga-affiliates option { color:#172554 !important; background:#fff !important; }
