@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Users, UserPlus, Copy, Check, PauseCircle, PlayCircle, Wallet, BadgeCheck, Clock3, School, Loader2, RefreshCw, Banknote, Link2 } from 'lucide-react';
+import { Users, UserPlus, Copy, Check, PauseCircle, PlayCircle, Wallet, BadgeCheck, Clock3, School, Loader2, RefreshCw, Banknote, Link2, Share2, Trash2, AlertTriangle } from 'lucide-react';
 import { formatFCFA } from '../types';
-import { adminCreateAffiliate, adminListAffiliates, adminMarkAffiliateCommissionPaid, adminSetAffiliateStatus, type AdminAffiliate, type AdminAffiliateCommission } from '../lib/admin';
+import { adminCreateAffiliate, adminListAffiliates, adminMarkAffiliateCommissionPaid, adminSetAffiliateStatus, adminDeleteAffiliate, type AdminAffiliate, type AdminAffiliateCommission } from '../lib/admin';
 
 type Props = { code: string; onToast: (message: string) => void };
 const paymentMethods = ['Orange Money','Wave','Moov Money','Espèces','Virement'];
@@ -19,6 +19,7 @@ export function AffiliateAdmin({ code, onToast }: Props) {
   const [reference, setReference] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<AdminAffiliate | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true); setError('');
@@ -53,6 +54,29 @@ export function AffiliateAdmin({ code, onToast }: Props) {
   };
 
   const referralUrl = (codeValue: string) => window.location.origin + '/?ref=' + encodeURIComponent(codeValue);
+  const shareLink = async (affiliate: AdminAffiliate) => {
+    const url = referralUrl(affiliate.referral_code);
+    const message = `Bonjour ${affiliate.full_name}, voici ton lien personnel pour recommander Gestilys : ${url} . Toute école qui s'inscrit avec ce lien sera rattachée à ton compte partenaire.`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Ton lien partenaire Gestilys', text: message, url });
+      else window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const deleteAffiliate = async () => {
+    if (!deleteTarget) return;
+    setBusyId(deleteTarget.id);
+    try {
+      await adminDeleteAffiliate(code, deleteTarget.id);
+      setDeleteTarget(null);
+      await refresh();
+      onToast('Partenaire de test supprimé.');
+    } catch (e: any) { onToast(e?.message || 'Suppression impossible.'); }
+    finally { setBusyId(null); }
+  };
+
   const copyLink = async (codeValue: string) => {
     const url = referralUrl(codeValue);
     try { await navigator.clipboard.writeText(url); onToast('Lien de parrainage copié.'); }
@@ -81,7 +105,7 @@ export function AffiliateAdmin({ code, onToast }: Props) {
     finally { setBusyId(null); }
   };
 
-  return <section data-admin-module="affiliations" className="mb-8 space-y-5">
+  return <section data-admin-module="affiliations" className="ga-affiliates mb-8 space-y-5 text-slate-900">
     <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-[#172554] via-[#1e3a8a] to-[#1d4ed8] p-5 text-white shadow-xl sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-800 text-[#ffe08a]"><Users className="h-3.5 w-3.5"/> RÉSEAU COMMERCIAL</div>
@@ -124,14 +148,14 @@ export function AffiliateAdmin({ code, onToast }: Props) {
               </div>
               <div className="mt-4 rounded-xl border border-[#f3d98c] bg-[#fffaf0] p-3">
                 <div className="flex items-center justify-between gap-2"><span className="text-[11px] font-800 uppercase tracking-wider text-[#795200]">Code de parrainage</span><span className="font-mono text-sm font-800 text-[#172554]">{affiliate.referral_code}</span></div>
-                <button type="button" onClick={()=>void copyLink(affiliate.referral_code)} className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#172554] px-3 py-2 text-xs font-800 text-white"><Link2 className="h-4 w-4"/> Copier le lien personnel <Copy className="h-3.5 w-3.5"/></button>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"><button type="button" onClick={()=>void shareLink(affiliate)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#128C7E] px-3 py-2 text-sm font-800 text-white"><Share2 className="h-4 w-4"/> Envoyer par WhatsApp</button><button type="button" onClick={()=>void copyLink(affiliate.referral_code)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#172554] px-3 py-2 text-sm font-800 text-white"><Link2 className="h-4 w-4"/> Copier le lien</button></div>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2">
                 <MiniStat label="Écoles" value={String(affiliate.referrals_count)}/>
                 <MiniStat label="À payer" value={formatFCFA(affiliate.due_total)}/>
                 <MiniStat label="Déjà payé" value={formatFCFA(affiliate.paid_total)}/>
               </div>
-              <button type="button" onClick={()=>void toggleStatus(affiliate)} disabled={busyId===affiliate.id} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-800 text-[#1e3a8a] disabled:opacity-50">{busyId===affiliate.id?<Loader2 className="h-4 w-4 animate-spin"/>:affiliate.status==='active'?<PauseCircle className="h-4 w-4"/>:<PlayCircle className="h-4 w-4"/>}{affiliate.status==='active'?'Mettre en pause':'Réactiver le partenaire'}</button>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"><button type="button" onClick={()=>void toggleStatus(affiliate)} disabled={busyId===affiliate.id} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-800 text-[#1e3a8a] disabled:opacity-50">{busyId===affiliate.id?<Loader2 className="h-4 w-4 animate-spin"/>:affiliate.status==='active'?<PauseCircle className="h-4 w-4"/>:<PlayCircle className="h-4 w-4"/>}{affiliate.status==='active'?'Mettre en pause':'Réactiver'}</button><button type="button" onClick={()=>setDeleteTarget(affiliate)} disabled={busyId===affiliate.id || affiliate.commissions.length>0} title={affiliate.commissions.length>0?'Suppression bloquée pour conserver l’historique financier':'Supprimer ce partenaire de test'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-800 text-red-700 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 className="h-4 w-4"/> Supprimer</button></div>{affiliate.commissions.length>0 && <p className="mt-2 text-xs leading-5 text-slate-600">Suppression désactivée : ce partenaire possède un historique de commissions à conserver. Tu peux le mettre en pause.</p>}
             </div>
             {affiliate.commissions.length>0 && <div className="border-t border-blue-100 bg-[#f8faff] p-3 sm:p-4">
               <h5 className="mb-2 flex items-center gap-2 text-xs font-800 uppercase tracking-wider text-[#172554]"><Wallet className="h-4 w-4"/> Historique des commissions</h5>
@@ -145,6 +169,7 @@ export function AffiliateAdmin({ code, onToast }: Props) {
       </div>
     </div>
 
+    {deleteTarget && <div className="fixed inset-0 z-[85] flex items-center justify-center bg-[#0b1738]/70 p-4" role="dialog" aria-modal="true" aria-label="Confirmer la suppression du partenaire"><div className="w-full max-w-md rounded-2xl border border-red-100 bg-white p-5 shadow-2xl"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-700"><AlertTriangle className="h-5 w-5"/></span><div><h3 className="font-display text-lg font-800 text-[#172554]">Supprimer ce partenaire ?</h3><p className="mt-1 text-sm leading-6 text-slate-700">Le compte de test <strong>{deleteTarget.full_name}</strong> et son lien seront supprimés. Cette action est irréversible. Les partenaires ayant des commissions ne peuvent pas être supprimés.</p></div></div><div className="mt-5 flex gap-2"><button type="button" onClick={()=>setDeleteTarget(null)} className="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-sm font-700 text-slate-800">Annuler</button><button type="button" onClick={()=>void deleteAffiliate()} disabled={busyId===deleteTarget.id} className="min-h-11 flex-1 rounded-xl bg-red-700 px-3 text-sm font-800 text-white disabled:opacity-50">{busyId===deleteTarget.id?'Suppression…':'Confirmer'}</button></div></div></div>}
     {paying && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0b1738]/65 p-4" role="dialog" aria-modal="true" aria-label="Enregistrer un paiement de commission">
       <div className="w-full max-w-md rounded-2xl border border-blue-100 bg-white p-5 shadow-2xl">
         <div className="mb-4"><h3 className="font-display text-lg font-800 text-[#172554]">Confirmer le versement</h3><p className="mt-1 text-sm text-slate-600">{paying.school_name} · {formatFCFA(paying.commission_amount)}</p></div>
@@ -156,7 +181,7 @@ export function AffiliateAdmin({ code, onToast }: Props) {
   </section>;
 }
 
-const inputClass = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-600 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
+const inputClass = 'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-600 !text-slate-900 outline-none transition placeholder:!text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
 function Field({label,children}:{label:string;children:React.ReactNode}) { return <label className="mb-3 block text-xs font-800 text-[#172554]">{label}<span className="mt-1.5 block">{children}</span></label>; }
 function Metric({label,value,icon}:{label:string;value:string;icon:React.ReactNode}) { return <div className="rounded-xl border border-white/20 bg-white/10 p-3"><div className="flex items-center gap-1.5 text-[11px] font-700 text-blue-100">{icon}{label}</div><div className="mt-1 break-words text-lg font-800 tabular-nums text-white sm:text-xl">{value}</div></div>; }
 function MiniStat({label,value}:{label:string;value:string}) { return <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-2"><p className="text-[10px] font-700 text-slate-600">{label}</p><p className="mt-1 break-words text-xs font-800 text-[#172554]">{value}</p></div>; }
