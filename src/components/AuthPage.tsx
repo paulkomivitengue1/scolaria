@@ -42,7 +42,8 @@ export function AuthPage({ onBack }: AuthPageProps) {
     try {
       if (mode === 'signup') {
         if (!validMalianPhone) { setError('Saisissez un numéro malien valide : +223 suivi de 8 chiffres.'); return; }
-        const referralCode = new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() || '';\n        const { error: err } = await signUp(email.trim(), password, schoolName.trim(), directorName.trim(), normalizedPhone, referralCode);
+        const referralCode = new URLSearchParams(window.location.search).get('ref')?.trim().toUpperCase() || '';
+        const { error: err } = await signUp(email.trim(), password, schoolName.trim(), directorName.trim(), normalizedPhone, referralCode);
         if (err) setError(err);
       } else {
         const { error: err } = await signIn(email.trim(), password);
