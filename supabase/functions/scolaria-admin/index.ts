@@ -145,10 +145,10 @@ Deno.serve(async (req: Request) => {
     const {error}=await supabase.from("schools").update({trial_ends_at:end,subscription_status:"trial"}).eq("id",schoolId);if(error)throw error;return respond({ok:true,trial_ends_at:end});
    }
    case "list_affiliates": {
-    const {data:rows,error}=await supabase.from("affiliates").select("id,full_name,phone,email,referral_code,status,created_at,affiliate_commissions(id,affiliate_id,school_id,plan,subscription_amount,commission_amount,status,created_at,paid_at,payment_method,payment_reference,schools(name))").order("created_at",{ascending:false});
+    const {data:rows,error}=await supabase.from("affiliates").select("id,full_name,phone,email,referral_code,status,created_at,affiliate_commissions(id,affiliate_id,school_id,school_name,plan,subscription_amount,commission_amount,status,created_at,paid_at,payment_method,payment_reference)").order("created_at",{ascending:false});
     if(error)throw error;
     const data=(rows||[]).map((a:any)=>{
-     const commissions=(a.affiliate_commissions||[]).map((c:any)=>({...c,school_name:c.schools?.name||"École supprimée",schools:undefined}));
+     const commissions=(a.affiliate_commissions||[]).map((c:any)=>({...c,school_name:c.school_name||"École supprimée"}));
      return {...a,affiliate_commissions:undefined,commissions,referrals_count:commissions.length,due_total:commissions.filter((c:any)=>c.status==="due").reduce((s:number,c:any)=>s+Number(c.commission_amount||0),0),paid_total:commissions.filter((c:any)=>c.status==="paid").reduce((s:number,c:any)=>s+Number(c.commission_amount||0),0)};
     });
     return respond({data});
