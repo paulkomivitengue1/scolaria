@@ -455,6 +455,7 @@ export function AdminPanel({ onExit }: Props) {
     count: payments.filter(p => p.provider === provider).length,
     confirmed: payments.filter(p => p.provider === provider && p.status === 'valide').reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
   }));
+  const hasLoginActivity = loginStats.daily.some(day => day.count > 0) || loginStats.monthly.some(month => month.count > 0);
 
   // Per-period new client stats
   const yearStart = new Date(now.getFullYear(), 0, 1);
@@ -484,10 +485,11 @@ export function AdminPanel({ onExit }: Props) {
         .gestilys-admin main button.bg-white\/10 { color:#fff !important; }
         .gestilys-admin main button.bg-gradient-to-r.from-royal-800, .gestilys-admin main button.bg-gradient-to-br.from-gold-500 { color:#fff !important; }
         .gestilys-admin main button.border-white\/20.bg-white\/10 { background:#1e40af; border-color:#93c5fd; color:#fff !important; }
-        .gestilys-admin main .text-slate-400 { color:#475569 !important; }
-        .gestilys-admin main .text-slate-300 { color:#334155 !important; }
-        .gestilys-admin main .text-slate-500 { color:#475569 !important; }
-        .gestilys-admin main .text-slate-600 { color:#334155 !important; }
+        /* Muted text is darkened only inside light cards, never on navy/blue panels. */
+        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-400 { color:#64748b !important; }
+        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-300 { color:#475569 !important; }
+        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-500 { color:#475569 !important; }
+        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-600 { color:#334155 !important; }
         .gestilys-admin main .bg-slate-50 { background:#f1f5f9; }
         .gestilys-admin main button:focus-visible,.gestilys-admin main input:focus-visible,.gestilys-admin main select:focus-visible { outline:3px solid rgba(147,197,253,.9); outline-offset:2px; }
         .gestilys-admin main button { transition:filter .18s,transform .18s,box-shadow .18s; }
@@ -618,28 +620,34 @@ export function AdminPanel({ onExit }: Props) {
               </div>
               <p className="mt-3 text-[11px] leading-relaxed text-blue-100">Le suivi des connexions et du churn commence avec cette version ; les événements antérieurs ne peuvent pas être reconstitués.</p>
               {loginStats.today===0 && loginStats.this_month===0 && loginStats.last_30_days===0 && <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-300/40 bg-[#fff8e6] p-4 text-[#172554]"><Activity className="mt-0.5 h-5 w-5 shrink-0 text-[#9a6700]"/><div><p className="text-sm font-800">Aucune connexion enregistrée pour le moment</p><p className="mt-1 text-xs leading-5 text-slate-700">Cette zone n’est pas vide par erreur : le suivi démarre à partir de l’activation de la version actuelle. Les chiffres apparaîtront dès les prochaines connexions des écoles.</p></div></div>}
-              <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
-                <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
-                <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
-                  {loginStats.daily.map((day) => {
-                    const max = Math.max(1, ...loginStats.daily.map(item => item.count));
-                    const height = Math.max(4, Math.round(day.count / max * 100));
-                    return <div key={day.date} title={day.date + ': ' + day.count + ' connexion(s)'} className="flex h-full min-w-2 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-amber-400 to-cyan-300" style={{ height: height + '%' }} /></div>;
-                  })}
+              {hasLoginActivity ? <>
+                <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
+                  <p className="mb-3 text-sm font-bold text-white">Activité quotidienne · 30 jours</p>
+                  <div className="flex h-24 items-end gap-1 overflow-x-auto pb-1" aria-label="Graphique des connexions quotidiennes">
+                    {loginStats.daily.map((day) => {
+                      const max = Math.max(1, ...loginStats.daily.map(item => item.count));
+                      const height = Math.max(4, Math.round(day.count / max * 100));
+                      return <div key={day.date} title={day.date + ': ' + day.count + ' connexion(s)'} className="flex h-full min-w-2 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-amber-400 to-cyan-300" style={{ height: height + '%' }} /></div>;
+                    })}
+                  </div>
+                  <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 30 jours</span><span>Aujourd’hui</span></div>
                 </div>
-                <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 30 jours</span><span>Aujourd’hui</span></div>
-              </div>
-              <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
-                <p className="mb-3 text-sm font-bold text-white">Activité mensuelle · 12 mois</p>
-                <div className="flex h-24 items-end gap-2 overflow-x-auto pb-1" aria-label="Graphique des connexions mensuelles">
-                  {loginStats.monthly.map((month) => {
-                    const max = Math.max(1, ...loginStats.monthly.map(item => item.count));
-                    const height = Math.max(4, Math.round(month.count / max * 100));
-                    return <div key={month.month} title={month.month + ': ' + month.count + ' connexion(s)'} className="flex h-full min-w-4 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-indigo-300 to-amber-300" style={{ height: height + '%' }} /></div>;
-                  })}
+                <div className="mt-4 rounded-xl border border-white/15 bg-white/10 p-3">
+                  <p className="mb-3 text-sm font-bold text-white">Activité mensuelle · 12 mois</p>
+                  <div className="flex h-24 items-end gap-2 overflow-x-auto pb-1" aria-label="Graphique des connexions mensuelles">
+                    {loginStats.monthly.map((month) => {
+                      const max = Math.max(1, ...loginStats.monthly.map(item => item.count));
+                      const height = Math.max(4, Math.round(month.count / max * 100));
+                      return <div key={month.month} title={month.month + ': ' + month.count + ' connexion(s)'} className="flex h-full min-w-4 flex-1 flex-col justify-end"><div className="w-full rounded-t bg-gradient-to-t from-indigo-300 to-amber-300" style={{ height: height + '%' }} /></div>;
+                    })}
+                  </div>
+                  <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 12 mois</span><span>Mois actuel</span></div>
                 </div>
-                <div className="mt-2 flex justify-between text-[10px] text-blue-100"><span>Il y a 12 mois</span><span>Mois actuel</span></div>
-              </div>
+              </> : <div className="mt-4 rounded-xl border border-dashed border-blue-200 bg-[#eaf1ff] p-5 text-center text-[#172554]">
+                <Activity className="mx-auto h-7 w-7 text-blue-700"/>
+                <p className="mt-2 text-sm font-extrabold">Graphiques en attente des premières données</p>
+                <p className="mt-1 text-xs leading-5 text-slate-700">Les graphiques se rempliront après les prochaines connexions suivies. Aucune ancienne connexion n’est inventée.</p>
+              </div>}
             </section>
 
             {/* ── Payment and revenue reporting ── */}
