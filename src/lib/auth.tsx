@@ -23,7 +23,7 @@ interface AuthContextValue {
   profile: SchoolProfile | null;
   loading: boolean;
   isTrialExpired: boolean;
-  signUp: (email: string, password: string, schoolName: string, directorName: string, phone: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, schoolName: string, directorName: string, phone: string, referralCode?: string) => Promise<{ error?: string }>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
@@ -197,16 +197,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     schoolName: string,
     directorName: string,
     phone: string,
+    referralCode = '',
   ): Promise<{ error?: string }> {
     const { data, error } = await getSupabase().auth.signUp({ email, password, options: { data: { director_phone: phone } } });
     if (error) return { error: error.message };
     if (!data.user) return { error: "Erreur inattendue lors de l'inscription." };
 
     // Create the school + user profile + seed default data atomically
-    const { data: schoolId, error: rpcError } = await getSupabase().rpc('handle_new_school', {
+    const { data: schoolId, error: rpcError } = await getSupabase().rpc('handle_new_school_with_referral', {
       p_school_name: schoolName,
       p_director_name: directorName,
       p_email: email,
+      p_referral_code: referralCode,
     });
     if (rpcError) return { error: rpcError.message };
     const { error: phoneError } = await getSupabase().rpc('set_new_school_phone', {

@@ -85,7 +85,7 @@ export interface AdminManualPayment {
   payment_period_end?: string | null;
 }
 
-async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'suspend' | 'restore', paid?: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel', trialDays?: number, plans?: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[]) {
+async function adminFetch(code: string, action: string, paymentId?: string, schoolId?: string, status?: 'suspend' | 'restore', paid?: boolean, plan?: 'Essentiel' | 'Premium' | 'Élite', billingPeriod?: 'mensuel' | 'annuel', trialDays?: number, plans?: { name: 'Essentiel' | 'Premium' | 'Élite'; monthly: number }[], extra: Record<string, unknown> = {}) {
   const { data: { session } } = await getSupabase().auth.getSession();
   const token = session?.access_token;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -95,7 +95,7 @@ async function adminFetch(code: string, action: string, paymentId?: string, scho
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token || key}`,
     },
-    body: JSON.stringify({ code, action, paymentId, schoolId, status, paid, plan, billingPeriod, trialDays, plans }),
+    body: JSON.stringify({ code, action, paymentId, schoolId, status, paid, plan, billingPeriod, trialDays, plans, ...extra }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
@@ -169,4 +169,46 @@ export async function adminSavePublicPricing(code: string, plans: { name: 'Essen
 
 export async function adminSavePublicTrialDays(code: string, trialDays: number): Promise<void> {
   await adminFetch(code, 'save_trial_days', undefined, undefined, undefined, undefined, undefined, undefined, trialDays);
+}
+
+
+export interface AdminAffiliate {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  referral_code: string;
+  status: 'active' | 'paused';
+  created_at: string;
+  referrals_count: number;
+  due_total: number;
+  paid_total: number;
+  commissions: AdminAffiliateCommission[];
+}
+export interface AdminAffiliateCommission {
+  id: string;
+  affiliate_id: string;
+  school_id: string;
+  school_name: string;
+  plan: 'Essentiel' | 'Premium' | 'Élite';
+  subscription_amount: number;
+  commission_amount: number;
+  status: 'due' | 'paid';
+  created_at: string;
+  paid_at: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
+}
+export async function adminListAffiliates(code: string): Promise<AdminAffiliate[]> {
+  const { data } = await adminFetch(code, 'list_affiliates');
+  return Array.isArray(data) ? data as AdminAffiliate[] : [];
+}
+export async function adminCreateAffiliate(code: string, affiliate: { full_name: string; phone: string; email: string }): Promise<void> {
+  await adminFetch(code, 'create_affiliate', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, affiliate);
+}
+export async function adminSetAffiliateStatus(code: string, affiliateId: string, status: 'active' | 'paused'): Promise<void> {
+  await adminFetch(code, 'set_affiliate_status', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, { affiliateId, affiliateStatus: status });
+}
+export async function adminMarkAffiliateCommissionPaid(code: string, commissionId: string, paymentMethod: string, paymentReference: string): Promise<void> {
+  await adminFetch(code, 'mark_affiliate_commission_paid', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, { commissionId, paymentMethod, paymentReference });
 }
