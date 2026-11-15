@@ -12,6 +12,7 @@ import {
 } from '../lib/admin';
 import { loadPublicPlanPrices, loadPublicTrialDays, DEFAULT_PLAN_PRICES } from '../lib/publicPricing';
 import { VisitorAnalytics } from './VisitorAnalytics';
+import { AffiliateAdmin } from './AffiliateAdmin';
 
 const DEV_CODE_STORAGE = 'scolaria_admin_code';
 
@@ -93,7 +94,7 @@ export function AdminPanel({ onExit }: Props) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'trial' | 'active' | 'expired' | 'suspended'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const [activeModule, setActiveModule] = useState<'dashboard' | 'revenus' | 'tarifs' | 'ecoles' | 'paiements' | 'visites'>('dashboard');
+  const [activeModule, setActiveModule] = useState<'dashboard' | 'revenus' | 'tarifs' | 'ecoles' | 'paiements' | 'visites' | 'affiliations'>('dashboard');
   const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editPlan, setEditPlan] = useState<'Essentiel' | 'Premium' | 'Élite'>('Essentiel');
@@ -469,8 +470,8 @@ export function AdminPanel({ onExit }: Props) {
         @media(min-width:768px) { .gestilys-admin .ga-module-menu { grid-template-columns:repeat(3,minmax(0,1fr)); padding:14px 24px; } }
         .gestilys-admin .ga-module-menu button { color:#172554 !important; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:11px 12px; font-size:13px; font-weight:800; text-align:center; }
         .gestilys-admin .ga-module-menu button[aria-current="page"] { color:#fff !important; background:linear-gradient(115deg,#172554,#1d4ed8); border-color:#f4bd35; box-shadow:0 5px 14px rgba(23,37,84,.16); }
-        .gestilys-admin main[data-admin-module="dashboard"] > section:not([data-admin-module="dashboard"]), .gestilys-admin main[data-admin-module="revenus"] > section:not([data-admin-module="revenus"]), .gestilys-admin main[data-admin-module="tarifs"] > section:not([data-admin-module="tarifs"]), .gestilys-admin main[data-admin-module="ecoles"] > section:not([data-admin-module="ecoles"]), .gestilys-admin main[data-admin-module="paiements"] > section:not([data-admin-module="paiements"]), .gestilys-admin main[data-admin-module="visites"] > section:not([data-admin-module="visites"]) { display:none !important; }
-        .gestilys-admin main[data-admin-module="dashboard"] > section[data-admin-module="dashboard"], .gestilys-admin main[data-admin-module="revenus"] > section[data-admin-module="revenus"], .gestilys-admin main[data-admin-module="tarifs"] > section[data-admin-module="tarifs"], .gestilys-admin main[data-admin-module="ecoles"] > section[data-admin-module="ecoles"], .gestilys-admin main[data-admin-module="paiements"] > section[data-admin-module="paiements"], .gestilys-admin main[data-admin-module="visites"] > section[data-admin-module="visites"] { display:block; }
+        .gestilys-admin main[data-admin-module="dashboard"] > section:not([data-admin-module="dashboard"]), .gestilys-admin main[data-admin-module="revenus"] > section:not([data-admin-module="revenus"]), .gestilys-admin main[data-admin-module="tarifs"] > section:not([data-admin-module="tarifs"]), .gestilys-admin main[data-admin-module="ecoles"] > section:not([data-admin-module="ecoles"]), .gestilys-admin main[data-admin-module="paiements"] > section:not([data-admin-module="paiements"]), .gestilys-admin main[data-admin-module="visites"] > section:not([data-admin-module="visites"]), .gestilys-admin main[data-admin-module="affiliations"] > section:not([data-admin-module="affiliations"]) { display:none !important; }
+        .gestilys-admin main[data-admin-module="dashboard"] > section[data-admin-module="dashboard"], .gestilys-admin main[data-admin-module="revenus"] > section[data-admin-module="revenus"], .gestilys-admin main[data-admin-module="tarifs"] > section[data-admin-module="tarifs"], .gestilys-admin main[data-admin-module="ecoles"] > section[data-admin-module="ecoles"], .gestilys-admin main[data-admin-module="paiements"] > section[data-admin-module="paiements"], .gestilys-admin main[data-admin-module="visites"] > section[data-admin-module="visites"], .gestilys-admin main[data-admin-module="affiliations"] > section[data-admin-module="affiliations"] { display:block; }
         .gestilys-admin { --ga-navy:#172554; --ga-blue:#1d4ed8; --ga-gold:#f4bd35; position:relative; isolation:isolate; background:radial-gradient(ellipse at 8% 5%,rgba(59,130,246,.14),transparent 32%),radial-gradient(ellipse at 94% 0%,rgba(244,189,53,.18),transparent 27%),linear-gradient(180deg,#f4f7ff 0%,#fff 55%,#f7f9fd 100%); }
         .gestilys-admin:before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:linear-gradient(rgba(29,78,216,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(29,78,216,.035) 1px,transparent 1px); background-size:34px 34px; mask-image:linear-gradient(to bottom,black,transparent 85%); }
         .gestilys-admin header { border-color:rgba(244,189,53,.35); background:linear-gradient(110deg,#172554 0%,#1e3a8a 62%,#1d4ed8 125%); box-shadow:0 12px 34px rgba(23,37,84,.16); }
@@ -524,7 +525,7 @@ export function AdminPanel({ onExit }: Props) {
         </div>
       </header>
 
-      {adminMenuOpen && authed && <nav aria-label="Modules administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 shadow-lg backdrop-blur"><div className="ga-module-menu">{[["dashboard","Vue d’ensemble"],["revenus","Revenus"],["tarifs","Tarifs"],["ecoles","Écoles"],["paiements","Paiements"],["visites","Visites"]].map(([module,label])=><button key={module} type="button" aria-current={activeModule===module ? "page" : undefined} onClick={()=>{setActiveModule(module as typeof activeModule);setAdminMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}}>{label}</button>)}</div></nav>}
+      {adminMenuOpen && authed && <nav aria-label="Modules administrateur" className="sticky top-[65px] z-20 border-b border-blue-100 bg-white/95 shadow-lg backdrop-blur"><div className="ga-module-menu">{[["dashboard","Vue d’ensemble"],["revenus","Revenus"],["tarifs","Tarifs"],["ecoles","Écoles"],["paiements","Paiements"],["visites","Visites"],["affiliations","Affiliés & commissions"]].map(([module,label])=><button key={module} type="button" aria-current={activeModule===module ? "page" : undefined} onClick={()=>{setActiveModule(module as typeof activeModule);setAdminMenuOpen(false);window.scrollTo({top:0,behavior:"smooth"});}}>{label}</button>)}</div></nav>}
       <main data-admin-module={activeModule} className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
         {dataLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -1048,6 +1049,7 @@ export function AdminPanel({ onExit }: Props) {
               </section>
             )}
 
+            <AffiliateAdmin code={code} onToast={showToast} />
             <footer className="mt-10 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
               <p className="font-600 text-slate-500">Gestilys Admin · Console Super-Administrateur</p>
               <p>Données en temps réel — Supabase</p>
