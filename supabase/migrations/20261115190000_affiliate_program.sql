@@ -101,5 +101,6 @@ DROP TRIGGER IF EXISTS schools_create_affiliate_commission ON public.schools;
 CREATE TRIGGER schools_create_affiliate_commission
 AFTER UPDATE OF subscription_status ON public.schools
 FOR EACH ROW EXECUTE FUNCTION public.create_affiliate_commission_on_activation();
+REVOKE ALL ON FUNCTION public.create_affiliate_commission_on_activation() FROM PUBLIC, anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
