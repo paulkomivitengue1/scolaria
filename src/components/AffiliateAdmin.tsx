@@ -54,15 +54,15 @@ export function AffiliateAdmin({ code, onToast }: Props) {
   };
 
   const referralUrl = (codeValue: string) => window.location.origin + '/?ref=' + encodeURIComponent(codeValue);
-  const shareLink = async (affiliate: AdminAffiliate) => {
+  const shareLink = (affiliate: AdminAffiliate) => {
     const url = referralUrl(affiliate.referral_code);
-    const message = `Bonjour ${affiliate.full_name}, voici ton lien personnel pour recommander Gestilys : ${url} . Toute école qui s'inscrit avec ce lien sera rattachée à ton compte partenaire.`;
-    try {
-      if (navigator.share) await navigator.share({ title: 'Ton lien partenaire Gestilys', text: message, url });
-      else window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
-    } catch (e: any) {
-      if (e?.name !== 'AbortError') window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
-    }
+    const message = `Bonjour ${affiliate.full_name}, voici ton lien personnel pour recommander Gestilys : ${url}. Toute école qui s'inscrit avec ce lien sera rattachée à ton compte partenaire.`;
+    const digits = (affiliate.phone || '').replace(/\D/g, '');
+    const phoneNumber = digits.startsWith('00') ? digits.slice(2) : digits.length === 8 ? '223' + digits : digits;
+    const whatsappUrl = phoneNumber
+      ? 'https://wa.me/' + phoneNumber + '?text=' + encodeURIComponent(message)
+      : 'https://wa.me/?text=' + encodeURIComponent(message);
+    window.location.href = whatsappUrl;
   };
 
   const deleteAffiliate = async () => {
@@ -106,6 +106,19 @@ export function AffiliateAdmin({ code, onToast }: Props) {
   };
 
   return <section data-admin-module="affiliations" className="ga-affiliates mb-8 space-y-5 text-slate-900">
+    <style>{`
+      .gestilys-admin .ga-affiliates { color:#172554 !important; color-scheme:light; }
+      .gestilys-admin .ga-affiliates h2,.gestilys-admin .ga-affiliates h3,.gestilys-admin .ga-affiliates h4,.gestilys-admin .ga-affiliates h5 { color:#172554 !important; }
+      .gestilys-admin .ga-affiliates input,.gestilys-admin .ga-affiliates select,.gestilys-admin .ga-affiliates textarea { color:#172554 !important; background-color:#fff !important; border-color:#94a3b8 !important; -webkit-text-fill-color:#172554 !important; }
+      .gestilys-admin .ga-affiliates input::placeholder,.gestilys-admin .ga-affiliates textarea::placeholder { color:#64748b !important; opacity:1 !important; -webkit-text-fill-color:#64748b !important; }
+      .gestilys-admin .ga-affiliates option { color:#172554 !important; background:#fff !important; }
+      .gestilys-admin .ga-affiliates .bg-white { background-color:#fff !important; }
+      .gestilys-admin .ga-affiliates .bg-slate-50 { background-color:#f1f5f9 !important; }
+      .gestilys-admin .ga-affiliates .text-slate-600,.gestilys-admin .ga-affiliates .text-slate-700 { color:#475569 !important; }
+      .gestilys-admin .ga-affiliates .text-\\[\\#172554\\] { color:#172554 !important; }
+      .gestilys-admin .ga-affiliates button { text-shadow:none !important; }
+      .gestilys-admin .ga-affiliates button.bg-white { color:#172554 !important; }
+    `}</style>
     <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-[#172554] via-[#1e3a8a] to-[#1d4ed8] p-5 text-white shadow-xl sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-800 text-[#ffe08a]"><Users className="h-3.5 w-3.5"/> RÉSEAU COMMERCIAL</div>
