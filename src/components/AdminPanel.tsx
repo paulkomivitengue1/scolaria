@@ -485,11 +485,15 @@ export function AdminPanel({ onExit }: Props) {
         .gestilys-admin main button.bg-white\/10 { color:#fff !important; }
         .gestilys-admin main button.bg-gradient-to-r.from-royal-800, .gestilys-admin main button.bg-gradient-to-br.from-gold-500 { color:#fff !important; }
         .gestilys-admin main button.border-white\/20.bg-white\/10 { background:#1e40af; border-color:#93c5fd; color:#fff !important; }
-        /* Muted text is darkened only inside light cards, never on navy/blue panels. */
-        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-400 { color:#64748b !important; }
-        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-300 { color:#475569 !important; }
-        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-500 { color:#475569 !important; }
-        .gestilys-admin main :is(.bg-white,.bg-slate-50,.bg-blue-50,.bg-amber-50,.bg-emerald-50,.bg-indigo-50,.bg-rose-50,.bg-orange-50,.bg-violet-50,.bg-sky-50,.bg-gold-50) .text-slate-600 { color:#334155 !important; }
+        /* Admin content uses a light canvas: enforce readable muted text everywhere.
+           Do not depend on a nearby background utility; many labels sit in transparent wrappers. */
+        .gestilys-admin main { color:#172554; color-scheme:light; }
+        .gestilys-admin main :is(.text-slate-300,.text-slate-400,.text-gray-300,.text-gray-400,.text-zinc-400,.text-neutral-400) { color:#64748b !important; }
+        .gestilys-admin main :is(.text-slate-500,.text-gray-500,.text-zinc-500,.text-neutral-500) { color:#475569 !important; }
+        .gestilys-admin main :is(.text-slate-600,.text-gray-600,.text-zinc-600,.text-neutral-600) { color:#334155 !important; }
+        .gestilys-admin main input,.gestilys-admin main select,.gestilys-admin main textarea { color:#0f172a !important; background-color:#fff; -webkit-text-fill-color:#0f172a; }
+        .gestilys-admin main input::placeholder,.gestilys-admin main textarea::placeholder { color:#64748b !important; opacity:1; -webkit-text-fill-color:#64748b; }
+        .gestilys-admin main option { color:#0f172a; background:#fff; }
         .gestilys-admin main .bg-slate-50 { background:#f1f5f9; }
         .gestilys-admin main button:focus-visible,.gestilys-admin main input:focus-visible,.gestilys-admin main select:focus-visible { outline:3px solid rgba(147,197,253,.9); outline-offset:2px; }
         .gestilys-admin main button { transition:filter .18s,transform .18s,box-shadow .18s; }
