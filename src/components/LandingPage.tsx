@@ -441,6 +441,26 @@ export function LandingPage({ onEnter }: LandingPageProps) {
           </div>
         </section>
 
+        <section className="gl-section gl-section-soft">
+          <div className="gl-container">
+            <div className="gl-kicker">Guides Gestilys</div>
+            <h2 className="gl-h2">En savoir plus sur la gestion de votre école</h2>
+            <p className="gl-sub">Retrouvez nos pages consacrées à la gestion scolaire et au suivi des frais dans les établissements privés au Mali.</p>
+            <div className="gl-feature-grid">
+              <article className="gl-feature">
+                <h3>Logiciel de gestion scolaire au Mali</h3>
+                <p>Découvrez les outils pour organiser les élèves, les classes et les tâches administratives.</p>
+                <a className="gl-link" href="/logiciel-gestion-scolaire-mali/">Découvrir le guide <ArrowRight size={14} style={{ display:'inline' }} /></a>
+              </article>
+              <article className="gl-feature">
+                <h3>Suivi des frais scolaires</h3>
+                <p>Comprenez comment organiser les paiements, les soldes et les reçus de votre établissement.</p>
+                <a className="gl-link" href="/gestion-frais-scolaires-ecole-privee-mali/">Lire le guide <ArrowRight size={14} style={{ display:'inline' }} /></a>
+              </article>
+            </div>
+          </div>
+        </section>
+
         <section id="tarifs" className="gl-section gl-section-soft" style={{background:"linear-gradient(135deg,#edf5ff 0%,#ffffff 48%,#fff8e7 100%)"}}>
           <div className="gl-container">
             <div className="gl-kicker">Des tarifs transparents</div>
