@@ -8,8 +8,9 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "preview": "vite preview",
-    "test": "node tests/student-import.test.mjs",
-    "test:import": "node tests/student-import.test.mjs"
+    "test": "bash tests/run-all.sh",
+    "test:import": "node tests/student-import.test.mjs",
+    "test:security": "bash tests/security/run-ephemeral.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
