@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isAdminSession, constantTimeEqual } from "../_shared/admin-auth.js";
 const corsHeaders = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const DEV_CODE = Deno.env.get("ADMIN_DEV_CODE");
 const ADMIN_EMAIL = "paulkomivitengue@gmail.com";
@@ -50,23 +51,13 @@ Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get("Authorization") || "";
   const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
-  // Le gateway vérifie déjà la signature du JWT (verify_jwt=true). En cas
-  // d'échec transitoire de getUser, utiliser uniquement l'e-mail du JWT vérifié.
-  let tokenEmail = "";
-  try {
-   const payload = bearerToken.split(".")[1];
-   if (payload) {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")));
-    tokenEmail = String(decoded.email || "").trim().toLowerCase();
-   }
-  } catch { tokenEmail = ""; }
-  const verifiedEmail = String(authData.user?.email || tokenEmail).trim().toLowerCase();
-  // L'accès reste limité au compte administrateur et au code développeur.
-  if (!bearerToken || (authError && !tokenEmail) || verifiedEmail !== ADMIN_EMAIL) {
+  // L'accès est accordé uniquement si Supabase Auth a vérifié le jeton ET que le
+  // compte est celui de l'administrateur. Le contenu du JWT n'est jamais décodé
+  // ni cru sans vérification (pas de repli sur une charge utile non vérifiée).
+  if (!isAdminSession(bearerToken, authData, authError, ADMIN_EMAIL)) {
    return respond({error:"Accès administrateur réservé au compte autorisé."},403);
   }
-  if(String(b.code ?? '').trim() !== String(DEV_CODE ?? '').trim()) return respond({error:"Code développeur invalide"},401);
+  if(!constantTimeEqual(b.code, DEV_CODE)) return respond({error:"Code développeur invalide"},401);
   const {action,paymentId,schoolId}=b;
   switch(action) {
    case "save_trial_days": {

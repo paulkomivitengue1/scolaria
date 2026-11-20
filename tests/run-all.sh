@@ -42,6 +42,17 @@ run_stage() { # label, command...  -> sets $stage_status and $stage_out
   stage_out="$out"
 }
 
+node_stage() { # summary label, test file
+  run_stage "$1" node "$2"
+  if [ "$stage_status" -eq 0 ]; then
+    summary_row "$1" "✅" "$2"
+  else
+    summary_row "$1" "❌" "code de sortie $stage_status (voir le détail ci-dessous)"
+    summary_block "Sortie : $1" "$stage_out"
+    overall=1
+  fi
+}
+
 echo "### node $(node --version) | npm $(npm --version) | $(date -u +%FT%TZ)" | tee -a "$LOG"
 summary_row "Environnement" "ℹ️" "node $(node --version), npm $(npm --version)"
 
@@ -54,24 +65,11 @@ else
 fi
 
 # 2. Student import tests (pre-existing suite)
-run_stage "student-import test" node tests/student-import.test.mjs
-if [ "$stage_status" -eq 0 ]; then
-  summary_row "Tests d'import des élèves" "✅" "tests/student-import.test.mjs"
-else
-  summary_row "Tests d'import des élèves" "❌" "code de sortie $stage_status"
-  summary_block "Sortie des tests d'import" "$stage_out"
-  overall=1
-fi
+node_stage "Tests d'import des élèves" tests/student-import.test.mjs
 
-# 3. Edge Function admin-auth guard
-run_stage "edge function admin auth guard" node tests/edge-function-auth.static.test.mjs
-if [ "$stage_status" -eq 0 ]; then
-  summary_row "Edge Function scolaria-admin : garde d'authentification" "✅" "tests/edge-function-auth.static.test.mjs"
-else
-  summary_row "Edge Function scolaria-admin : garde d'authentification" "❌" "voir le détail ci-dessous"
-  summary_block "Sortie du test d'authentification Edge Function" "$stage_out"
-  overall=1
-fi
+# 3. Edge Function admin authentication: runtime tests + source guard
+node_stage "Edge Function scolaria-admin : tests d'authentification (exécution)" tests/admin-auth.test.mjs
+node_stage "Edge Function scolaria-admin : garde d'authentification (source)" tests/edge-function-auth.static.test.mjs
 
 # 4. PostgreSQL + migrations replay + security scenarios (rows added by the scripts).
 # A hard timeout turns any hang into a reported failure instead of a stuck job.
