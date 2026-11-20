@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 # Starts a temporary local PostgreSQL cluster (no root, no Docker), runs the
 # security scenarios against it, then removes everything.
-# Used by `npm test`, so the existing CI workflow executes the DB tests too.
 set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/summary.sh
+source "$here/../lib/summary.sh"
 
 BIN="$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1 || true)"
 if [ -z "$BIN" ] && command -v pg_ctl > /dev/null 2>&1; then
   BIN="$(dirname "$(command -v pg_ctl)")"
 fi
 if [ -z "$BIN" ] || [ ! -x "$BIN/initdb" ]; then
+  summary_row "PostgreSQL : binaires serveur" "❌" "initdb/pg_ctl introuvables sur ce runner"
   echo "::error::PostgreSQL server binaries (initdb/pg_ctl) not found: cannot run DB security tests" >&2
   exit 1
 fi
+version="$("$BIN/postgres" --version 2>/dev/null || echo 'version inconnue')"
+summary_row "PostgreSQL : binaires serveur" "✅" "$BIN ($version)"
 
 TMP="$(mktemp -d)"
 cleanup() {
@@ -20,8 +26,26 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"$BIN/initdb" -D "$TMP/data" -U postgres --auth=trust --encoding=UTF8 --locale=C > /dev/null
-"$BIN/pg_ctl" -D "$TMP/data" -o "-k $TMP -c listen_addresses='' -p 54329" -w start > /dev/null
+if ! out="$("$BIN/initdb" -D "$TMP/data" -U postgres --auth=trust --encoding=UTF8 --locale=C 2>&1)"; then
+  summary_row "PostgreSQL : initialisation du cluster temporaire" "❌" "initdb a échoué"
+  summary_block "Erreur initdb" "$out"
+  echo "$out" >&2
+  exit 1
+fi
+if ! out="$("$BIN/pg_ctl" -D "$TMP/data" -o "-k $TMP -c listen_addresses='' -p 54329" -w start 2>&1)"; then
+  summary_row "PostgreSQL : démarrage" "❌" "pg_ctl start a échoué"
+  summary_block "Erreur démarrage PostgreSQL" "$out"
+  echo "$out" >&2
+  exit 1
+fi
 
 export DATABASE_URL="postgresql:///postgres?host=$TMP&port=54329&user=postgres"
+if ! out="$(psql "$DATABASE_URL" -tAc 'select version()' 2>&1)"; then
+  summary_row "PostgreSQL : connexion" "❌" "psql n'a pas pu se connecter"
+  summary_block "Erreur de connexion psql" "$out"
+  echo "$out" >&2
+  exit 1
+fi
+summary_row "PostgreSQL : initialisation, démarrage et connexion" "✅" "$out"
+
 bash tests/security/run.sh
