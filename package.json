@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "preview": "vite preview",
-    "test": "node tests/student-import.test.mjs && bash tests/security/run-ephemeral.sh",
+    "test": "bash tests/run-all.sh",
     "test:import": "node tests/student-import.test.mjs",
     "test:security": "bash tests/security/run-ephemeral.sh"
   },
