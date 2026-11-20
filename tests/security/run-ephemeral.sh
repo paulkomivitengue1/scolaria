@@ -20,6 +20,7 @@ version="$("$BIN/postgres" --version 2>/dev/null || echo 'version inconnue')"
 summary_row "PostgreSQL : binaires serveur" "✅" "$BIN ($version)"
 
 TMP="$(mktemp -d)"
+PGLOG="$TMP/postgres.log"
 cleanup() {
   "$BIN/pg_ctl" -D "$TMP/data" -m immediate stop > /dev/null 2>&1 || true
   rm -rf "$TMP"
@@ -32,9 +33,13 @@ if ! out="$("$BIN/initdb" -D "$TMP/data" -U postgres --auth=trust --encoding=UTF
   echo "$out" >&2
   exit 1
 fi
-if ! out="$("$BIN/pg_ctl" -D "$TMP/data" -o "-k $TMP -c listen_addresses='' -p 54329" -w start 2>&1)"; then
+
+# The server daemon must NOT inherit our stdout/stderr (a captured or piped
+# descriptor would keep this script waiting forever): log to a file instead.
+if ! "$BIN/pg_ctl" -D "$TMP/data" -l "$PGLOG" -o "-k $TMP -c listen_addresses='' -p 54329" -w start > /dev/null 2>&1 < /dev/null; then
+  out="$(cat "$PGLOG" 2>/dev/null || true)"
   summary_row "PostgreSQL : démarrage" "❌" "pg_ctl start a échoué"
-  summary_block "Erreur démarrage PostgreSQL" "$out"
+  summary_block "Journal de démarrage PostgreSQL" "$out"
   echo "$out" >&2
   exit 1
 fi

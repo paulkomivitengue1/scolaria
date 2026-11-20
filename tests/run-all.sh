@@ -32,7 +32,7 @@ flush_summary() {
   } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
 }
 
-run_stage() { # label, command...  -> sets $stage_status
+run_stage() { # label, command...  -> sets $stage_status and $stage_out
   local label="$1"; shift
   local out
   echo "### $label" | tee -a "$LOG"
@@ -73,11 +73,16 @@ else
   overall=1
 fi
 
-# 4. PostgreSQL + migrations replay + security scenarios (rows added by the scripts)
+# 4. PostgreSQL + migrations replay + security scenarios (rows added by the scripts).
+# A hard timeout turns any hang into a reported failure instead of a stuck job.
 echo "### security DB tests" | tee -a "$LOG"
-bash tests/security/run-ephemeral.sh 2>&1 | tee -a "$LOG"
-if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+timeout 900 bash tests/security/run-ephemeral.sh 2>&1 | tee -a "$LOG"
+security_status=${PIPESTATUS[0]}
+if [ "$security_status" -ne 0 ]; then
   overall=1
+  if [ "$security_status" -eq 124 ]; then
+    summary_row "Tests de sécurité base de données" "❌" "délai maximum de 900 s dépassé (blocage)"
+  fi
 fi
 
 echo "### exit status: $overall" | tee -a "$LOG"
